@@ -1,0 +1,34 @@
+=== Certifying Language Pack: Arabic (Modern Standard) (ar) ===
+Config: {'code': 'ar', 'name': 'Arabic (Modern Standard)', 'script_direction': 'rtl', 'digit_policy': 'hindi', 'punctuation_policy': 'rtl_standard', 'negation_markers': ['لا', 'غير', 'عدم', 'يحظر'], 'tokenizer': 'cltk_ar'}
+--------------------------------------------------
+
+--- Core Pharma Cases ---
+[CORE] Case core_num_range: 
+  Source: Dose: 40–80 mg daily.
+  Gate Response: 0 violations found.
+[CORE] Case core_decimal: 
+  Source: Values < 0.5% are insignificant.
+  Gate Response: 0 violations found.
+[CORE] Case core_placeholder: 
+  Source: Patient [[PII:ID:9928]] reported nausea.
+  Gate Response: 0 violations found.
+[CORE] Case core_negation: 
+  Source: Do not chew or crush.
+  Gate Response: 1 violations found.
+    - negation_flip: Source contains negation 'not' but Target lacks common Arabic negation markers.
+[CORE] Case core_table: 
+  Source: | Adjuvant | Start | End |
+| Placebo | Day 1 | Day 5 |
+  Gate Response: 0 violations found.
+
+--- AR Golden Cases ---
+[GOLDEN] Case ar_rtl_punct: Ensure Latin content inside brackets stays coherent in RTL flow
+  Source: Severe hepatic impairment (Child-Pugh C).
+  Gate Response: 0 violations found.
+[GOLDEN] Case ar_digits: Check digit policy (acceptable dependent on config)
+  Source: Dose: 10 mg.
+  Gate Response: 0 violations found.
+[GOLDEN] Case ar_negation: Strict negation marker presence
+  Source: Do not take with alcohol.
+  Gate Response: 1 violations found.
+    - negation_flip: Source contains negation 'not' but Target lacks common Arabic negation markers.

@@ -1,0 +1,12 @@
+{
+  "description": "Test-quality signals (incubator: defaults to info to avoid noisy enforcement).",
+  "rules": {
+    "missing_test_assertion": { "enabled": true, "severity": "info" },
+    "test_isolation": { "enabled": true, "severity": "info" },
+    "test_naming": { "enabled": true, "severity": "info" },
+    "duplicate_class_defs": { "enabled": true, "severity": "warning" },
+    "classvar_in_tests": { "enabled": true, "severity": "warning" },
+    "test_parametrisation": { "enabled": true, "severity": "info", "min_similar_tests": 3 },
+    "noqa_ann001": { "enabled": true, "severity": "warning" }
+  }
+}

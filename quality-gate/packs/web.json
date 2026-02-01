@@ -1,0 +1,10 @@
+{
+  "description": "JS/TS/React-focused rules (static scans, no node tooling required).",
+  "rules": {
+    "no_var": { "enabled": true, "severity": "error" },
+    "no_eval": { "enabled": true, "severity": "error" },
+    "dangerously_set_html": { "enabled": true, "severity": "error", "exceptions": [] },
+    "react_hooks_rules": { "enabled": false, "severity": "info" },
+    "missing_key_prop": { "enabled": false, "severity": "info" }
+  }
+}

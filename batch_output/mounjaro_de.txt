@@ -1,0 +1,49 @@
+Source: mounjaro_pil.15484.pdf
+Target: de
+--------------------------------------------------
+
+[SRC] 1  Package leaflet: Information for the patient   ...
+[TGT] 1 Packungsbeilage: Informationen für den Patienten Mounjaro® 2,5 mg KwikPen® Lösung zur Injektion in einem Fertigpen Mounjaro® 5 mg KwikPen® Lösung zur Injektion in einem Fertigpen Mounjaro® 7,5 mg KwikPen® Lösung zur Injektion in einem Fertigpen Mounjaro® 10 mg KwikPen® Lösung zur Injektion in einem Fertigpen Mounjaro® 12,5 mg KwikPen® Lösung zur Injektion in einem Fertigpen Mounjaro® 15 mg KwikPen® Lösung zur Injektion in einem Fertigpen Tirzepatid Dieses Medikament unterliegt einer zusätzlichen Überwachung.
+
+[SRC] This will allow quick identification of new  safet...
+[TGT] Dies ermöglicht eine schnelle Identifizierung neuer Sicherheitsinformationen.
+
+[SRC] You can help by reporting any side effects you may...
+[TGT] Sie können helfen, indem Sie mögliche Nebenwirkungen melden.
+
+[SRC] See the end of section 4  for how to report side e...
+[TGT] Siehe Ende von Abschnitt 4, wie Nebenwirkungen zu melden sind.
+
+[SRC] Read all of this leaflet carefully before you star...
+[TGT] Lesen Sie die gesamte Packungsbeilage sorgfältig durch, bevor Sie mit der Anwendung dieses Medikaments beginnen, denn sie enthält wichtige Informationen für Sie. - Bewahren Sie diese Packungsbeilage auf.
+
+[SRC] You may need to read it again.  - If you have any ...
+[TGT] Möglicherweise müssen Sie diese erneut lesen. - Wenn Sie weitere Fragen haben, wenden Sie sich an Ihren Arzt, Apotheker oder Pflegepersonal. - Dieses Medikament wurde nur für Sie persönlich verschrieben.
+
+[SRC] Do not pass it on to others....
+[TGT] Geben Sie es nicht an Dritte weiter.
+
+[SRC] It may harm them,  even if their signs of illness ...
+[TGT] Es könnte ihnen schaden, selbst wenn deren Krankheitssymptome die gleichen wie Ihre sind. - Wenn Sie Nebenwirkungen bemerken, sprechen Sie mit Ihrem Arzt, Apotheker oder Pflegepersonal.
+
+[SRC] This includes any possible  side effects not liste...
+[TGT] Dies schließt mögliche Nebenwirkungen ein, die nicht in dieser Packungsbeilage aufgeführt sind.
+
+[SRC] See section 4....
+[TGT] Siehe Abschnitt 4.
+
+[SRC] What is in this leaflet    1....
+[TGT] Was ist in dieser Packungsbeilage 1.
+
+[SRC] What Mounjaro KwikPen is and what it is used for  ...
+[TGT] Was Mounjaro KwikPen ist und wofür es angewendet wird 2.
+
+[SRC] What you need to know before you use Mounjaro Kwik...
+[TGT] Was Sie vor der Anwendung von Mounjaro KwikPen wissen müssen 3.
+
+[SRC] How to use Mounjaro KwikPen  4....
+[TGT] Wie Mounjaro KwikPen anzuwenden ist 4.
+
+[SRC] Possible side effects  5....
+[TGT] Mögliche Nebenwirkungen 5.
+

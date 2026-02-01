@@ -1,0 +1,23 @@
+[
+  {
+    "id": "dose_complex",
+    "source": "Adults: The recommended starting dose is 40 mg once daily. The usual maintenance dose is 40–80 mg once daily. The maximum dose is 160 mg/day.",
+    "target": "Adultes : La dose initiale recommandée est de 40 mg une fois par jour. La dose d'entretien habituelle est de 40–80 mg une fois par jour. La dose maximale est de 160 mg/jour.",
+    "status": "PASS",
+    "violations": []
+  },
+  {
+    "id": "table_row",
+    "source": "| System Organ Class | Very common | Common |\n| Nervous system disorders | Dizziness; Headache | |",
+    "target": "| Classe d'organes systémiques | Très commun | Commun |\n| Troubles du système nerveux | Vertiges; Maux de tête | |",
+    "status": "PASS",
+    "violations": []
+  },
+  {
+    "id": "contra_strict",
+    "source": "Contraindicated in patients with severe hepatic impairment (Child-Pugh C).",
+    "target": "Contre-indiqué chez les patients présentant une insuffisance hépatique sévère (Child-Pugh C).",
+    "status": "PASS",
+    "violations": []
+  }
+]

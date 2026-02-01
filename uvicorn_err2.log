@@ -1,0 +1,12 @@
+INFO:     Started server process [15820]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('127.0.0.1', 8000): [winerror 10048] only one usage of each socket address (protocol/network address/port) is normally permitted
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+Warning: DB Initialization failed: (sqlite3.OperationalError) near "EXTENSION": syntax error
+[SQL: CREATE EXTENSION IF NOT EXISTS vector]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Warning: DB Initialization failed: (sqlite3.OperationalError) near "EXTENSION": syntax error
+[SQL: CREATE EXTENSION IF NOT EXISTS vector]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)

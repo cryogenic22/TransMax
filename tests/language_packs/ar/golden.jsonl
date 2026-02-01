@@ -1,0 +1,23 @@
+[
+  {
+    "id": "ar_rtl_punct",
+    "source_text": "Severe hepatic impairment (Child-Pugh C).",
+    "target_regex": ".*\\(Child-Pugh C\\).*",
+    "expected_checks": ["rtl_punctuation"],
+    "desc": "Ensure Latin content inside brackets stays coherent in RTL flow"
+  },
+  {
+    "id": "ar_digits",
+    "source_text": "Dose: 10 mg.",
+    "target_regex": "10 mg|١٠ mg|١٠ ملغ",
+    "expected_checks": ["numbers", "units"],
+    "desc": "Check digit policy (acceptable dependent on config)"
+  },
+  {
+    "id": "ar_negation",
+    "source_text": "Do not take with alcohol.",
+    "target_regex": ".*(لا|عدم).*",
+    "expected_checks": ["negation"],
+    "desc": "Strict negation marker presence"
+  }
+]

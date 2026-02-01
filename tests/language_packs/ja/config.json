@@ -1,0 +1,14 @@
+{
+    "code": "ja",
+    "name": "Japanese (Pharma)",
+    "script_direction": "ltr",
+    "digit_policy": "western",
+    "punctuation_policy": "cjk_standard",
+    "negation_markers": [
+        "ない",
+        "ません",
+        "禁忌"
+    ],
+    "tokenizer": "sudachi_c",
+    "variant_policy": "strict"
+}

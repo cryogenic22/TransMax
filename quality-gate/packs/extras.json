@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "name": "Extras (Incubator)",
+  "description": "Optional extra rules (mostly info-level) for teams that want FAANG-style review signals without hard blocking PRS.",
+  "rules": {
+    "import_boundaries": {"enabled": false, "severity": "error"},
+    "exception_debt": {"enabled": false, "severity": "warning"},
+    "star_import": {"enabled": true, "severity": "info"},
+    "global_state_mutation": {"enabled": true, "severity": "info"},
+    "assert_in_production": {"enabled": true, "severity": "info"},
+    "line_length": {
+      "enabled": true,
+      "severity": "info",
+      "max_length": 120,
+      "ignore_patterns": ["https?://"]
+    },
+    "commented_code": {"enabled": true, "severity": "info", "min_lines": 5},
+    "react_hooks_rules": {"enabled": true, "severity": "info"},
+    "missing_key_prop": {"enabled": true, "severity": "info"}
+  }
+}

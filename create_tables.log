@@ -1,0 +1,3 @@
+Creating tables...
+Tables created successfully!
+Tables in database: ['alembic_version', 'language_packs', 'translation_glossaries', 'translation_memory', 'translation_jobs', 'audit_records', 'chunk_translations', 'quality_reports', 'glossaries', 'glossary_terms', 'tm_segments', 'documents', 'segments', 'change_logs', 'audit_records_queue', 'translation_jobs_queue']

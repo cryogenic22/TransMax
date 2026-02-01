@@ -1,0 +1,14 @@
+# Minimal pre-commit: Quality Gate only (stdlib-only).
+# Install:
+#   cp quality-gate/.pre-commit-config.min.yaml .pre-commit-config.yaml
+#   pre-commit install
+
+repos:
+  - repo: local
+    hooks:
+      - id: quality-gate
+        name: Quality Gate (staged)
+        entry: python quality-gate/quality_gate.py --staged
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]

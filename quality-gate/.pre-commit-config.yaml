@@ -1,0 +1,143 @@
+# Quality Gate Pre-Commit Hooks
+# ==============================
+# Copy this file to your repo root as .pre-commit-config.yaml
+# Then run: pre-commit install
+#
+# This configuration enforces quality gates before every commit.
+
+default_install_hook_types: [pre-commit, pre-push, commit-msg]
+default_stages: [pre-commit]
+
+repos:
+  # ============================================================================
+  # QUALITY GATE (Custom)
+  # ============================================================================
+  - repo: local
+    hooks:
+      # Main quality gate check
+      - id: quality-gate
+        name: Quality Gate
+        entry: python quality-gate/quality_gate.py --staged
+        language: python
+        types: [file]
+        pass_filenames: false
+        stages: [pre-commit]
+        verbose: true
+
+      # Strict quality gate on push (includes warnings)
+      - id: quality-gate-strict
+        name: Quality Gate (Strict)
+        entry: python quality-gate/quality_gate.py --strict
+        language: python
+        types: [file]
+        pass_filenames: false
+        stages: [pre-push]
+        verbose: true
+
+      # Commit message format check
+      - id: commit-msg-format
+        name: Commit Message Format
+        entry: python quality-gate/check_commit_msg.py
+        language: python
+        stages: [commit-msg]
+        always_run: true
+
+  # ============================================================================
+  # STANDARD HOOKS
+  # ============================================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # Prevent large files from being committed
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+
+      # Check for files that would conflict in case-insensitive filesystems
+      - id: check-case-conflict
+
+      # Check for merge conflict strings
+      - id: check-merge-conflict
+
+      # Ensure files end with a newline
+      - id: end-of-file-fixer
+        exclude: '\.min\.(js|css)$'
+
+      # Remove trailing whitespace
+      - id: trailing-whitespace
+        exclude: '\.min\.(js|css)$'
+
+      # Check YAML syntax
+      - id: check-yaml
+        args: ['--unsafe']  # Allow custom tags
+
+      # Check JSON syntax
+      - id: check-json
+
+      # Check TOML syntax
+      - id: check-toml
+
+      # Prevent committing to main/master directly
+      - id: no-commit-to-branch
+        args: ['--branch', 'main', '--branch', 'master']
+
+      # Detect private keys
+      - id: detect-private-key
+
+  # ============================================================================
+  # TYPESCRIPT/JAVASCRIPT
+  # ============================================================================
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint
+        entry: npx eslint --fix
+        language: system
+        types: [javascript, jsx, ts, tsx]
+        pass_filenames: true
+
+      - id: typescript-check
+        name: TypeScript Check
+        entry: npx tsc --noEmit
+        language: system
+        types: [ts, tsx]
+        pass_filenames: false
+
+  # ============================================================================
+  # PYTHON
+  # ============================================================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      - id: ruff
+        args: ['--fix']
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        additional_dependencies: ['types-all']
+        args: ['--ignore-missing-imports']
+
+  # ============================================================================
+  # SECRETS DETECTION
+  # ============================================================================
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: 'package-lock\.json|\.lock$'
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: [quality-gate-strict]  # Skip strict check in CI (handled separately)
+  submodules: false

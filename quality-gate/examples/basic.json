@@ -1,0 +1,5 @@
+{
+  "packs": ["core", "python", "security", "extras"],
+  "prs": { "enabled": true, "min_score": 85 },
+  "thresholds": { "error_count": 0 }
+}

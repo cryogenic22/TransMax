@@ -1,0 +1,49 @@
+Source: mounjaro_pil.15484.pdf
+Target: ja
+--------------------------------------------------
+
+[SRC] 1  Package leaflet: Information for the patient   ...
+[TGT] 1 パッケージリーフレット：患者向け情報 Mounjaro® 2.5 mg KwikPen® 注射用溶液（プレフィルドペン） Mounjaro® 5 mg KwikPen® 注射用溶液（プレフィルドペン） Mounjaro® 7.5 mg KwikPen® 注射用溶液（プレフィルドペン） Mounjaro® 10 mg KwikPen® 注射用溶液（プレフィルドペン） Mounjaro® 12.5 mg KwikPen® 注射用溶液（プレフィルドペン） Mounjaro® 15 mg KwikPen® 注射用溶液（プレフィルドペン） tirzepatide この医薬品は追加の監視が必要です。
+
+[SRC] This will allow quick identification of new  safet...
+[TGT] これにより、新しい安全情報の迅速な特定が可能になります。
+
+[SRC] You can help by reporting any side effects you may...
+[TGT] 副作用が発生した場合に報告することで、お手伝いいただけます。
+
+[SRC] See the end of section 4  for how to report side e...
+[TGT] 副作用の報告方法については、セクション4の最後をご覧ください。
+
+[SRC] Read all of this leaflet carefully before you star...
+[TGT] この医薬品を使用する前に、このリーフレットを注意深くお読みください。あなたにとって重要な情報が含まれています。 - このリーフレットを保管してください。
+
+[SRC] You may need to read it again.  - If you have any ...
+[TGT] 再度読む必要があるかもしれません。 - ご不明な点がある場合は、医師、薬剤師、または看護師にお尋ねください。 - この医薬品はあなた専用に処方されたものです。
+
+[SRC] Do not pass it on to others....
+[TGT] 他人に譲渡しないでください。
+
+[SRC] It may harm them,  even if their signs of illness ...
+[TGT] それは彼らに害を及ぼす可能性があります、たとえ彼らの病気の兆候があなたと同じであっても。 - 副作用が発生した場合は、医師、薬剤師、または看護師に相談してください。
+
+[SRC] This includes any possible  side effects not liste...
+[TGT] これには、このリーフレットに記載されていない可能性のある副作用も含まれます。
+
+[SRC] See section 4....
+[TGT] セクション4をご覧ください。
+
+[SRC] What is in this leaflet    1....
+[TGT] このリーフレットには何が記載されていますか 1.
+
+[SRC] What Mounjaro KwikPen is and what it is used for  ...
+[TGT] Mounjaro KwikPenとは何か、そしてそれは何に使用されるか 2.
+
+[SRC] What you need to know before you use Mounjaro Kwik...
+[TGT] Mounjaro KwikPenを使用する前に知っておくべきこと 3.
+
+[SRC] How to use Mounjaro KwikPen  4....
+[TGT] Mounjaro KwikPenの使用方法 4.
+
+[SRC] Possible side effects  5....
+[TGT] 考えられる副作用 5.
+

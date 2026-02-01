@@ -1,0 +1,27 @@
+{
+  "bundle_id": "c8d407df-ec44-4aff-b6bd-e802e01d9c65",
+  "generated_at": "2026-01-24T13:58:43.388575",
+  "system_version": "TransMax v3.0-RC1",
+  "integrity_status": "PASS",
+  "integrity_details": "Integrity Verified",
+  "context": {
+    "audit_id": "4fc842cf-9950-43d7-a9f3-0fea816fcec7",
+    "job_id": "7de411f4-3e2c-4a86-b86b-ece30aaec57b",
+    "final_decision": null
+  },
+  "configuration_frozen": {
+    "frozen_param": "confirmed"
+  },
+  "chain_of_custody": [
+    {
+      "sequence": 0,
+      "timestamp": "2026-01-24T13:58:43.202320",
+      "event": "TEST_EVENT",
+      "payload": {
+        "data": "secure"
+      },
+      "integrity_hash": "a4fb0607b437410537cd0fd411ada0fc3a237ee16ec1386afb8dc04208c1e7b8",
+      "link_hash": "GENESIS_HASH"
+    }
+  ]
+}

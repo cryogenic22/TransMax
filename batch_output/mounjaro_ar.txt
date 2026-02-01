@@ -1,0 +1,49 @@
+Source: mounjaro_pil.15484.pdf
+Target: ar
+--------------------------------------------------
+
+[SRC] 1  Package leaflet: Information for the patient   ...
+[TGT] 1 نشرة المعلومات: معلومات للمريض مونجارو® 2.5 ملغ حل كويكبن® للحقن في قلم مملوء مسبقًا مونجارو® 5 ملغ حل كويكبن® للحقن في قلم مملوء مسبقًا مونجارو® 7.5 ملغ حل كويكبن® للحقن في قلم مملوء مسبقًا مونجارو® 10 ملغ حل كويكبن® للحقن في قلم مملوء مسبقًا مونجارو® 12.5 ملغ حل كويكبن® للحقن في قلم مملوء مسبقًا مونجارو® 15 ملغ حل كويكبن® للحقن في قلم مملوء مسبقًا تيرزيباتيد هذا الدواء خاضع لمراقبة إضافية.
+
+[SRC] This will allow quick identification of new  safet...
+[TGT] هذا سيسمح بتحديد سريع لمعلومات السلامة الجديدة.
+
+[SRC] You can help by reporting any side effects you may...
+[TGT] يمكنك المساعدة بالإبلاغ عن أي آثار جانبية قد تحصل عليها.
+
+[SRC] See the end of section 4  for how to report side e...
+[TGT] انظر نهاية القسم 4 لكيفية الإبلاغ عن الآثار الجانبية.
+
+[SRC] Read all of this leaflet carefully before you star...
+[TGT] اقرأ كل هذه النشرة بعناية قبل أن تبدأ باستخدام هذا الدواء لأنها تحتوي على معلومات مهمة لك. - احتفظ بهذه النشرة.
+
+[SRC] You may need to read it again.  - If you have any ...
+[TGT] قد تحتاج لقراءتها مرة أخرى. - إذا كان لديك أي أسئلة إضافية، اسأل طبيبك أو الصيدلي أو الممرض. - هذا الدواء موصوف لك فقط.
+
+[SRC] Do not pass it on to others....
+[TGT] لا تمرره للآخرين.
+
+[SRC] It may harm them,  even if their signs of illness ...
+[TGT] قد يضرهم، حتى لو كانت علامات المرض لديهم هي نفسها التي لديك. - إذا حصلت على أي آثار جانبية، تحدث إلى طبيبك أو الصيدلي أو الممرض.
+
+[SRC] This includes any possible  side effects not liste...
+[TGT] هذا يشمل أي آثار جانبية محتملة غير مذكورة في هذه النشرة.
+
+[SRC] See section 4....
+[TGT] انظر القسم 4.
+
+[SRC] What is in this leaflet    1....
+[TGT] ماذا يوجد في هذه النشرة 1.
+
+[SRC] What Mounjaro KwikPen is and what it is used for  ...
+[TGT] ما هو مونجارو كويكبن ولماذا يستخدم 2.
+
+[SRC] What you need to know before you use Mounjaro Kwik...
+[TGT] ما يجب أن تعرفه قبل استخدام مونجارو كويكبن 3.
+
+[SRC] How to use Mounjaro KwikPen  4....
+[TGT] كيفية استخدام مونجارو كويكبن 4.
+
+[SRC] Possible side effects  5....
+[TGT] الآثار الجانبية المحتملة 5.
+
