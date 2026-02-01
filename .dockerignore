@@ -1,0 +1,47 @@
+# Secrets (CRITICAL)
+.env
+.env.local
+.env.*
+
+# Version Control
+.git
+.gitignore
+.github
+
+# Python Cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Testing & Quality
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+tests/
+
+# Local Data
+uploads/
+*.db
+*.sqlite3
+transmax.db
+
+# Documentation & IDE
+.vscode/
+.idea/
+docs/
+*.md

@@ -1,0 +1,314 @@
+Source Document: 02_SmPC_EU_EN_Cardiomel_nefrosartan_v0.2.pdf
+Target Language: French (fr)
+--------------------------------------------------
+
+[SOURCE] SUMMARY OF PRODUCT CHARACTERIS-
+TICS (SmPC) — EU English (Synthetic / Mock)
+Product: Cardiomel 20 mg / 40 mg film-coated tablets (nefrosartan)
+Document ID: SmPC-EU-EN-CARDIOMEL-NEFROSARTAN-v0.2 (Syn-
+thetic)
+Date of revision (synthetic): 16 Jan 2026
+Synthetic mock SmPC aligned to EMA QRD v10.4 heading structure
+for prototyping only.
+1. NAME OF THE MEDICINAL PRODUCT
+Cardiomel 20 mg film-coated tablets
+Cardiomel 40 mg film-coated tablets
+2. QUALITATIVE AND QUANTITATIVE COMPOSI-
+TION
+Each film-coated tablet contains nefrosartan (as nefrosartan potassium) 20 mg
+or 40 mg.
+Excipient with known effect: lactose monohydrate.
+For the full list of excipients, see section 6.1.
+3. PHARMACEUTICAL FORM
+Film-coated tablet.
+Cardiomel 20 mg: oval, white, debossed “NM20” (synthetic).
+Cardiomel 40 mg: oval, light blue, debossed “NM40” (synthetic).
+4. CLINICAL PARTICULARS
+4.1 Therapeutic indications
+Cardiomel is indicated for the treatment of essential hypertension in adults.
+4.2 Posology and method of administration
+Posology
+Adults: The recommended starting dose is 40 mg once daily. The usual main-
+tenance dose is 40–80 mg once daily. The maximum dose is 160 mg/day.
+Elderly: No routine dose adjustment; consider a lower starting dose in frail pa-
+tients or those at risk of hypotension.
+Renal impairment: Mild/moderate—no adjustment generally required. Severe
+impairment (eGFR <30 mL/min/1.73m²) or dialysis—use with caution and
+1
+[TARGET] RÉSUMÉ DES CARACTÉRISTIQUES DU PRODUIT (RCP) — Anglais UE (Synthétique / Maquette)
+Produit : Comprimés pelliculés Cardiomel 20 mg / 40 mg (nefrosartan)
+ID du document : RCP-EU-FR-CARDIOMEL-NEFROSARTAN-v0.2 (Synthétique)
+Date de révision (synthétique) : 16 janvier 2026
+Maquette de RCP synthétique alignée sur la structure des rubriques EMA QRD v10.4
+pour prototypage uniquement.
+1. NOM DU MÉDICAMENT
+Comprimés pelliculés Cardiomel 20 mg
+Comprimés pelliculés Cardiomel 40 mg
+2. COMPOSITION QUALITATIVE ET QUANTITATIVE
+Chaque comprimé pelliculé contient du nefrosartan (sous forme de potassium de nefrosartan) 20 mg
+ou 40 mg.
+Excipient à effet notoire : lactose monohydraté.
+Pour la liste complète des excipients, voir la section 6.1.
+3. FORME PHARMACEUTIQUE
+Comprimé pelliculé.
+Cardiomel 20 mg : ovale, blanc, gravé "NM20" (synthétique).
+Cardiomel 40 mg : ovale, bleu clair, gravé "NM40" (synthétique).
+4. DONNÉES CLINIQUES
+4.1 Indications thérapeutiques
+Cardiomel est indiqué pour le traitement de l'hypertension artérielle essentielle chez l'adulte.
+4.2 Posologie et mode d'administration
+Posologie
+Adultes : La dose initiale recommandée est de 40 mg une fois par jour. La dose d'entretien habituelle est de 40 à 80 mg une fois par jour. La dose maximale est de 160 mg/jour.
+Personnes âgées : Pas d'ajustement systématique de la dose ; envisager une dose initiale plus faible chez les patients fragiles ou à risque d'hypotension.
+Insuffisance rénale : Légère/modérée — généralement aucun ajustement nécessaire. Insuffisance sévère (DFG <30 mL/min/1,73m²) ou dialyse — utiliser avec prudence et
+
+[SOURCE] monitor renal function and potassium.
+Hepatic impairment: Mild—caution. Moderate—start low and titrate cau-
+tiously. Severe hepatic impairment—contraindicated.
+Method of administration
+Oral use. Swallow with water, with or without food.
+4.3 Contraindications
+• Hypersensitivity to the active substance or to any of the excipients listed
+in section 6.1
+• Pregnancy in the second and third trimester (see section 4.6)
+• Severe hepatic impairment / cholestasis
+• Concomitant use with aliskiren-containing products in patients with dia-
+betes mellitus or renal impairment (eGFR <60 mL/min/1.73 m²)
+4.4 Special warnings and precautions for use
+Hypotension/volume depletion; renal function impairment; hyperkalaemia; dual
+RAAS blockade; angioedema; aortic/mitral stenosis/obstructive cardiomyopa-
+thy; primary aldosteronism; hepatic impairment.
+This medicinal product contains lactose. Patients with rare hereditary problems
+of galactose intolerance, total lactase deficiency or glucose-galactose malabsorp-
+tion should not take this medicinal product.
+4.5 Interaction with other medicinal products and other forms of
+interaction
+Potassium-sparing diuretics/potassium supplements/salt substitutes: risk of hy-
+perkalaemia.
+NSAIDs: reduced antihypertensive effect; risk of renal impairment—monitor
+renal function.
+Lithium: increased lithium levels/toxicity possible—avoid or monitor lithium
+levels.
+Other antihypertensives: additive blood pressure lowering.
+4.6 F ertility , pregnancy and lactation
+Pregnancy
+Use of angiotensin II receptor antagonists is not recommended during the first
+trimester of pregnancy. Use is contraindicated during the second and third
+trimesters of pregnancy. If pregnancy is detected, Cardiomel should be discon-
+tinued and alternative treatment started.
+2
+[TARGET] surveiller la fonction rénale et le potassium.
+Insuffisance hépatique : Légère — prudence. Modérée — commencer à faible dose et titrer prudemment. Insuffisance hépatique sévère — contre-indiqué.
+Mode d'administration
+Usage oral. Avaler avec de l'eau, avec ou sans nourriture.
+4.3 Contre-indications
+• Hypersensibilité à la substance active ou à l'un des excipients listés dans la section 6.1
+• Grossesse au deuxième et troisième trimestre (voir section 4.6)
+• Insuffisance hépatique sévère / cholestase
+• Utilisation concomitante avec des produits contenant de l'aliskiren chez les patients atteints de diabète sucré ou d'insuffisance rénale (DFG <60 mL/min/1,73 m²)
+4.4 Mises en garde spéciales et précautions d'emploi
+Hypotension/déplétion volumique ; insuffisance rénale ; hyperkaliémie ; blocage dual du SRAA ; angioedème ; sténose aortique/mitrale/cardiomyopathie obstructive ; aldostéronisme primaire ; insuffisance hépatique.
+Ce médicament contient du lactose. Les patients présentant des problèmes héréditaires rares d'intolérance au galactose, de déficit total en lactase ou de malabsorption du glucose-galactose ne doivent pas prendre ce médicament.
+4.5 Interaction avec d'autres médicaments et autres formes d'interactions
+Diurétiques épargneurs de potassium/suppléments en potassium/substituts de sel : risque d'hyperkaliémie.
+AINS : effet antihypertenseur réduit ; risque d'insuffisance rénale — surveiller la fonction rénale.
+Lithium : augmentation possible des niveaux/toxicité du lithium — éviter ou surveiller les niveaux de lithium.
+Autres antihypertenseurs : abaissement additif de la pression artérielle.
+4.6 Fertilité, grossesse et allaitement
+Grossesse
+L'utilisation des antagonistes des récepteurs de l'angiotensine II n'est pas recommandée pendant le premier trimestre de la grossesse. L'utilisation est contre-indiquée pendant le deuxième et le troisième trimestre de la grossesse. Si une grossesse est détectée, Cardiomel doit être arrêté et un traitement alternatif doit être commencé.
+
+[SOURCE] Breast-feeding
+Use is not recommended. Alternative treatments with better established safety
+during breast-feeding are preferable, especially while nursing a newborn or
+preterm infant.
+F ertility
+No clinically meaningful effects anticipated (synthetic).
+4.7 Effects on ability to drive and use machines
+Cardiomel may cause dizziness or fatigue, particularly at initiation or during
+dose increases. Patients should be cautioned about driving or using machines if
+affected.
+4.8 Undesirable effects
+Most commonly reported: dizziness, headache, fatigue. Clinically relevant: hy-
+potension, hyperkalaemia, increased creatinine; rare angioedema.
+T abulated list of adverse reactions (synthetic)
+System
+Organ
+Class
+Very
+common Common Uncommon Rare
+Not
+known
+Nervous
+system
+disorders
+Dizziness;
+Headache
+Cardiac
+disorders
+Palpitations
+Vascular
+disorders
+Hypotension Orthostatic
+hypoten-
+sion
+Syncope
+Gastrointestinal
+disorders
+Nausea;
+Diarrhoea
+Dyspepsia
+Renal and
+urinary
+disorders
+Creatinine
+increased
+Acute
+kidney
+injury
+Metabolism
+and
+nutrition
+disorders
+Hyperkalaemia
+Skin and
+subcuta-
+neous
+tissue
+disorders
+Rash;
+Pruritus
+Angioedema
+3
+[TARGET] Allaitement
+L'utilisation n'est pas recommandée. Des traitements alternatifs ayant une sécurité mieux établie pendant l'allaitement sont préférables, en particulier lors de l'allaitement d'un nouveau-né ou d'un prématuré.
+Fertilité
+Aucun effet cliniquement significatif anticipé (synthétique).
+4.7 Effets sur l'aptitude à conduire et à utiliser des machines
+Cardiomel peut provoquer des vertiges ou de la fatigue, en particulier au début du traitement ou lors des augmentations de dose. Il convient d'avertir les patients de ne pas conduire ou utiliser des machines s'ils sont affectés.
+4.8 Effets indésirables
+Les plus fréquemment rapportés : vertiges, maux de tête, fatigue. Cliniquement pertinents : hypotension, hyperkaliémie, augmentation de la créatinine ; angioedème rare.
+Liste tabulée des réactions indésirables (synthétique)
+Classe de systèmes d'organes
+Très
+fréquent Fréquent Peu fréquent Rare
+Inconnu
+Troubles du système
+nerveux
+Vertiges ;
+Maux de tête
+Troubles cardiaques
+Palpitations
+Troubles vasculaires
+Hypotension Hypotension
+orthostatique
+Syncope
+Troubles gastro-intestinaux
+Nausées ;
+Diarrhée
+Dyspepsie
+Troubles rénaux et
+urinaires
+Augmentation de la
+ créatinine
+Lésion rénale
+aiguë
+Troubles du métabolisme et de la nutrition
+Hyperkaliémie
+Troubles de la peau et du tissu sous-cutané
+Éruption ;
+Prurit
+Angioedème
+
+[SOURCE] Reporting of suspected adverse reactions
+Reporting suspected adverse reactions after authorisation of the medicinal prod-
+uct is important. It allows continued monitoring of the benefit/risk balance.
+Healthcare professionals are asked to report any suspected adverse reactions via
+the national reporting system listed in Appendix V.
+4.9 Overdose
+Supportive treatment; monitor blood pressure, electrolytes, renal function. Dial-
+ysis unlikely to be effective (synthetic).
+5. PHARMACOLOGICAL PROPERTIES
+5.1 Pharmacodynamic properties
+Pharmacotherapeutic group: angiotensin II receptor antagonists, plain (syn-
+thetic).
+ATC code: not assigned (synthetic).
+Mechanism: selective AT1 antagonism → reduced vasoconstriction and aldos-
+terone → reduced blood pressure.
+5.2 Pharmacokinetic properties
+Absorption Tmax 1.5–3 h; bioavailability ~35%; protein binding ~98%; terminal
+half-life ~12 h; elimination mainly biliary/fecal with minor renal component
+(synthetic).
+5.3 Preclinical safety data
+Embryo-fetal toxicity consistent with RAAS inhibition; no genotoxic signal in
+standard assays (synthetic).
+6. PHARMACEUTICAL PARTICULARS
+6.1 List of excipients
+Tablet core: lactose monohydrate, microcrystalline cellulose, croscarmellose
+sodium, magnesium stearate.
+Film coat: hypromellose, macrogol, titanium dioxide, iron oxides (synthetic).
+6.2 Incompatibilities
+Not applicable.
+6.3 Shelf life
+3 years.
+4
+[TARGET] Déclaration des effets indésirables suspectés
+La déclaration des effets indésirables suspectés après autorisation du médicament est importante. Elle permet une surveillance continue du rapport bénéfice/risque du médicament.
+Les professionnels de santé sont priés de déclarer tout effet indésirable suspecté via le système national de déclaration listé dans l'Annexe V.
+4.9 Surdosage
+Traitement de soutien ; surveiller la pression artérielle, les électrolytes, la fonction rénale. La dialyse est peu susceptible d'être efficace (synthétique).
+5. PROPRIÉTÉS PHARMACOLOGIQUES
+5.1 Propriétés pharmacodynamiques
+Groupe pharmacothérapeutique : antagonistes des récepteurs de l'angiotensine II, simples (synthétique).
+Code ATC : non attribué (synthétique).
+Mécanisme : antagonisme sélectif du récepteur AT1 → réduction de la vasoconstriction et de l'aldostérone → réduction de la pression artérielle.
+5.2 Propriétés pharmacocinétiques
+Absorption Tmax 1,5–3 h ; biodisponibilité ~35 % ; liaison aux protéines ~98 % ; demi-vie terminale ~12 h ; élimination principalement biliaire/fécale avec une composante rénale mineure (synthétique).
+5.3 Données de sécurité préclinique
+Toxicité embryo-fœtale conforme à l'inhibition du SRAA ; aucun signal génotoxique dans les tests standards (synthétique).
+6. CARACTÉRISTIQUES PHARMACEUTIQUES
+6.1 Liste des excipients
+Noyau du comprimé : lactose monohydraté, cellulose microcristalline, croscarmellose sodique, stéarate de magnésium.
+Pelliculage : hypromellose, macrogol, dioxyde de titane, oxydes de fer (synthétique).
+6.2 Incompatibilités
+Non applicable.
+6.3 Durée de conservation
+3 ans.
+
+[SOURCE] 6.4 Special precautions for storage
+Store below 30°C. Keep in the original package to protect from moisture.
+6.5 Nature and contents of container
+PVC/Alu blister packs: 28, 30, 56, 90 tablets (not all pack sizes may be mar-
+keted) (synthetic).
+HDPE bottle with desiccant: 30, 90 tablets (synthetic).
+6.6 Special precautions for disposal and other handling
+No special requirements.
+7. MARKETING AUTHORISATION HOLDER
+Acme Pharma Europe B.V., Example Street 1, 1234 AB, Amsterdam, Nether-
+lands (synthetic).
+8. MARKETING AUTHORISATION NUMBER(S)
+EU/1/26/000/001 (20 mg)
+EU/1/26/000/002 (40 mg) (synthetic).
+9. DATE OF FIRST AUTHORISATION/RENEW AL OF
+THE AUTHORISATION
+16/01/2026 (synthetic).
+10. DATE OF REVISION OF THE TEXT
+16/01/2026 (synthetic).
+5
+[TARGET] 6.4 Précautions particulières de conservation
+Conserver à une température ne dépassant pas 30°C. Conserver dans l'emballage d'origine pour protéger de l'humidité.
+6.5 Nature et contenu de l'emballage
+Plaquettes thermoformées PVC/Alu : 28, 30, 56, 90 comprimés (toutes les tailles de conditionnement peuvent ne pas être commercialisées) (synthétique).
+Flacon en PEHD avec dessiccatif : 30, 90 comprimés (synthétique).
+6.6 Précautions particulières d'élimination et de manipulation
+Aucune exigence particulière.
+7. TITULAIRE DE L'AUTORISATION DE MISE SUR LE MARCHÉ
+Acme Pharma Europe B.V., Rue Exemple 1, 1234 AB, Amsterdam, Pays-Bas (synthétique).
+8. NUMÉRO(S) D'AUTORISATION DE MISE SUR LE MARCHÉ
+UE/1/26/000/001 (20 mg)
+UE/1/26/000/002 (40 mg) (synthétique).
+9. DATE DE PREMIÈRE AUTORISATION/RENOUVELLEMENT DE L'AUTORISATION
+16/01/2026 (synthétique).
+10. DATE DE RÉVISION DU TEXTE
+16/01/2026 (synthétique).
+

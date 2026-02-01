@@ -1,0 +1,14 @@
+{
+  "description": "Optional eval-infrastructure checks (golden datasets present, thresholds configured, baseline optionally required).",
+  "rules": {
+    "eval_coverage": {
+      "enabled": true,
+      "severity": "warning",
+      "min_total_cases": 1,
+      "min_cases_per_suite": 0
+    },
+    "eval_threshold_assertions": { "enabled": true, "severity": "error" },
+    "eval_baseline_exists": { "enabled": true, "severity": "warning" }
+  }
+}
+

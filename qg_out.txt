@@ -1,0 +1,108 @@
+[QualityGate] Config sources:
+  - C:\Users\kapil\Documents\transmax\quality-gate\quality-gate.config.json
+  - C:\Users\kapil\Documents\transmax\quality-gate\packs\ai_engineering.json
+[QualityGate] Checking 33 files...
+
+======================================================================
+QUALITY GATE REPORT
+======================================================================
+
+Files checked: 33
+Lines checked: 4027
+Errors: 21
+Warnings: 13
+PRS: min=85 failed=5/33
+
+----------------------------------------------------------------------
+ISSUES BY FILE
+----------------------------------------------------------------------
+
+app/agents/graph.py:
+  [W] Line 1: [file_size] File has 502 lines (warning threshold: 500).
+  [E] Line 1: [prs_score] PRS 62.0/100 below minimum 85.
+      Fix: Fix errors/warnings in this file; split large functions/files; remove debug/todos; improve error handling.
+  [E] Line 129: [function_size] Function 'draft_translate' is 123 lines (max: 50).
+      Fix: Extract parts into smaller helper functions.
+  [W] Line 129: [max_complexity] Function 'draft_translate' has complexity 22 (max: 10).
+  [E] Line 253: [function_size] Function 'run_quality_gates' is 70 lines (max: 50).
+      Fix: Extract parts into smaller helper functions.
+  [W] Line 253: [max_complexity] Function 'run_quality_gates' has complexity 12 (max: 10).
+  [E] Line 324: [function_size] Function 'refine_translation' is 87 lines (max: 50).
+      Fix: Extract parts into smaller helper functions.
+  [W] Line 324: [max_complexity] Function 'refine_translation' has complexity 17 (max: 10).
+
+app/api/documents.py:
+  [E] Line 1: [prs_score] PRS 84.0/100 below minimum 85.
+      Fix: Fix errors/warnings in this file; split large functions/files; remove debug/todos; improve error handling.
+  [E] Line 58: [function_size] Function 'create_document' is 76 lines (max: 50).
+      Fix: Extract parts into smaller helper functions.
+  [W] Line 58: [max_complexity] Function 'create_document' has complexity 11 (max: 10).
+  [W] Line 78: [async_blocking_calls] Blocking call `open` inside `async def create_document()`.
+  [W] Line 88: [async_blocking_calls] Blocking call `open` inside `async def create_document()`.
+
+app/api/endpoints.py:
+  [E] Line 47: [function_size] Function 'translate_text' is 55 lines (max: 50).
+      Fix: Extract parts into smaller helper functions.
+
+app/api/schemas.py:
+  [I] Line 56: [pydantic_deprecated_apis] Pydantic v1-style `class Config:` detected.
+  [I] Line 82: [pydantic_deprecated_apis] Pydantic v1-style `class Config:` detected.
+  [I] Line 116: [pydantic_deprecated_apis] Pydantic v1-style `class Config:` detected.
+
+app/api/v1/translations.py:
+  [E] Line 17: [function_size] Function 'create_translation_job' is 62 lines (max: 50).
+      Fix: Extract parts into smaller helper functions.
+  [W] Line 93: [max_complexity] Function 'get_job_result' has complexity 11 (max: 10).
+
+app/core/config.py:
+  [I] Line 50: [pydantic_deprecated_apis] Pydantic v1-style `class Config:` detected.
+
+app/schemas/api_v1.py:
+  [I] Line 25: [pydantic_deprecated_apis] Pydantic v1-style `class Config:` detected.
+  [I] Line 79: [pydantic_mutable_field_default] Mutable default value in Pydantic model `AuditLogResponse` field.
+  [I] Line 89: [pydantic_deprecated_apis] Pydantic v1-style `class Config:` detected.
+
+app/services/db_service.py:
+  [E] Line 1: [prs_score] PRS 78.0/100 below minimum 85.
+      Fix: Fix errors/warnings in this file; split large functions/files; remove debug/todos; improve error handling.
+  [E] Line 55: [function_size] Function 'get_constraints' is 93 lines (max: 50).
+      Fix: Extract parts into smaller helper functions.
+  [W] Line 55: [max_complexity] Function 'get_constraints' has complexity 14 (max: 10).
+  [E] Line 195: [function_size] Function 'save_audit_log' is 67 lines (max: 50).
+      Fix: Extract parts into smaller helper functions.
+
+app/services/json_parser.py:
+  [E] Line 1: [prs_score] PRS 68.0/100 below minimum 85.
+      Fix: Fix errors/warnings in this file; split large functions/files; remove debug/todos; improve error handling.
+  [W] Line 13: [max_complexity] Function 'parse' has complexity 12 (max: 10).
+  [E] Line 24: [no_silent_catch] Silent exception catch (except: pass). Errors are being swallowed.
+      Fix: Log the error or handle it properly.
+  [E] Line 34: [no_silent_catch] Silent exception catch (except: pass). Errors are being swallowed.
+      Fix: Log the error or handle it properly.
+  [E] Line 49: [no_silent_catch] Silent exception catch (except: pass). Errors are being swallowed.
+      Fix: Log the error or handle it properly.
+
+app/services/pdf_service.py:
+  [W] Line 11: [max_complexity] Function 'extract_text' has complexity 11 (max: 10).
+
+app/services/pii_service.py:
+  [E] Line 31: [function_size] Function 'redact' is 77 lines (max: 50).
+      Fix: Extract parts into smaller helper functions.
+
+app/services/quality_gate.py:
+  [E] Line 1: [prs_score] PRS 56.0/100 below minimum 85.
+      Fix: Fix errors/warnings in this file; split large functions/files; remove debug/todos; improve error handling.
+  [E] Line 38: [function_size] Function 'check_forbidden_terms' is 56 lines (max: 50).
+      Fix: Extract parts into smaller helper functions.
+  [E] Line 95: [function_size] Function 'check_mandatory_terms' is 54 lines (max: 50).
+      Fix: Extract parts into smaller helper functions.
+  [W] Line 95: [max_complexity] Function 'check_mandatory_terms' has complexity 11 (max: 10).
+  [E] Line 176: [function_size] Function 'check_units' is 74 lines (max: 50).
+      Fix: Extract parts into smaller helper functions.
+  [E] Line 296: [function_size] Function 'check_tables' is 65 lines (max: 50).
+      Fix: Extract parts into smaller helper functions.
+  [W] Line 296: [max_complexity] Function 'check_tables' has complexity 11 (max: 10).
+
+----------------------------------------------------------------------
+[FAILED]
+----------------------------------------------------------------------

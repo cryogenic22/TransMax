@@ -1,0 +1,14 @@
+{
+    "code": "ar",
+    "name": "Arabic (Modern Standard)",
+    "script_direction": "rtl",
+    "digit_policy": "hindi",
+    "punctuation_policy": "rtl_standard",
+    "negation_markers": [
+        "لا",
+        "غير",
+        "عدم",
+        "يحظر"
+    ],
+    "tokenizer": "cltk_ar"
+}

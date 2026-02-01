@@ -1,0 +1,33 @@
+name: Quality Gate
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install Linting Tools
+      run: |
+        pip install ruff black mypy types-requests types-redis
+
+    - name: Check Formatting (Black)
+      run: black --check .
+
+    - name: Lint (Ruff)
+      run: ruff check .
+
+    - name: Type Check (Mypy)
+      run: mypy app/

@@ -1,0 +1,31 @@
+=== Certifying Language Pack: Japanese (Pharma) (ja) ===
+Config: {'code': 'ja', 'name': 'Japanese (Pharma)', 'script_direction': 'ltr', 'digit_policy': 'western', 'punctuation_policy': 'cjk_standard', 'negation_markers': ['ない', 'ません', '禁忌'], 'tokenizer': 'sudachi_c', 'variant_policy': 'strict'}
+--------------------------------------------------
+
+--- Core Pharma Cases ---
+[CORE] Case core_num_range: 
+  Source: Dose: 40–80 mg daily.
+  Gate Response: 0 violations found.
+[CORE] Case core_decimal: 
+  Source: Values < 0.5% are insignificant.
+  Gate Response: 0 violations found.
+[CORE] Case core_placeholder: 
+  Source: Patient [[PII:ID:9928]] reported nausea.
+  Gate Response: 0 violations found.
+[CORE] Case core_negation: 
+  Source: Do not chew or crush.
+  Gate Response: 1 violations found.
+    - negation_flip: Source contains negation 'not' but Target lacks Japanese negation forms.
+[CORE] Case core_table: 
+  Source: | Adjuvant | Start | End |
+| Placebo | Day 1 | Day 5 |
+  Gate Response: 0 violations found.
+
+--- JA Golden Cases ---
+[GOLDEN] Case ja_variants: Enforce formal 'Do not take' style over casual 'Do not drink' if strictly configured
+  Source: Do not drink.
+  Gate Response: 1 violations found.
+    - negation_flip: Source contains negation 'not' but Target lacks Japanese negation forms.
+[GOLDEN] Case ja_punct: Ensure delimiters are maintained or mapped to full-width
+  Source: Dizziness; Headache
+  Gate Response: 0 violations found.

@@ -1,0 +1,32 @@
+{
+  "description": "AI-engineering heuristics (async safety, pydantic footguns, polars performance, test fidelity). Enabled by default but only triggers when relevant patterns are present.",
+  "rules": {
+    "async_blocking_calls": {
+      "enabled": true,
+      "severity": "warning",
+      "blocking_calls": [
+        "open",
+        "time.sleep",
+        "subprocess.run",
+        "subprocess.call",
+        "os.system",
+        "requests.get",
+        "requests.post",
+        "requests.put",
+        "requests.delete",
+        "requests.patch",
+        "urllib.request.urlopen",
+        "sqlite3.connect",
+        "psycopg2.connect"
+      ]
+    },
+    "async_thread_offload": { "enabled": true, "severity": "info" },
+    "pydantic_mutable_field_default": { "enabled": true, "severity": "info" },
+    "pydantic_deprecated_apis": { "enabled": true, "severity": "info" },
+    "polars_apply": { "enabled": true, "severity": "info" },
+    "polars_to_pandas": { "enabled": true, "severity": "info" },
+    "polars_row_iteration": { "enabled": true, "severity": "info" },
+    "test_overmocking": { "enabled": true, "severity": "info", "max_mocks_per_test": 5 },
+    "test_mock_return_without_assert": { "enabled": true, "severity": "info" }
+  }
+}

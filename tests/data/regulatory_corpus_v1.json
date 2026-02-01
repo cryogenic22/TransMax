@@ -1,0 +1,89 @@
+[
+    {
+        "id": "TC_JA_NEG_FAIL",
+        "description": "Japanese Negation: Forbidden naive variant '飲まない' (Do not drink) for medication",
+        "target_language": "ja",
+        "source_text": "Do not drink alcohol while taking this medication.",
+        "target_text": "この薬を服用している間は、アルコールを飲まないでください。",
+        "expected_result": "FAIL",
+        "expected_defects": [
+            {
+                "category": "TERMINOLOGY",
+                "severity": "MAJOR",
+                "message_contains": "Forbidden variant sequence '飲まない'"
+            }
+        ]
+    },
+    {
+        "id": "TC_JA_NEG_PASS",
+        "description": "Japanese Negation: Compliant formal variant '摂取しない' (Do not ingest)",
+        "target_language": "ja",
+        "source_text": "Do not drink alcohol while taking this medication.",
+        "target_text": "この薬を服用している間は、アルコールを摂取しないでください。",
+        "expected_result": "PASS",
+        "expected_defects": []
+    },
+    {
+        "id": "TC_AR_DIGIT_PASS_WESTERN",
+        "description": "Arabic Digits: Western digits are allowed by policy",
+        "target_language": "ar",
+        "source_text": "10 mg daily",
+        "target_text": "10 mg يوميا",
+        "expected_result": "PASS",
+        "expected_defects": []
+    },
+    {
+        "id": "TC_AR_DIGIT_PASS_HINDI",
+        "description": "Arabic Digits: Hindi digits are allowed by policy",
+        "target_language": "ar",
+        "source_text": "10 mg daily",
+        "target_text": "١٠ ملغ يوميا",
+        "expected_result": "PASS",
+        "expected_defects": []
+    },
+    {
+        "id": "TC_AR_DIGIT_FAIL",
+        "description": "Arabic Digits: Missing number entirely",
+        "target_language": "ar",
+        "source_text": "10 mg daily",
+        "target_text": "ملغ يوميا",
+        "expected_result": "FAIL",
+        "expected_defects": [
+            {
+                "category": "NUMERIC_MISMATCH",
+                "severity": "CRITICAL",
+                "message_contains": "Number '10' missing"
+            }
+        ]
+    },
+    {
+        "id": "TC_FR_UNIT_FAIL",
+        "description": "French Unit: Missing 'mg' unit",
+        "target_language": "fr",
+        "source_text": "10 mg daily",
+        "target_text": "10 par jour",
+        "expected_result": "FAIL",
+        "expected_defects": [
+            {
+                "category": "UNIT_MISMATCH",
+                "severity": "CRITICAL",
+                "message_contains": "Unit mismatch: 'mg' missing"
+            }
+        ]
+    },
+    {
+        "id": "TC_PII_FAIL",
+        "description": "General PII: Unredacted PII token",
+        "target_language": "es",
+        "source_text": "Patient [[PII: NAME]] should...",
+        "target_text": "Paciente [[PII: NAME]] debe...",
+        "expected_result": "FAIL",
+        "expected_defects": [
+            {
+                "category": "PII_LEAK",
+                "severity": "MAJOR",
+                "message_contains": "Potential unredacted PII"
+            }
+        ]
+    }
+]

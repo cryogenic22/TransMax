@@ -1,0 +1,157 @@
+{
+  "version": "1.0.0",
+  "name": "Quality Gate (Portable Defaults)",
+  "description": "Drop-in quality gates with PRS scoring. Override per repo via .quality-gate.json at the repo root.",
+  "packs": ["ai_engineering"],
+
+  "paths": {
+    "include": [],
+    "extensions": [".py", ".ts", ".tsx", ".js", ".jsx"],
+    "exclude": [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/.next/**",
+      "**/.git/**",
+      "**/__pycache__/**",
+      "**/.pytest_cache/**",
+      "**/.venv/**",
+      "**/.venv*/**",
+      "**/venv/**",
+      "**/venv*/**",
+      "**/site-packages/**",
+      "**/.quality-reports/**",
+      "**/coverage/**"
+    ]
+  },
+
+  "prs": {
+    "enabled": true,
+    "min_score": 85,
+    "error_weight": 10,
+    "warning_weight": 2,
+    "_note": "PRS = 100 - (errors*10) - (warnings*2). Files below min_score are blocked."
+  },
+
+  "evals": {
+    "enabled": false,
+    "datasets_path": "eval_datasets/golden",
+    "baseline_path": "eval_datasets/regression/baseline.json",
+    "coverage": { "allow_empty": false },
+    "thresholds": {
+      "min_accuracy": 0.85,
+      "regression_tolerance": 0.02,
+      "max_latency_p99_ms": 1000
+    },
+    "executor": {
+      "type": "python_callable",
+      "callable": "",
+      "command": [],
+      "timeout_ms": 10000
+    }
+  },
+
+  "rules": {
+    "file_size": {
+      "enabled": true,
+      "severity": "error",
+      "max_lines": 800,
+      "warning_lines": 500,
+      "exceptions": ["**/*.generated.*", "**/schemas.*", "**/models.*"]
+    },
+    "function_size": {"enabled": true, "severity": "error", "max_lines": 50, "warning_lines": 30},
+    "no_todo_fixme": {
+      "enabled": true,
+      "severity": "error",
+      "patterns": ["TODO", "FIXME", "XXX", "HACK", "BUG"],
+      "allow_with_issue": true,
+      "issue_pattern": "(TODO|FIXME)\\s*\\(#\\d+\\)"
+    },
+    "no_debug_statements": {
+      "enabled": true,
+      "severity": "warning",
+      "patterns": {
+        "javascript": ["console.log", "console.debug", "debugger"],
+        "typescript": ["console.log", "console.debug", "debugger"],
+        "python": ["breakpoint()", "pdb.set_trace", "import pdb"]
+      },
+      "exceptions": ["console.error", "console.info", "console.warn", "logger."]
+    },
+    "no_type_escape": {
+      "enabled": true,
+      "severity": "warning",
+      "patterns": {"typescript": ["@ts-ignore", "@ts-nocheck"], "python": ["# type: ignore"]},
+      "allowed_python_type_ignore_codes": ["import-not-found"]
+    },
+    "no_silent_catch": {
+      "enabled": true,
+      "severity": "error",
+      "patterns": {
+        "python": ["except.*:\\s*pass", "except Exception:\\s*pass", "except:\\s*pass"],
+        "javascript": ["catch\\s*\\([^)]*\\)\\s*\\{\\s*\\}"],
+        "typescript": ["catch\\s*\\([^)]*\\)\\s*\\{\\s*\\}"]
+      }
+    },
+    "no_hardcoded_secrets": {
+      "enabled": true,
+      "severity": "error",
+      "patterns": [
+        "password\\s*=\\s*['\"][^'\"]+['\"]",
+        "api_key\\s*=\\s*['\"][^'\"]+['\"]",
+        "secret\\s*=\\s*['\"][^'\"]+['\"]",
+        "token\\s*=\\s*['\"][A-Za-z0-9]{20,}['\"]",
+        "-----BEGIN (RSA |EC )?PRIVATE KEY-----"
+      ],
+      "exceptions": ["password=''", "password=\"\"", "test", "example", "placeholder"]
+    },
+    "no_duplicate_code": {"enabled": true, "severity": "warning"},
+    "max_complexity": {"enabled": true, "severity": "warning", "cyclomatic_max": 10},
+
+    "mutable_default": {"enabled": false, "severity": "error"},
+    "bare_except": {"enabled": false, "severity": "error"},
+    "sql_injection": {"enabled": false, "severity": "warning"},
+    "command_injection": {"enabled": false, "severity": "error"},
+
+    "star_import": {"enabled": false, "severity": "warning", "include_tests": false, "exceptions": []},
+    "global_state_mutation": {
+      "enabled": false,
+      "severity": "warning",
+      "include_tests": false,
+      "exceptions": []
+    },
+    "assert_in_production": {
+      "enabled": false,
+      "severity": "warning",
+      "include_tests": false,
+      "exceptions": []
+    },
+
+    "no_eval": {"enabled": false, "severity": "error"},
+    "dangerously_set_html": {"enabled": false, "severity": "error", "exceptions": []},
+
+    "line_length": {
+      "enabled": false,
+      "severity": "warning",
+      "max_length": 120,
+      "ignore_patterns": ["https?://"],
+      "exceptions": []
+    },
+    "commented_code": {"enabled": false, "severity": "warning", "min_lines": 5, "exceptions": []},
+
+    "missing_test_assertion": {"enabled": false, "severity": "info"},
+    "test_isolation": {"enabled": false, "severity": "info"},
+    "test_naming": {"enabled": false, "severity": "info"},
+
+    "no_var": {"enabled": false, "severity": "error"},
+    "parameter_count": {"enabled": false, "severity": "warning", "max_parameters": 5},
+    "nesting_depth": {"enabled": false, "severity": "warning", "max_depth": 4},
+
+    "react_hooks_rules": {"enabled": false, "severity": "info"},
+    "missing_key_prop": {"enabled": false, "severity": "info"},
+
+    "dataclass_field_count": {"enabled": false, "severity": "info", "max_fields": 20},
+    "excessive_cast": {"enabled": false, "severity": "info", "max_casts": 12}
+  },
+
+  "thresholds": {"error_count": 0}
+}

@@ -1,0 +1,14 @@
+{
+  "description": "Baseline static hygiene + PRS scoring (portable, zero external deps).",
+  "rules": {
+    "file_size": { "enabled": true, "severity": "error", "max_lines": 800, "warning_lines": 500 },
+    "function_size": { "enabled": true, "severity": "error", "max_lines": 50, "warning_lines": 30 },
+    "no_todo_fixme": { "enabled": true, "severity": "error" },
+    "no_debug_statements": { "enabled": true, "severity": "warning" },
+    "no_type_escape": { "enabled": true, "severity": "warning" },
+    "no_silent_catch": { "enabled": true, "severity": "error" },
+    "no_hardcoded_secrets": { "enabled": true, "severity": "error" },
+    "no_duplicate_code": { "enabled": true, "severity": "warning" },
+    "max_complexity": { "enabled": true, "severity": "warning", "cyclomatic_max": 10 }
+  }
+}

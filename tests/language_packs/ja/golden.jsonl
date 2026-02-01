@@ -1,0 +1,17 @@
+[
+  {
+    "id": "ja_variants",
+    "source_text": "Do not drink.",
+    "target_regex": ".*(ない|ません).*",
+    "forbidden_regex": ".*飲まないでください.*", 
+    "expected_checks": ["variant_enforcement"],
+    "desc": "Enforce formal 'Do not take' style over casual 'Do not drink' if strictly configured"
+  },
+  {
+    "id": "ja_punct",
+    "source_text": "Dizziness; Headache",
+    "target_regex": ".*(めまい|目眩).*(头痛|頭痛).*",
+    "expected_checks": ["cjk_punctuation"],
+    "desc": "Ensure delimiters are maintained or mapped to full-width"
+  }
+]

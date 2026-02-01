@@ -1,0 +1,49 @@
+# Core dependencies
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+
+# Database
+sqlalchemy
+psycopg2-binary
+alembic
+supabase>=2.3.0
+pgvector
+
+# Translation providers
+openai
+anthropic
+deepl
+deep-translator
+
+# Agent Orchestration
+langgraph
+langchain
+langchain-openai
+langchain-anthropic
+janome
+
+# Utils
+aiofiles
+httpx
+tenacity
+python-jose[cryptography]
+redis
+pint
+unstructured
+pypdf
+
+# Monitoring
+prometheus-client
+
+# Testing
+pytest
+pytest-asyncio
+
+# Quality & Development
+ruff
+black
+mypy
+pre-commit
+reportlab

@@ -1,0 +1,46 @@
+Traceback (most recent call last):
+  File "C:\Users\kapil\Documents\transmax\test_models.py", line 4, in <module>
+    from app.models.database import Document, Segment, ChangeLog, Base
+  File "C:\Users\kapil\Documents\transmax\app\models\database.py", line 32, in <module>
+    class Document(Base):
+    ...<28 lines>...
+            return f"<Document(id={self.id}, name='{self.name}', status={self.status})>"
+  File "C:\Python313\Lib\site-packages\sqlalchemy\orm\decl_api.py", line 196, in __init__
+    _as_declarative(reg, cls, dict_)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\site-packages\sqlalchemy\orm\decl_base.py", line 244, in _as_declarative
+    return _MapperConfig.setup_mapping(registry, cls, dict_, None, {})
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\site-packages\sqlalchemy\orm\decl_base.py", line 325, in setup_mapping
+    return _ClassScanMapperConfig(
+        registry, cls_, dict_, table, mapper_kw
+    )
+  File "C:\Python313\Lib\site-packages\sqlalchemy\orm\decl_base.py", line 561, in __init__
+    self._scan_attributes()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Python313\Lib\site-packages\sqlalchemy\orm\decl_base.py", line 1021, in _scan_attributes
+    collected_annotation = self._collect_annotation(
+        name, annotation, base, None, obj
+    )
+  File "C:\Python313\Lib\site-packages\sqlalchemy\orm\decl_base.py", line 1303, in _collect_annotation
+    extracted = _extract_mapped_subtype(
+        raw_annotation,
+    ...<7 lines>...
+        and not is_dataclass,  # self.allow_dataclass_fields,
+    )
+  File "C:\Python313\Lib\site-packages\sqlalchemy\orm\util.py", line 2387, in _extract_mapped_subtype
+    raise sa_exc.ArgumentError(
+    ...<14 lines>...
+    )
+sqlalchemy.exc.ArgumentError: Type annotation for "Document.segments" can't be correctly interpreted for Annotated Declarative Table form.  ORM annotations should normally make use of the ``Mapped[]`` generic type, or other ORM-compatible generic type, as a container for the actual type, which indicates the intent that the attribute is mapped. Class variables that are not intended to be mapped by the ORM should use ClassVar[].  To allow Annotated Declarative to disregard legacy annotations which don't use Mapped[] to pass, set "__allow_unmapped__ = True" on the class or a superclass this class. (Background on this error at: https://sqlalche.me/e/20/zlpr)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\kapil\Documents\transmax\test_models.py", line 18, in <module>
+    print(f"\u2717 Error: {type(e).__name__}: {e}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2717' in position 0: character maps to <undefined>

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "core_num_range",
+    "source_text": "Dose: 40–80 mg daily.",
+    "expected_checks": ["numbers", "units"],
+    "critical_elements": ["40", "80", "mg"]
+  },
+  {
+    "id": "core_decimal",
+    "source_text": "Values < 0.5% are insignificant.",
+    "expected_checks": ["numbers"],
+    "critical_elements": ["0.5", "%"]
+  },
+  {
+    "id": "core_placeholder",
+    "source_text": "Patient [[PII:ID:9928]] reported nausea.",
+    "expected_checks": ["pii_integrity"],
+    "critical_elements": ["[[PII:ID:9928]]"]
+  },
+  {
+    "id": "core_negation",
+    "source_text": "Do not chew or crush.",
+    "expected_checks": ["negation"],
+    "risk_level": "critical"
+  },
+  {
+    "id": "core_table",
+    "source_text": "| Adjuvant | Start | End |\n| Placebo | Day 1 | Day 5 |",
+    "expected_checks": ["table_structure"],
+    "critical_elements": ["|", "Day 1", "Day 5"]
+  }
+]

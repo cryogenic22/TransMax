@@ -1,0 +1,11 @@
+{
+  "description": "Python-focused correctness + maintainability rules (stdlib-only implementation).",
+  "rules": {
+    "mutable_default": { "enabled": true, "severity": "error" },
+    "bare_except": { "enabled": true, "severity": "error" },
+    "parameter_count": { "enabled": true, "severity": "info", "max_parameters": 6 },
+    "nesting_depth": { "enabled": true, "severity": "info", "max_depth": 5 },
+    "dataclass_field_count": { "enabled": true, "severity": "info", "max_fields": 22 },
+    "excessive_cast": { "enabled": true, "severity": "info", "max_casts": 15 }
+  }
+}

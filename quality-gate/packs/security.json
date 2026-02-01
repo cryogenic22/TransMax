@@ -1,0 +1,7 @@
+{
+  "description": "Security posture rules (static heuristics, conservative defaults).",
+  "rules": {
+    "command_injection": { "enabled": true, "severity": "error" },
+    "sql_injection": { "enabled": true, "severity": "warning" }
+  }
+}
