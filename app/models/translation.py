@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, DateTime, Integer, Float, JSON, Text, For
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 import enum
 from pgvector.sqlalchemy import Vector
 
@@ -67,7 +67,7 @@ class TranslationJob(Base):
     processing_time = Column(Float)  # in seconds
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     started_at = Column(DateTime)
     completed_at = Column(DateTime)
     
@@ -116,7 +116,7 @@ class ChunkTranslation(Base):
     cost_estimate = Column(Float)
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     # Relationships
     job = relationship("TranslationJob", back_populates="chunk_translations")
@@ -148,7 +148,7 @@ class QualityReport(Base):
     chunks_requiring_review = Column(JSON)  # List of chunk IDs
     
     # Report metadata
-    generated_at = Column(DateTime, default=datetime.utcnow)
+    generated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     report_version = Column(String, default="1.0")
     
     # Relationships
@@ -174,8 +174,8 @@ class TranslationGlossary(Base):
     is_active = Column(Boolean, default=True)
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     created_by = Column(String)
 
 
@@ -206,7 +206,7 @@ class TranslationMemory(Base):
     source_chunk_id = Column(UUID(as_uuid=True))
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     last_used_at = Column(DateTime)
     verified_at = Column(DateTime)
     verified_by = Column(String)
@@ -227,5 +227,5 @@ class LanguagePack(Base):
     config_json = Column(JSON, nullable=False)  # rules, tokeniser settings
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

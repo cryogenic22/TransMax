@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime, timezone
 import csv
 import io
@@ -49,8 +49,7 @@ class TranslationRuleSchema(BaseModel):
     created_by: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RuleCreateSchema(BaseModel):
@@ -106,8 +105,7 @@ class GlossarySchema(BaseModel):
     term_count: Optional[int] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GlossaryUpdateSchema(BaseModel):

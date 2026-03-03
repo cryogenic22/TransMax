@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, HttpUrl, validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from app.core.profile_enums import TranslationArchetype, ContentRiskTier, OutputModality
@@ -12,14 +12,15 @@ class JobProfileRequest(BaseModel):
     tier: ContentRiskTier = Field(..., description="Risk Tier (A=Highest, C=Lowest)")
     modality: OutputModality = Field(..., description="Target format/modality")
     
-    @validator('tier')
-    def validate_tier_archetype_compatibility(cls, v, values):
+    @field_validator('tier')
+    @classmethod
+    def validate_tier_archetype_compatibility(cls, v, info):
         """
         Enforce Governance Invariants at the Edge.
         Example: INFORMATIONAL cannot be TIER_A.
         """
-        if 'archetype' in values:
-            arch = values['archetype']
+        if 'archetype' in info.data:
+            arch = info.data['archetype']
             if arch == TranslationArchetype.INFORMATIONAL and v == ContentRiskTier.TIER_A:
                 raise ValueError("Informational Archetype cannot be Tier A (Critical).")
         return v
@@ -28,8 +29,8 @@ class JobCreateRequest(BaseModel):
     """
     TMX-010: Job Creation Schema.
     """
-    source_language: str = Field(..., min_length=2, max_length=5, example="en")
-    target_language: str = Field(..., min_length=2, max_length=5, example="ja")
+    source_language: str = Field(..., min_length=2, max_length=5, json_schema_extra={"example": "en"})
+    target_language: str = Field(..., min_length=2, max_length=5, json_schema_extra={"example": "ja"})
     
     request_id: str = Field(..., description="Idempotency Key")
     
@@ -46,21 +47,20 @@ class JobCreateRequest(BaseModel):
     # Async Callback
     webhook_url: Optional[HttpUrl] = None
     
-    class Config:
-        schema_extra = {
-            "example": {
-                "source_language": "en",
-                "target_language": "fr",
-                "request_id": "req-001",
-                "profile": {
-                    "archetype": "SAFETY_CRITICAL",
-                    "tier": "TIER_A",
-                    "modality": "NARRATIVE"
-                },
-                "text_content": "Take 10mg daily.",
-                "domain": "pharma"
-            }
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "source_language": "en",
+            "target_language": "fr",
+            "request_id": "req-001",
+            "profile": {
+                "archetype": "SAFETY_CRITICAL",
+                "tier": "TIER_A",
+                "modality": "NARRATIVE"
+            },
+            "text_content": "Take 10mg daily.",
+            "domain": "pharma"
         }
+    })
 
 class Alert(BaseModel):
     severity: str

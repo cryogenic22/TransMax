@@ -125,11 +125,34 @@ async def reverse_translate_segment(
     
     if not seg.translated_text:
         raise HTTPException(status_code=400, detail="Segment has no translation to reverse")
-    
-    # TODO: Integrate with agent for actual reverse translation
-    # For now, return a placeholder
-    reverse_text = f"[REVERSE] {seg.translated_text}"
-    
+
+    # Get document for language info
+    doc = db.query(Document).filter(Document.id == seg.document_id).first()
+    target_lang = doc.target_language if doc else "unknown"
+    source_lang = doc.source_language if doc else "en"
+
+    from app.services.llm import get_llm
+    from langchain_core.messages import SystemMessage, HumanMessage
+
+    llm = get_llm()
+    system_msg = SystemMessage(content=(
+        f"You are a strict linguistic auditor performing back-translation verification. "
+        f"Translate the following {target_lang} text back into {source_lang}. "
+        f"Maintain exact meaning, tone, and technical precision. "
+        f"Return ONLY the translation."
+    ))
+    user_msg = HumanMessage(content=f"Text: {seg.translated_text}")
+
+    try:
+        response = await llm.ainvoke([system_msg, user_msg])
+        reverse_text = response.content.strip()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"LLM reverse translation failed: {e}")
+
+    # Persist on the segment
+    seg.reverse_translation = reverse_text
+    db.commit()
+
     return SegmentReverseResponse(
         segment_id=segment_id,
         original_source=seg.source_text,

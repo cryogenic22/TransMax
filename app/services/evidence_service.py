@@ -38,10 +38,19 @@ class EvidenceService:
                 
             blocked_count = session.query(QualityScorecard).filter(QualityScorecard.status == "BLOCKED").count()
             
-            # 3. Integrity Metrics (Audit Chain)
-            # Verify chain consistency (Mock Hash Check for V1)
-            audit_trails = session.query(AuditRecord).count()
-            
+            # 3. Integrity Metrics (Audit Chain) — real verification
+            from app.services.audit_service import AuditService
+            audit_svc = AuditService(self.db)
+            audit_records = session.query(AuditRecord).all()
+            audit_trails = len(audit_records)
+            tampered_count = 0
+            for rec in audit_records:
+                report = audit_svc.verify_chain_integrity(rec.audit_id)
+                if not report.get("valid", True):
+                    tampered_count += 1
+
+            chain_status = "TAMPERED" if tampered_count > 0 else "VERIFIED"
+
             return {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "volume": {
@@ -61,9 +70,10 @@ class EvidenceService:
                 },
                 "integrity": {
                     "audit_trails_active": audit_trails,
-                    "chain_status": "VERIFIED" # Placeholder for actual hash traversal
+                    "tampered_chains": tampered_count,
+                    "chain_status": chain_status
                 },
-                "readiness_verdict": "READY" if total_jobs > 0 and blocked_count == 0 else "CAUTION"
+                "readiness_verdict": "READY" if total_jobs > 0 and blocked_count == 0 and tampered_count == 0 else "CAUTION"
             }
             
         except Exception as e:

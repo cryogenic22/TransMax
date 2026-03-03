@@ -3,7 +3,7 @@ Pydantic schemas for API request/response validation.
 """
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from enum import Enum
 
 
@@ -55,8 +55,7 @@ class DocumentResponse(BaseModel):
     updated_at: datetime
     segment_count: Optional[int] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DocumentListResponse(BaseModel):
     """Schema for paginated document list."""
@@ -84,8 +83,7 @@ class SegmentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SegmentUpdate(BaseModel):
     """Schema for updating a segment's translation."""
@@ -118,8 +116,7 @@ class ChangeLogResponse(BaseModel):
     user_name: Optional[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Translation Job Schemas ---

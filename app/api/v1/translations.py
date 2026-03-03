@@ -44,7 +44,7 @@ async def create_translation_job(
         status=DocumentStatus.UPLOADED.value,
         client_request_id=request.request_id,
         created_at=datetime.now(timezone.utc),
-        meta_json=request.profile.dict() # Persist Profile for Graph
+        meta_json=request.profile.model_dump() # Persist Profile for Graph
     )
     db.add(new_doc)
     
@@ -168,28 +168,29 @@ def get_audit_bundle(job_id: str, db: Session = Depends(get_db)):
         AuditLogEntry.audit_id == audit_record.audit_id
     ).order_by(AuditLogEntry.sequence_index).all()
     
-    # 3. Verify Chain Integrity (Quick Check)
-    # We could call verify_chain_integrity service here, but for API speed we just map.
-    # Let's say we trust DB unless explicitly requested to verify.
-    
+    # 3. Verify Chain Integrity
+    from app.services.audit_service import AuditService
+    integrity = AuditService().verify_chain_integrity(audit_record.audit_id)
+    is_tampered = not integrity.get("valid", True)
+
     response_entries = [
         AuditLogEntryResponse(
             sequence_index=e.sequence_index,
             event_type=e.event_type,
             timestamp=e.timestamp,
             entry_hash=e.entry_hash,
-            payload_summary={"count": len(str(e.payload))} # Summary only for list view
+            payload_summary={"count": len(str(e.payload))}
         )
         for e in entries
     ]
-    
+
     return AuditBundleResponse(
         audit_id=audit_record.audit_id,
         job_id=job_id,
         final_decision=audit_record.final_decision or "PENDING",
         created_at=audit_record.created_at,
         chain_head_hash=audit_record.chain_head_hash or "N/A",
-        is_tampered=False, # Placeholder for real check
+        is_tampered=is_tampered,
         entries=response_entries
     )
 

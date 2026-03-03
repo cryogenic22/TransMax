@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 
@@ -65,9 +65,7 @@ class Settings(BaseSettings):
     oidc_role_claim: str = "groups"
     oidc_role_mapping: Optional[str] = None   # JSON: {"OktaAdmins": "admin", ...}
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
 
 @lru_cache()
