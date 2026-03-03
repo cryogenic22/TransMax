@@ -29,6 +29,7 @@ def get_audit_record(audit_id: str, db: Session = Depends(get_db)):
         job_id=record.job_id,
         final_decision=record.final_decision,
         versions=versions,
-        hash_signature=record.chain_head_hash, # Using chain_head_hash as signature for now
+        hash_signature=record.hash_signature or record.chain_head_hash,
+        full_payload=record.full_payload,
         created_at=record.created_at
     )

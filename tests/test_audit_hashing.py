@@ -14,10 +14,8 @@ def test_audit_log_hashing(mock_db_session):
     Verifies that save_audit_log computes a consistent SHA-256 hash.
     """
     service = DatabaseService()
-    
-    # Mock get_session to return our mock
+
     with patch.object(service, 'get_session', return_value=mock_db_session):
-        # Setup data
         job_id = "job-123"
         audit_id = "audit-456"
         state = {
@@ -26,30 +24,22 @@ def test_audit_log_hashing(mock_db_session):
                 "summary": {"score": 98}
             }
         }
-        
-        # Mock finding the job
+
         mock_job = TranslationJobQueue(job_id=job_id)
         mock_db_session.query.return_value.filter.return_value.first.return_value = mock_job
-        
-        # Execute
+
         service.save_audit_log(job_id, state, audit_id)
-        
-        # Verification
-        # 1. Check if add was called
+
         assert mock_db_session.add.called
-        
-        # 2. Get the AuditRecord object passed to add
-        # add is called with the audit record
-        # args[0] is the object
+
         audit_record = mock_db_session.add.call_args[0][0]
-        
+
         assert isinstance(audit_record, AuditRecord)
         assert audit_record.audit_id == audit_id
         assert audit_record.hash_signature is not None
-        
-        # 3. Re-compute hash manually to verify correctness
-        # integrity_payload = f"{audit_id}:{job_id}:{audit.final_decision}:{json.dumps(audit.scores_json, sort_keys=True)}"
-        expected_payload = f"{audit_id}:{job_id}:PASS:{json.dumps({'score': 98}, sort_keys=True)}"
-        expected_hash = hashlib.sha256(expected_payload.encode()).hexdigest()
-        
+
+        # Verify hash consistency: re-compute from stored full_payload
+        reconstructed_json = json.dumps(audit_record.full_payload, sort_keys=True)
+        expected_hash = hashlib.sha256(reconstructed_json.encode()).hexdigest()
+
         assert audit_record.hash_signature == expected_hash

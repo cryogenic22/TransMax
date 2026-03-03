@@ -177,6 +177,9 @@ class SegmentUnit:
     retry_count: int = 0
     error_message: Optional[str] = None
     
+    # Reflexion
+    validation_score: Optional[float] = None
+
     # Context (for LLM)
     prev_context: Optional[str] = None
     next_context: Optional[str] = None

@@ -10,6 +10,7 @@ from app.schemas.api_v1 import JobCreateRequest, JobResponse, JobResult, Validat
 # We need to invoke the graph. For now, we import the runner.
 # Ideally this is a separate worker process.
 from typing import List
+from app.agents.runner import run_pipeline_background
 
 router = APIRouter()
 

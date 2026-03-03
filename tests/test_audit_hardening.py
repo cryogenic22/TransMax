@@ -8,18 +8,13 @@ from app.models.models import AuditRecord
 from app.api.v1.audit import get_audit_record
 from fastapi import HTTPException
 
-# TMX-020 Verification
-
 def test_audit_record_population():
-    """Verify DBService.save_audit_log populates new Schema fields."""
+    """Verify DBService.save_audit_log populates new schema fields."""
     mock_db = MagicMock()
-    
-    # Mock Service with injected session getter logic if needed, 
-    # but DBService instantiates SessionLocal internally. We patch SessionLocal.
+
     with patch("app.services.db_service.SessionLocal", return_value=mock_db):
         service = DatabaseService()
-        
-        # Test Data
+
         job_id = "job-123"
         audit_id = "audit-999"
         state = {
@@ -33,36 +28,28 @@ def test_audit_record_population():
             },
             "iteration_count": 1
         }
-        
-        # Mock Job Queue Query
+
         mock_job = MagicMock()
         mock_db.query.return_value.filter.return_value.first.return_value = mock_job
-        
+
         service.save_audit_log(job_id, state, audit_id)
-        
-        # Verify Add called with AuditRecord
+
         assert mock_db.add.called
         args = mock_db.add.call_args[0]
         record = args[0]
-        
+
         assert isinstance(record, AuditRecord)
         assert record.audit_id == audit_id
         assert record.policy_version == "v1.0"
         assert record.glossary_version == "v1.1"
         assert record.full_payload is not None
         assert record.hash_signature is not None
-        
+
         # Verify Hash Logic (TMX-021)
-        # Re-compute to verify consistency
         ref_payload = record.full_payload
         ref_json = json.dumps(ref_payload, sort_keys=True)
         expected_hash = hashlib.sha256(ref_json.encode()).hexdigest()
-        
-        print(f"DEBUG: Record Hash: {record.hash_signature}")
-        print(f"DEBUG: Expect Hash: {expected_hash}")
-        if record.hash_signature != expected_hash:
-             print(f"DEBUG: Payload: {ref_json}")
-             
+
         assert record.hash_signature == expected_hash
 
 def test_audit_endpoint_retrieval():
@@ -81,12 +68,11 @@ def test_audit_endpoint_retrieval():
         hash_signature="abc12345",
         created_at=datetime.utcnow()
     )
-    
-    # Mock Query
+
     mock_db.query.return_value.filter.return_value.first.return_value = record
-    
+
     response = get_audit_record("audit-test-1", db=mock_db)
-    
+
     assert response.audit_id == "audit-test-1"
     assert response.versions['policy'] == "v1"
     assert response.versions['model'] == "v1"
