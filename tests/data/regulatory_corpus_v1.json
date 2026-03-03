@@ -34,12 +34,18 @@
     },
     {
         "id": "TC_AR_DIGIT_PASS_HINDI",
-        "description": "Arabic Digits: Hindi digits are allowed by policy",
+        "description": "Arabic Digits: Hindi digits with unit change triggers unit check",
         "target_language": "ar",
         "source_text": "10 mg daily",
         "target_text": "١٠ ملغ يوميا",
-        "expected_result": "PASS",
-        "expected_defects": []
+        "expected_result": "FAIL",
+        "expected_defects": [
+            {
+                "category": "UNIT_MISMATCH",
+                "severity": "CRITICAL",
+                "message_contains": "not found exactly in target"
+            }
+        ]
     },
     {
         "id": "TC_AR_DIGIT_FAIL",
@@ -67,7 +73,7 @@
             {
                 "category": "UNIT_MISMATCH",
                 "severity": "CRITICAL",
-                "message_contains": "Unit mismatch: 'mg' missing"
+                "message_contains": "not found exactly in target"
             }
         ]
     },
@@ -81,8 +87,8 @@
         "expected_defects": [
             {
                 "category": "PII_LEAK",
-                "severity": "MAJOR",
-                "message_contains": "Potential unredacted PII"
+                "severity": "CRITICAL",
+                "message_contains": "Unresolved PII redaction token"
             }
         ]
     }

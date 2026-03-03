@@ -59,7 +59,7 @@ class QualityGateService:
             print(f"Drift Calc Failed: {e}")
             return 0.0
 
-    def check_segment(self, source_text: str, target_text: str, constraints: Dict[str, Any], target_lang: str, source_lang: str = "en") -> List[Dict[str, Any]]:
+    def check_segment(self, source_text: str, target_text: str, constraints: Dict[str, Any], target_lang: str, source_lang: str = "en", profile_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Runs all deterministic checks and returns a list of violation dicts (serialized Defects).
         Accepts source_lang for source-side language pack validation.
@@ -203,6 +203,17 @@ class QualityGateService:
         # 'constraints' dict would contain 'archetype' key or we read from JobProfile.
         # For now, we allow explicit 'check_analytical_anchors' flag or deduce from constraints.
         
+        # 6. Placeholder Integrity (Universal)
+        defects.extend(self.check_placeholders(source_text, target_text))
+
+        # 7. Frequency Gate (Pharma abbreviation matching)
+        defects.extend(self.check_frequency(source_text, target_text))
+
+        # 8. Regulatory Profile Checks (if profile_id is provided)
+        if profile_id:
+            defects.extend(self.check_date_formatting(target_text, profile_id))
+            defects.extend(self.check_mandatory_headers(target_text, profile_id))
+
         if constraints.get('archetype') == 'ANALYTICAL' or constraints.get('check_analytical_anchors'):
              from app.services.analytical_check import AnalyticalCheckService
              analytical_service = AnalyticalCheckService()
@@ -525,6 +536,186 @@ class QualityGateService:
                     f"Table {i+1} Column Structure Mismatch (Header): {s['cols'][0]} vs {t['cols'][0]}."
                 ))
                 
+        return defects
+
+    def check_placeholders(self, source_text: str, target_text: str) -> List[Defect]:
+        """
+        TMX-034: Verify strict placeholder preservation ({{var}}, [n]).
+        """
+        defects = []
+
+        # Extract placeholders: {{...}} and [n]
+        ph_pattern = r'\{\{[^}]+\}\}|\[\d+\]'
+        src_placeholders = re.findall(ph_pattern, source_text)
+        tgt_placeholders = re.findall(ph_pattern, target_text)
+
+        src_set = set(src_placeholders)
+        tgt_set = set(tgt_placeholders)
+
+        missing = src_set - tgt_set
+        hallucinated = tgt_set - src_set
+
+        for ph in missing:
+            defects.append(self._create_defect(
+                DefectCategory.PLACEHOLDER_CORRUPTION,
+                f"Placeholder missing in target: {ph}"
+            ))
+        for ph in hallucinated:
+            defects.append(self._create_defect(
+                DefectCategory.PLACEHOLDER_CORRUPTION,
+                f"Placeholder hallucinated in target: {ph}"
+            ))
+
+        return defects
+
+    def check_frequency(self, source_text: str, target_text: str) -> List[Defect]:
+        """
+        TMX-031: Canonical Frequency Matching (BID, QD, TID, QID).
+        """
+        defects = []
+
+        # Pharma frequency abbreviations -> canonical frequency per day
+        FREQ_MAP = {
+            'qd': 1.0, 'once daily': 1.0, 'once a day': 1.0,
+            'bid': 2.0, 'twice daily': 2.0, 'twice a day': 2.0,
+            'tid': 3.0, 'three times daily': 3.0, 'three times a day': 3.0,
+            'qid': 4.0, 'four times daily': 4.0, 'four times a day': 4.0,
+            'qhs': 1.0,  # at bedtime
+        }
+
+        # Multilingual frequency patterns
+        FREQ_PATTERNS = {
+            'une fois par jour': 1.0, 'once daily': 1.0,
+            'deux fois par jour': 2.0, 'twice daily': 2.0,
+            'trois fois par jour': 3.0, 'three times daily': 3.0,
+            'quatre fois par jour': 4.0, 'four times daily': 4.0,
+        }
+
+        def extract_freq(text):
+            text_lower = text.lower()
+            found = []
+            # Check longer patterns first
+            for pattern, freq in sorted(FREQ_PATTERNS.items(), key=lambda x: -len(x[0])):
+                if pattern in text_lower:
+                    found.append((pattern, freq))
+                    text_lower = text_lower.replace(pattern, '', 1)
+            # Then check abbreviations (word boundary)
+            for abbr, freq in FREQ_MAP.items():
+                if re.search(rf'\b{re.escape(abbr)}\b', text_lower):
+                    found.append((abbr, freq))
+            return found
+
+        src_freqs = extract_freq(source_text)
+        tgt_freqs = extract_freq(target_text)
+
+        if not src_freqs and not tgt_freqs:
+            return []
+
+        # Check for mismatches
+        src_values = [f[1] for f in src_freqs]
+        tgt_values = [f[1] for f in tgt_freqs]
+
+        if src_freqs and not tgt_freqs:
+            for name, val in src_freqs:
+                defects.append(self._create_defect(
+                    DefectCategory.FREQUENCY_MISMATCH,
+                    f"Expected {name} ({val}/day) but no frequency found in target."
+                ))
+        elif not src_freqs and tgt_freqs:
+            for name, val in tgt_freqs:
+                defects.append(self._create_defect(
+                    DefectCategory.FREQUENCY_MISMATCH,
+                    f"Extra frequency in target: {name} ({val}/day) with no source frequency."
+                ))
+        elif src_freqs and tgt_freqs:
+            # Compare canonical values
+            if sorted(src_values) != sorted(tgt_values):
+                for name, val in src_freqs:
+                    if val not in tgt_values:
+                        defects.append(self._create_defect(
+                            DefectCategory.FREQUENCY_MISMATCH,
+                            f"Expected {name} ({val}/day) but not matched in target."
+                        ))
+                for name, val in tgt_freqs:
+                    if val not in src_values:
+                        defects.append(self._create_defect(
+                            DefectCategory.FREQUENCY_MISMATCH,
+                            f"Extra frequency in target: {name} ({val}/day)."
+                        ))
+
+        return defects
+
+    def check_date_formatting(self, text: str, profile_id: str) -> List[Defect]:
+        """
+        Regulatory Profile: Validate date formats match authority requirements.
+        """
+        from app.core.regulatory_profiles import get_profile
+        defects = []
+
+        profile = get_profile(profile_id)
+        if not profile or not profile.get('date_format'):
+            return []
+
+        expected_fmt = profile['date_format']
+
+        # Find date-like patterns in text
+        date_pattern = r'\b(\d{1,4})[/.](\d{1,2})[/.](\d{1,4})\b'
+        matches = re.finditer(date_pattern, text)
+
+        for m in matches:
+            p1, p2, p3 = int(m.group(1)), int(m.group(2)), int(m.group(3))
+
+            if expected_fmt == "DD/MM/YYYY":
+                # p1=day (1-31), p2=month (1-12), p3=year
+                if not (1 <= p1 <= 31 and 1 <= p2 <= 12):
+                    defects.append(self._create_defect(
+                        DefectCategory.FORMATTING_ERROR,
+                        f"Date '{m.group(0)}' does not match required format {expected_fmt}."
+                    ))
+            elif expected_fmt == "MM/DD/YYYY":
+                # p1=month (1-12), p2=day (1-31), p3=year
+                if not (1 <= p1 <= 12 and 1 <= p2 <= 31):
+                    defects.append(self._create_defect(
+                        DefectCategory.FORMATTING_ERROR,
+                        f"Date '{m.group(0)}' does not match required format {expected_fmt}."
+                    ))
+            elif expected_fmt == "YYYY/MM/DD":
+                if not (p1 > 1900 and 1 <= p2 <= 12 and 1 <= p3 <= 31):
+                    defects.append(self._create_defect(
+                        DefectCategory.FORMATTING_ERROR,
+                        f"Date '{m.group(0)}' does not match required format {expected_fmt}."
+                    ))
+
+        return defects
+
+    def check_mandatory_headers(self, text: str, profile_id: str) -> List[Defect]:
+        """
+        Regulatory Profile: Validate mandatory section headers.
+        """
+        from app.core.regulatory_profiles import get_profile
+        defects = []
+
+        profile = get_profile(profile_id)
+        if not profile:
+            return []
+
+        mandatory = profile.get('mandatory_headings', [])
+        if not mandatory:
+            return []
+
+        # Detect if this text looks like a numbered header
+        header_pattern = r'^\d+\.\s*[A-Z\s\(\)]+$'
+        if not re.match(header_pattern, text.strip()):
+            return []
+
+        # It looks like a header - check if it matches any mandatory heading
+        text_stripped = text.strip()
+        if text_stripped not in mandatory:
+            defects.append(self._create_defect(
+                DefectCategory.STRUCTURE_ERROR,
+                f"Non-standard header detected: '{text_stripped}'. Check required format for {profile_id}."
+            ))
+
         return defects
 
 _gate_service_instance = None

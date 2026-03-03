@@ -121,41 +121,51 @@ async def test_req_nfr_02_audit_integrity(db_service, audit_service, scaffold_jo
     """
     REQ-NFR-02: Audit Chain Integrity.
     Verifies that the audit log was created, populated, and has a valid hash chain.
+    The graph creates its own audit trail in validate_request, so we query by job_id after.
     """
     doc_id, job_id, _ = scaffold_job
-    audit_id = audit_service.create_audit_trail(job_id)
-    
-    # We invoke the graph with this audit_id
+
+    # Build a proper JSON response the translation engine can parse
+    seg_session = db_service.get_session()
+    seg_rows = seg_session.query(Segment).filter_by(document_id=doc_id).all()
+    seg_ids = [s.id for s in seg_rows]
+    seg_session.close()
+
+    mock_json = json.dumps({
+        "segments": [{"id": sid, "target_text": "監査済み翻訳。"} for sid in seg_ids]
+    })
+    mock_response = MagicMock()
+    mock_response.content = mock_json
+
     inputs = {
         "doc_id": doc_id,
         "target_language": "ja",
         "job_id": job_id,
-        "audit_id": audit_id,
         "constraint_pack": {},
         "segments": []
     }
-    
-    # Mock LLM
-    mock_response = MagicMock()
-    mock_response.content = "Audited Translation."
-    
-    with patch("langchain_openai.ChatOpenAI.invoke", return_value=mock_response):
+
+    with patch("langchain_openai.ChatOpenAI.ainvoke", return_value=mock_response):
         await workflow_app.ainvoke(inputs)
-        
-    # Verify Integrity
-    report = audit_service.verify_chain_integrity(audit_id)
-    assert report["valid"] is True, f"Audit Chain Broken: {report}"
-    
-    # Verify specific events exist (e.g. SCORECARD_GENERATED from graph.py)
-    # This requires querying the DB for events
+
+    # The graph creates its own audit trail — query by job_id to find it
     session = db_service.get_session()
-    from app.models.models import AuditLogEntry
-    events = session.query(AuditLogEntry.event_type).filter_by(audit_id=audit_id).all()
+    from app.models.models import AuditRecord, AuditLogEntry
+    record = session.query(AuditRecord).filter_by(job_id=job_id).order_by(AuditRecord.created_at.desc()).first()
+    assert record is not None, "No audit record found for job"
+    actual_audit_id = record.audit_id
+
+    # Verify Integrity
+    report = audit_service.verify_chain_integrity(actual_audit_id)
+    assert report["valid"] is True, f"Audit Chain Broken: {report}"
+
+    # Verify events exist
+    events = session.query(AuditLogEntry.event_type).filter_by(audit_id=actual_audit_id).all()
     event_types = [e[0] for e in events]
     session.close()
-    
+
+    assert "JOB_STARTED" in event_types
     assert "SCORECARD_GENERATED" in event_types
-    # assert "JOB_STARTED" in event_types (if we logged it)
 
 @pytest.mark.asyncio
 async def test_req_nfr_03_termination_on_block(db_service, scaffold_job):
@@ -164,33 +174,33 @@ async def test_req_nfr_03_termination_on_block(db_service, scaffold_job):
     Input with Critical Defect -> BLOCKED state -> Ends.
     """
     doc_id, job_id, seg_id = scaffold_job
-    
-    # Inject Critical Defect Input into DB Segment
+
+    # Inject pharma source text
     session = db_service.get_session()
     seg = session.query(Segment).filter_by(id=seg_id).first()
     seg.source_text = "10 mg daily"
-    seg.translated_text = "100 mg daily" # CRITICAL NUMERIC ERROR
-    # (Pre-populating translation to simulate 'Draft' phase output if we were testing just gates,
-    # but to test full graph, we need the LLM to output this.
-    # We'll mock the LLM to output the error).
     seg.status = "PENDING"
     session.commit()
     session.close()
-    
+
+    # Mock LLM to return proper JSON with a WRONG number (100 instead of 10)
+    mock_json = json.dumps({
+        "segments": [{"id": seg_id, "target_text": "100 mg par jour"}]
+    })
     mock_bad_response = MagicMock()
-    mock_bad_response.content = "100 mg daily" # Will trigger Numeric Fail
-    
+    mock_bad_response.content = mock_json
+
     inputs = {
         "doc_id": doc_id,
-        "target_language": "fr", # Using FR for simple numeric/unit check
+        "target_language": "fr",
         "job_id": job_id,
         "constraint_pack": {},
         "segments": []
     }
-    
-    with patch("langchain_openai.ChatOpenAI.invoke", return_value=mock_bad_response):
+
+    with patch("langchain_openai.ChatOpenAI.ainvoke", return_value=mock_bad_response):
         final_state = await workflow_app.ainvoke(inputs)
-        
+
     assert final_state['quality_report']['status'] == "BLOCKED"
     # Ensure no infinite loop (ainvoke returns, so it terminated)
 

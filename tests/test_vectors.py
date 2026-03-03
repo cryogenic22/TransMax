@@ -10,10 +10,14 @@ from app.core.config import settings
 
 def test_vector_integration():
     print("--- Testing Vector Integration (Postgres) ---")
-    
+
     # 1. Check Env
     if not settings.openai_api_key or "placeholder" in settings.openai_api_key:
         pytest.skip("Skipping Vector Test: OPENAI_API_KEY missing or placeholder.")
+
+    from app.models.database import engine
+    if engine.dialect.name != "postgresql":
+        pytest.skip("Skipping Vector Test: pgvector requires PostgreSQL.")
         
     db_service = DatabaseService()
     

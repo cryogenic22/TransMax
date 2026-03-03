@@ -28,6 +28,10 @@ class DefectCategory(str, Enum):
     SENTIMENT_SHIFT = "SENTIMENT_SHIFT"       # Major (Analytical)
     TABLE_CORRUPTION = "TABLE_CORRUPTION"     # Critical (Structure)
     COMPLEXITY_WARNING = "COMPLEXITY_WARNING" # Major (Human Review Required)
+    PLACEHOLDER_CORRUPTION = "PLACEHOLDER_CORRUPTION" # Critical (Integrity)
+    FREQUENCY_MISMATCH = "FREQUENCY_MISMATCH"         # Critical (Dosing)
+    FORMATTING_ERROR = "FORMATTING_ERROR"             # Major (Regulatory)
+    STRUCTURE_ERROR = "STRUCTURE_ERROR"               # Major (Regulatory)
 
 @dataclass
 class Defect:
@@ -62,6 +66,12 @@ class TaxonomyService:
 
         if "anchor" in message_lower:
             return DefectSeverity.CRITICAL
+
+        if "placeholder" in message_lower:
+            return DefectSeverity.CRITICAL
+
+        if "frequency" in message_lower:
+            return DefectSeverity.CRITICAL
             
         # 2. MAJOR RULES (Terminology/Meaning)
         if "glossary" in message_lower or "terminology" in message_lower:
@@ -71,7 +81,10 @@ class TaxonomyService:
             return DefectSeverity.MAJOR
             
         if "pii" in message_lower or "redacted" in message_lower:
-            return DefectSeverity.MAJOR # PII leak is Major compliance risk
+            return DefectSeverity.CRITICAL # PII leak is Critical compliance risk
+
+        if "table" in message_lower and ("mismatch" in message_lower or "corruption" in message_lower):
+            return DefectSeverity.CRITICAL
 
         if "complexity" in message_lower or "check" in message_lower:
             return DefectSeverity.MAJOR # Soft mark for human review

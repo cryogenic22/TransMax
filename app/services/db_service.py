@@ -11,6 +11,7 @@ from datetime import datetime
 from app.models.database import engine, SessionLocal, Base, Document, DocumentStatus, Segment
 from app.models.models import TranslationJobQueue, AuditRecord, Glossary, GlossaryTerm, TMSegment, QualityScorecard
 from app.core.constants import SubstitutionType
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -216,8 +217,6 @@ class DatabaseService:
                 }
 
             # 2. Vector Search (If configured and key exists)
-            from app.core.config import settings
-            from app.core.constants import SubstitutionType
             
             if settings.openai_api_key:
                 try:

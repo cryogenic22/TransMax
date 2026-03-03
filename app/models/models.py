@@ -178,9 +178,14 @@ class AuditRecord(Base):
     # Summary Hashes
     input_hash = Column(String(64), nullable=True)
     output_hash = Column(String(64), nullable=True)
-    
+
     # The final "Seal" of the chain
     chain_head_hash = Column(String(64), nullable=True) # Matches the last AuditLogEntry hash
+
+    # TMX-021: Tamper Evidence
+    full_payload = Column(JSON, nullable=True)
+    hash_signature = Column(String(64), nullable=True)
+    events_json = Column(JSON, nullable=True)
     
     # Relationships
     job = relationship("TranslationJobQueue", back_populates="audit_record", foreign_keys=[job_id])

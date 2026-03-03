@@ -128,5 +128,6 @@ class AuditRecordResponse(BaseModel):
     final_decision: Optional[str]
     versions: Dict[str, Optional[str]]
     hash_signature: Optional[str]
+    full_payload: Optional[Dict[str, Any]] = None
     created_at: datetime
 

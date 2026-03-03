@@ -91,5 +91,46 @@ class PIIService:
             
         return restored_text
 
+    def add_pattern(self, name: str, pattern: str):
+        """Add a custom PII detection pattern."""
+        self.patterns[name] = pattern
+
+    def redact(self, text: str, mode: str = "mask") -> Tuple[str, List[Dict[str, str]]]:
+        """
+        Redact PII from text using <TYPE_REDACTED> tokens.
+        mode='mask': replace with tokens, mode='remove': delete PII entirely.
+        """
+        redaction_map = []
+
+        if mode == "remove":
+            result = text
+            for pii_type, pattern in self.patterns.items():
+                matches = list(re.finditer(pattern, result))
+                for match in reversed(matches):
+                    redaction_map.append({
+                        "token": "",
+                        "original": match.group(0),
+                        "type": pii_type
+                    })
+                    result = result[:match.start()] + result[match.end():]
+            return result, redaction_map
+
+        # Default mask mode
+        masked_text = text
+        for pii_type, pattern in self.patterns.items():
+            def make_callback(pt):
+                def replace_callback(match):
+                    original_value = match.group(0)
+                    token = f"<{pt}_REDACTED>"
+                    redaction_map.append({
+                        "token": token,
+                        "original": original_value,
+                        "type": pt
+                    })
+                    return token
+                return replace_callback
+            masked_text = re.sub(pattern, make_callback(pii_type), masked_text)
+        return masked_text, redaction_map
+
 # Singleton instance
 default_pii_service = PIIService()

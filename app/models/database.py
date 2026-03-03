@@ -44,6 +44,9 @@ class Document(Base):
     # Glossary binding
     glossary_id = Column(String, nullable=True)
 
+    # Profile / metadata (stored as JSON for governance)
+    meta_json = Column(JSON, nullable=True)
+
     # TMX-011: Idempotency
     client_request_id = Column(String(255), unique=True, index=True, nullable=True)
     
