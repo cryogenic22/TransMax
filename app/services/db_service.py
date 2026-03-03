@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional, List
 import json
 import uuid
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.models.database import engine, SessionLocal, Base, Document, DocumentStatus, Segment
 from app.models.models import TranslationJobQueue, AuditRecord, Glossary, GlossaryTerm, TMSegment, QualityScorecard
@@ -393,7 +393,7 @@ class DatabaseService:
                 "scores_json": state.get("quality_report", {}),
                 "events_json": [enrichment_data],
                 "versions": versions,
-                "timestamp": str(datetime.utcnow())
+                "timestamp": str(datetime.now(timezone.utc))
             }
             
             # TMX-021: Canonical Serialization & Hashing
@@ -570,7 +570,7 @@ class DatabaseService:
                 "===================================",
                 f"Document ID: {doc.id}",
                 f"Filename: {doc.name}",
-                f"Date: {datetime.utcnow().isoformat()}",
+                f"Date: {datetime.now(timezone.utc).isoformat()}",
                 f"Source: {doc.source_language} -> Target: {doc.target_language}",
                 "",
                 "--- SEGMENT AUDIT TRAIL ---"

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
 from sqlalchemy.orm import Session
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.core.database import get_db
 from app.models.database import Document, DocumentStatus, Segment
@@ -43,7 +43,7 @@ async def create_translation_job(
         target_language=request.target_language,
         status=DocumentStatus.UPLOADED.value,
         client_request_id=request.request_id,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
         meta_json=request.profile.dict() # Persist Profile for Graph
     )
     db.add(new_doc)

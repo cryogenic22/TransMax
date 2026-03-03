@@ -5,7 +5,7 @@ CRUD operations for documents and translation jobs.
 import os
 import uuid
 import aiofiles
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, BackgroundTasks
 from fastapi.responses import StreamingResponse
@@ -236,10 +236,10 @@ async def update_document(
     for field, value in update_data.items():
         setattr(doc, field, value)
     
-    doc.updated_at = datetime.utcnow()
+    doc.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(doc)
-    
+
     return document_to_response(doc, db)
 
 
@@ -298,9 +298,9 @@ async def translate_document(
     # Update document
     doc.target_language = request.target_language
     doc.status = DocumentStatus.PROCESSING.value
-    doc.updated_at = datetime.utcnow()
+    doc.updated_at = datetime.now(timezone.utc)
     db.commit()
-    
+
     # Queue background job - runs the full LLM + quality gates pipeline
     from app.agents.runner import run_pipeline_background
     background_tasks.add_task(

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, JSON, Boolean, ForeignKeyConstraint, Float, UniqueConstraint
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
@@ -39,8 +39,8 @@ class TranslationRule(Base):
     false_positive_count = Column(Integer, default=0)            # Analytics: reported false positives
     created_by = Column(String, nullable=True)                   # User who created the rule
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 class TranslationJobQueue(Base):
     __tablename__ = "translation_jobs_queue"
@@ -57,8 +57,8 @@ class TranslationJobQueue(Base):
     request_json = Column(JSON, nullable=False)
     state_json = Column(JSON, nullable=True) # Checkpoint of graph state
     
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # audit_trail_id removed to avoid circular dependency. AuditRecord links to Job via job_id.
     audit_record = relationship("AuditRecord", back_populates="job", uselist=False)
@@ -82,7 +82,7 @@ class JobConfigSnapshot(Base):
     # Hash for integrity check
     config_hash = Column(String(64), nullable=False)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     job = relationship("TranslationJobQueue", back_populates="config_snapshot")
 
@@ -105,7 +105,7 @@ class AuditLogEntry(Base):
     previous_hash = Column(String(64), nullable=True) # Hash of the previous entry
     entry_hash = Column(String(64), nullable=False)   # Hash of (this_payload + previous_hash)
     
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     audit_trail = relationship("AuditRecord", back_populates="log_entries")
 
@@ -130,7 +130,7 @@ class QualityScorecard(Base):
     
     status = Column(String, nullable=False) # PASS / BLOCK / REVIEW
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     job = relationship("TranslationJobQueue", back_populates="scorecard")
     entries = relationship("ScorecardEntry", back_populates="scorecard")
@@ -149,7 +149,7 @@ class ScorecardEntry(Base):
     severity = Column(String, nullable=False)   # From DefectSeverity Enum
     message = Column(String, nullable=False)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     scorecard = relationship("QualityScorecard", back_populates="entries")
 
@@ -163,7 +163,7 @@ class AuditRecord(Base):
     audit_id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
     job_id = Column(String, ForeignKey("translation_jobs_queue.job_id"), nullable=True) 
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     final_decision = Column(String, nullable=True)
     scores_json = Column(JSON, nullable=True)
@@ -200,7 +200,7 @@ class Glossary(Base):
     is_active = Column(Boolean, default=True)
     meta_json = Column(JSON, nullable=True)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     terms = relationship("GlossaryTerm", back_populates="glossary")
 
@@ -253,8 +253,8 @@ class TMSegment(Base):
     # Vector embedding
     embedding = Column(Vector(1536))
     
-    created_at = Column(DateTime, default=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     meta_json = Column(JSON, nullable=True)
 
 class DeadLetterQueue(Base):
@@ -276,6 +276,6 @@ class DeadLetterQueue(Base):
     
     status = Column(String, default="NEW") # NEW, INVESTIGATING, RESOLVED, DISCARDED
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     resolved_at = Column(DateTime, nullable=True)
     resolution_notes = Column(Text, nullable=True)

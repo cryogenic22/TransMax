@@ -2,7 +2,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 import csv
 import io
 import json
@@ -919,7 +919,7 @@ async def submit_feedback(feedback: FeedbackRequest, user: AuthenticatedIdentity
                 confidence_score=1.0,
                 target_language=feedback.target_language,
                 status="PENDING_APPROVAL",
-                origin_event_id=f"feedback_{datetime.utcnow().timestamp()}",
+                origin_event_id=f"feedback_{datetime.now(timezone.utc).timestamp()}",
                 created_by=user.user_id,
             )
             session.add(new_rule)

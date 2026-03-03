@@ -2,7 +2,7 @@ from sqlalchemy import Column, String, DateTime, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.models.database import Base
 
@@ -35,7 +35,7 @@ class AuditRecord(Base):
     details_json = Column(JSON) # The full structured log content
     
     # Timestamps
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     # Integrity
     record_hash = Column(String) # Hash of this record's content for immutability check

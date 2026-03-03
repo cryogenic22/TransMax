@@ -5,7 +5,7 @@ Endpoints for login, registration, SSO, user management.
 All endpoints are aware of AUTH_MODE and behave accordingly.
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -113,7 +113,7 @@ async def login(request: LoginRequest):
     from app.core.database import SessionLocal
     db = SessionLocal()
     try:
-        user.last_login_at = datetime.utcnow()
+        user.last_login_at = datetime.now(timezone.utc)
         db.add(user)
         db.commit()
     finally:
@@ -332,7 +332,7 @@ async def update_user_role(
         if not target:
             raise HTTPException(status_code=404, detail="User not found")
         target.role = request.role
-        target.updated_at = datetime.utcnow()
+        target.updated_at = datetime.now(timezone.utc)
         db.commit()
         return {"message": f"User {target.email} role updated to {request.role}"}
     finally:

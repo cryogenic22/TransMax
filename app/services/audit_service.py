@@ -3,7 +3,7 @@ import json
 import hashlib
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
@@ -34,7 +34,7 @@ class AuditService:
             record = AuditRecord(
                 audit_id=audit_id,
                 job_id=job_id,
-                created_at=datetime.utcnow()
+                created_at=datetime.now(timezone.utc)
             )
             session.add(record)
             session.commit()
@@ -86,7 +86,7 @@ class AuditService:
                 payload=payload, # stored as JSON
                 previous_hash=previous_hash,
                 entry_hash=entry_hash,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(timezone.utc)
             )
             
             session.add(new_entry)
@@ -125,9 +125,9 @@ class AuditService:
                 job_id=job_id,
                 config_json=config_json,
                 config_hash=config_hash,
-                created_at=datetime.utcnow()
+                created_at=datetime.now(timezone.utc)
             )
-            
+
             session.add(snapshot)
             session.commit()
             logger.info(f"Captured Config Snapshot {snapshot_id} for Job {job_id}")
@@ -230,7 +230,7 @@ class AuditService:
             # 5. Assemble Bundle
             bundle = {
                 "bundle_id": str(uuid.uuid4()),
-                "generated_at": datetime.utcnow().isoformat(),
+                "generated_at": datetime.now(timezone.utc).isoformat(),
                 "system_version": "TransMax v3.0-RC1",
                 "integrity_status": "PASS" if integrity_report["valid"] else "FAIL",
                 "integrity_details": integrity_report.get("details"),
@@ -265,7 +265,7 @@ class AuditService:
             "action": action,
             "user_id": user_id,
             "reason": reason,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
         # Log as a distinct event type for queries
