@@ -23,13 +23,20 @@ class ConfidenceService:
         defects: List[Dict[str, Any]],
         semantic_drift_score: float = 0.0,
         source_text: str = "",
-        process_flags: Dict[str, bool] = None
+        process_flags: Dict[str, bool] = None,
+        source_language: str = "en",
+        target_language: str = "en",
     ) -> ScoreResult:
         """
         Pure function calculation of confidence score.
+        Applies language-pair calibration when source/target are provided.
         """
         process_flags = process_flags or {}
         config = SCORING_CONFIG
+
+        # Load language-pair calibration
+        from app.core.language_calibration import get_pair_calibration
+        calibration = get_pair_calibration(source_language, target_language)
         
         breakdown = []
         components = {
@@ -57,20 +64,23 @@ class ConfidenceService:
                 breakdown_reasoning=breakdown
             )
             
-        det_penalty = (major_count * config.penalty_defect_major) + \
-                      (minor_count * config.penalty_defect_minor)
+        # Apply calibration: defect_multiplier adjusts penalty severity per language pair
+        det_penalty = ((major_count * config.penalty_defect_major) + \
+                      (minor_count * config.penalty_defect_minor)) * calibration.defect_multiplier
         
         if det_penalty > 0:
             components["deterministic_penalty"] = det_penalty
             breakdown.append(f"Defects: -{det_penalty} ({major_count} Major, {minor_count} Minor)")
 
-        # 2. Semantic Risk (Drift)
+        # 2. Semantic Risk (Drift) — use pair-calibrated thresholds if available
         # ------------------------
+        drift_high = calibration.drift_threshold_high or config.drift_threshold_high
+        drift_medium = calibration.drift_threshold_medium or config.drift_threshold_medium
         sem_penalty = 0.0
-        if semantic_drift_score > config.drift_threshold_high:
+        if semantic_drift_score > drift_high:
             sem_penalty = config.penalty_drift_high
             breakdown.append(f"Semantic Drift High ({semantic_drift_score:.2f}): -{sem_penalty}")
-        elif semantic_drift_score > config.drift_threshold_medium:
+        elif semantic_drift_score > drift_medium:
             sem_penalty = config.penalty_drift_medium
             breakdown.append(f"Semantic Drift Moderate ({semantic_drift_score:.2f}): -{sem_penalty}")
             
@@ -114,10 +124,13 @@ class ConfidenceService:
         if proc_penalty > 0:
             components["process_penalty"] = proc_penalty
 
-        # 5. Final Calculation
+        # 5. Final Calculation (include pair difficulty penalty from calibration)
         # --------------------
-        total_penalty = det_penalty + sem_penalty + struct_penalty + proc_penalty
-        final_score = max(0.0, 100.0 - total_penalty)
+        pair_penalty = calibration.pair_difficulty_penalty
+        if pair_penalty > 0:
+            breakdown.append(f"Language pair difficulty adjustment: -{pair_penalty}")
+        total_penalty = det_penalty + sem_penalty + struct_penalty + proc_penalty + pair_penalty
+        final_score = max(calibration.confidence_floor, 100.0 - total_penalty)
         
         # Determine Band
         if final_score >= 95:

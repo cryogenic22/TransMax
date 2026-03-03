@@ -52,6 +52,7 @@ class TransMaxState(TypedDict):
     # Input
     doc_id: str
     target_language: str
+    source_language: Optional[str]  # Any-to-any: detected or specified source language
     job_id: Optional[str] # Added job_id optional
     audit_id: Optional[str] # TMX-020: Linked Audit Trail
     segment_ids_filter: Optional[List[str]]  # Optional filter for selective translation
@@ -94,6 +95,31 @@ async def validate_request(state: TransMaxState) -> TransMaxState:
     except Exception as e:
         logger.warning(f"Failed to update document status, proceeding anyway: {e}")
     
+    # Resolve source language: metadata → auto-detect → fallback to "en"
+    if not state.get('source_language'):
+        try:
+            doc_meta = get_db_service().get_document_metadata(state['doc_id'])
+            if doc_meta and doc_meta.get('source_language'):
+                state['source_language'] = doc_meta['source_language']
+            else:
+                # Auto-detect from first segments
+                from app.services.language_detection import detect_language
+                segments = get_db_service().get_segments_for_doc(state['doc_id'])
+                sample_text = " ".join(s['source_text'] for s in segments[:5])[:2000]
+                if sample_text.strip():
+                    detection = detect_language(sample_text)
+                    if detection.confidence >= 0.5:
+                        state['source_language'] = detection.language
+                        logger.info(f"Auto-detected source language: {detection.language} (confidence={detection.confidence:.2f})")
+                    else:
+                        state['source_language'] = "en"
+                        logger.info(f"Low detection confidence ({detection.confidence:.2f}), defaulting to 'en'")
+                else:
+                    state['source_language'] = "en"
+        except Exception as e:
+            logger.warning(f"Language detection failed: {e}, defaulting to 'en'")
+            state['source_language'] = "en"
+
     # Initialize iteration state
     state['iteration_count'] = 0
     
@@ -161,14 +187,26 @@ async def compile_constraints(state: TransMaxState) -> TransMaxState:
         state['constraint_pack'] = {"glossary": [], "tm_matches": []}
         return state
 
-    query_text = " ".join([s['source_text'] for s in segments])[:2000] 
-    
+    query_text = " ".join([s['source_text'] for s in segments])[:2000]
+
+    # Resolve glossary_id from the document record
+    glossary_id = None
+    try:
+        from app.models.database import SessionLocal, Document
+        with SessionLocal() as _session:
+            doc = _session.query(Document).filter(Document.id == state['doc_id']).first()
+            if doc and doc.glossary_id:
+                glossary_id = doc.glossary_id
+    except Exception as e:
+        logger.warning(f"Failed to read glossary_id from document: {e}")
+
     # Reuse existing logic in db_service
-    # Assuming source is 'en' for now, could fetch from doc meta
+    source_lang = state.get('source_language', 'en')
     constraints = get_db_service().get_constraints(
-        source_lang="en", 
+        source_lang=source_lang,
         target_lang=state['target_language'],
-        query_text=query_text
+        query_text=query_text,
+        glossary_id=glossary_id,
     )
     
     state['constraint_pack'] = constraints
@@ -180,7 +218,7 @@ async def compile_constraints(state: TransMaxState) -> TransMaxState:
     for seg in state['segments']:
         match = get_db_service().find_best_match(
             source_text=seg['source_text'],
-            source_lang="en", # TODO: Get from doc metadata in state
+            source_lang=source_lang,
             target_lang=state['target_language']
         )
         if match and match['type'] == SubstitutionType.TM_EXACT:
@@ -206,7 +244,7 @@ def _process_tm_matches(segments: List[Dict[str, Any]]) -> tuple[List[Dict[str, 
             tm_updates.append({
                 "segment_id": seg['segment_id'],
                 "translated_text": translation,
-                "status": str(SegmentStatus.TRANSLATED),
+                "status": SegmentStatus.TRANSLATED.value,
                 "translation_source": SubstitutionType.TM_EXACT.value,
                 "match_score": 1.0
             })
@@ -299,7 +337,7 @@ async def draft_translate(state: TransMaxState) -> TransMaxState:
             draft_updates.append({
                 "segment_id": seg_id,
                 "translated_text": trans_text,
-                "status": str(SegmentStatus.TRANSLATED),
+                "status": SegmentStatus.TRANSLATED.value,
                 "translation_source": "llm_draft_v1"
             })
             
@@ -335,7 +373,8 @@ async def run_quality_gates(state: TransMaxState) -> TransMaxState:
                 source_text=seg['source_text'],
                 target_text=seg['translated_text'],
                 constraints=constraint_pack,
-                target_lang=state['target_language']
+                target_lang=state['target_language'],
+                source_lang=state.get('source_language', 'en')
             )
             
             gate_results = {
@@ -352,7 +391,7 @@ async def run_quality_gates(state: TransMaxState) -> TransMaxState:
             }
             if has_critical:
                 logger.warning(f"CRITICAL DEFECT in Segment {seg['segment_id']}: BLOCKING.")
-                update_data["status"] = str(SegmentStatus.BLOCKED)
+                update_data["status"] = SegmentStatus.BLOCKED.value
             updates.append(update_data)
             
             if seg_defects:

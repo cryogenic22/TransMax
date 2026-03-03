@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, JSON, Boolean, ForeignKeyConstraint, Float
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Text, JSON, Boolean, ForeignKeyConstraint, Float, UniqueConstraint
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
 import uuid
@@ -8,23 +8,37 @@ from app.models.database import Base
 
 class TranslationRule(Base):
     """
-    TMX-045: Knowledge System Rule.
-    Represents a learned translation rule (Nuance).
+    TMX-045: Knowledge System Rule (Black Book v2).
+    Represents a learned translation rule with enterprise domain scoping.
     """
     __tablename__ = "translation_rules"
-    
+
     rule_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    
+
     source_pattern = Column(String, nullable=False, index=True) # Text or Regex
     target_correction = Column(String, nullable=False)
-    
+
     context_tag = Column(String, default="general") # e.g. "pharma", "legal"
     confidence_score = Column(Float, nullable=False) # 0.0 - 1.0 (AI Confidence)
-    
+
     status = Column(String, default="PENDING_APPROVAL") # ACTIVE, PENDING_APPROVAL, REJECTED
-    
+
     origin_event_id = Column(String, nullable=True) # Link to ChangeLog or Audit
-    
+
+    # --- Black Book v2: Domain Scoping ---
+    source_language = Column(String, nullable=True, index=True)  # e.g. "en", None = any
+    target_language = Column(String, nullable=True, index=True)  # e.g. "fr", None = any
+    project_id = Column(String, nullable=True, index=True)       # Scope to project
+    domain = Column(String, default="general", index=True)       # "pharma", "legal", "general"
+    is_regex = Column(Boolean, default=False)                    # Pattern is regex vs literal
+    is_strict = Column(Boolean, default=False)                   # Strict mode: block if violated
+    priority = Column(Integer, default=0)                        # Higher = applied first
+    description = Column(Text, nullable=True)                    # Human-readable explanation
+    fire_count = Column(Integer, default=0)                      # Analytics: how often triggered
+    last_fired_at = Column(DateTime, nullable=True)              # Analytics: last trigger time
+    false_positive_count = Column(Integer, default=0)            # Analytics: reported false positives
+    created_by = Column(String, nullable=True)                   # User who created the rule
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -204,7 +218,9 @@ class GlossaryTerm(Base):
         ForeignKeyConstraint(
             ['glossary_id', 'glossary_version'],
             ['glossaries.glossary_id', 'glossaries.version'],
+            ondelete="CASCADE",
         ),
+        UniqueConstraint('glossary_id', 'glossary_version', 'source_text', name='uq_glossary_term_source'),
     )
     
     glossary = relationship("Glossary", 

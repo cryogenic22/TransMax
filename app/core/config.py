@@ -50,6 +50,20 @@ class Settings(BaseSettings):
     # Security
     secret_key: str
     access_token_expire_minutes: int = 30
+
+    # Auth — fully optional, defaults to no-auth for dev/demo
+    auth_mode: str = "none"  # "none" | "jwt" | "oidc"
+    auth_jwt_algorithm: str = "HS256"
+
+    # OIDC / SSO (only needed when auth_mode="oidc")
+    oidc_provider: Optional[str] = None       # "okta" | "microsoft" | "google"
+    oidc_client_id: Optional[str] = None
+    oidc_client_secret: Optional[str] = None
+    oidc_issuer_url: Optional[str] = None
+    oidc_redirect_uri: Optional[str] = None
+    oidc_scopes: str = "openid profile email"
+    oidc_role_claim: str = "groups"
+    oidc_role_mapping: Optional[str] = None   # JSON: {"OktaAdmins": "admin", ...}
     
     class Config:
         env_file = ".env"

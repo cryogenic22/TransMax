@@ -29,10 +29,13 @@ aiofiles
 httpx
 tenacity
 python-jose[cryptography]
+passlib[bcrypt]
 redis
 pint
+langdetect
 unstructured
 pypdf
+python-docx
 
 # Monitoring
 prometheus-client

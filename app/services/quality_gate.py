@@ -59,26 +59,23 @@ class QualityGateService:
             print(f"Drift Calc Failed: {e}")
             return 0.0
 
-    def check_segment(self, source_text: str, target_text: str, constraints: Dict[str, Any], target_lang: str) -> List[Dict[str, Any]]:
+    def check_segment(self, source_text: str, target_text: str, constraints: Dict[str, Any], target_lang: str, source_lang: str = "en") -> List[Dict[str, Any]]:
         """
         Runs all deterministic checks and returns a list of violation dicts (serialized Defects).
+        Accepts source_lang for source-side language pack validation.
         """
         defects: List[Defect] = []
-        
-        
+
+        # --- Source-side Language Pack Checks ---
+        source_pack = self._lang_packs.get(source_lang)
+        if not source_pack and source_lang != "en":
+            source_pack = self._load_lang_pack(source_lang)
+
         # --- Language Pack Integration (TMX-033) ---
         lang_pack = self._lang_packs.get(target_lang)
         
         if not lang_pack:
-            if target_lang == 'ja':
-                from app.services.language_packs.japanese import JapanesePack
-                lang_pack = JapanesePack()
-            elif target_lang == 'ar':
-                from app.services.language_packs.arabic import ArabicPack
-                lang_pack = ArabicPack()
-            
-            if lang_pack:
-                self._lang_packs[target_lang] = lang_pack
+            lang_pack = self._load_lang_pack(target_lang)
             
         if lang_pack:
             # Specialized Language Checks
@@ -160,6 +157,16 @@ class QualityGateService:
                     f"Glossary term missing: '{src}' -> '{tgt}'"
                 ))
         
+        # 2b. Forbidden Terms Check (Critical)
+        forbidden_terms = constraints.get('forbidden_terms', [])
+        for ft in forbidden_terms:
+            forbidden_word = ft.get('term', '')
+            if forbidden_word and forbidden_word.lower() in target_text.lower():
+                defects.append(self._create_defect(
+                    DefectCategory.TERMINOLOGY,
+                    f"Forbidden term detected in translation: '{forbidden_word}'"
+                ))
+
         # 3. PII Check (Major/Critical) - Fail-Safe Integrity
         # Check 1: Unresolved Tokens
         if "[[PII" in target_text or "<EMAIL" in target_text or "<PHONE" in target_text: 
@@ -364,6 +371,28 @@ class QualityGateService:
             
         return "NEUTRAL"
     
+    def _load_lang_pack(self, lang_code: str):
+        """Load and cache a language pack by language code."""
+        if lang_code in self._lang_packs:
+            return self._lang_packs[lang_code]
+
+        pack = None
+        try:
+            from app.services.language_packs.factory import LanguagePackFactory
+            pack = LanguagePackFactory.get_pack(lang_code)
+        except Exception:
+            # Fallback to known packs
+            if lang_code == 'ja':
+                from app.services.language_packs.japanese import JapanesePack
+                pack = JapanesePack()
+            elif lang_code == 'ar':
+                from app.services.language_packs.arabic import ArabicPack
+                pack = ArabicPack()
+
+        if pack:
+            self._lang_packs[lang_code] = pack
+        return pack
+
     def _create_defect(self, category: DefectCategory, message: str) -> Defect:
         """Helper to create rated defect"""
         # Auto-classify severity based on rules/message if needed, or use category default

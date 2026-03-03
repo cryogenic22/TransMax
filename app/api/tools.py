@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import asyncio
@@ -8,6 +8,8 @@ from app.services.quality_gate import get_quality_gate_service
 from app.services.llm import get_llm
 from app.services.db_service import DatabaseService
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from app.auth.providers import AuthenticatedIdentity
+from app.auth.dependencies import get_current_user
 
 router = APIRouter()
 
@@ -35,7 +37,7 @@ class UniversalTranslateRequest(BaseModel):
 # --- Endpoints ---
 
 @router.post("/audit")
-async def audit_translation(request: AuditRequest):
+async def audit_translation(request: AuditRequest, user: AuthenticatedIdentity = Depends(get_current_user)):
     """
     Quality Auditor: Runs deterministic checks (Glossary, Negation, Units).
     """
@@ -80,7 +82,7 @@ async def audit_translation(request: AuditRequest):
     }
 
 @router.post("/back-translate")
-async def back_translate(request: BackTranslateRequest):
+async def back_translate(request: BackTranslateRequest, user: AuthenticatedIdentity = Depends(get_current_user)):
     """
     Back-Translation Verifier: Translates back to English & calculates drift.
     """
@@ -119,7 +121,7 @@ async def back_translate(request: BackTranslateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/back-translate/with-source")
-async def back_translate_with_source(request: AuditRequest): # Use AuditRequest as it has both
+async def back_translate_with_source(request: AuditRequest, user: AuthenticatedIdentity = Depends(get_current_user)): # Use AuditRequest as it has both
     """
     Full Verification: Back-translates and computes Semantic Drift against Source.
     """
@@ -153,26 +155,26 @@ async def back_translate_with_source(request: AuditRequest): # Use AuditRequest 
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/translate/universal")
-async def universal_translate(request: UniversalTranslateRequest):
+async def universal_translate(request: UniversalTranslateRequest, user: AuthenticatedIdentity = Depends(get_current_user)):
     """
-    Universal Translator: Any-to-Any translation.
+    Universal Translator: Any-to-Any translation with auto-detection and quality gates.
     """
+    from app.services.language_detection import detect_language, get_language_name
+
     llm = get_llm()
-    
-    lang_names = {
-        'en': 'English', 'de': 'German', 'fr': 'French', 'es': 'Spanish',
-        'it': 'Italian', 'ja': 'Japanese', 'zh': 'Chinese', 'ar': 'Arabic',
-        'pt': 'Portuguese', 'ru': 'Russian', 'hi': 'Hindi', 'bn': 'Bengali',
-        'ko': 'Korean', 'vi': 'Vietnamese', 'tr': 'Turkish', 'pl': 'Polish',
-        'nl': 'Dutch', 'th': 'Thai', 'id': 'Indonesian', 'el': 'Greek'
-    }
-    
-    src = lang_names.get(request.source_language, request.source_language)
-    tgt = lang_names.get(request.target_language, request.target_language)
+
+    # Auto-detect source language if "auto" or empty
+    source_lang = request.source_language
+    if not source_lang or source_lang == "auto":
+        detection = detect_language(request.text)
+        source_lang = detection.language
+
+    src = get_language_name(source_lang)
+    tgt = get_language_name(request.target_language)
     
     # Fetch Constraints (Black Book Rules)
     db = DatabaseService()
-    constraints = db.get_constraints(request.source_language, request.target_language)
+    constraints = db.get_constraints(source_lang, request.target_language)
     
     glossary_text = ""
     if constraints.get("glossary"):
@@ -272,7 +274,9 @@ Ensure all text is covered.""")
             score_result = ConfidenceService.calculate_score(
                 defects=violations,
                 source_text=scoring_src,
-                process_flags={"reflexion_run": False} 
+                process_flags={"reflexion_run": False},
+                source_language=source_lang,
+                target_language=request.target_language,
             )
             confidence_score = score_result.final_score
             score_breakdown = score_result.components
@@ -302,7 +306,7 @@ Ensure all text is covered.""")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/matrix")
-async def translation_matrix(request: MatrixRequest):
+async def translation_matrix(request: MatrixRequest, user: AuthenticatedIdentity = Depends(get_current_user)):
     """
     Multi-Lingual Matrix: Parallel translation to multiple languages.
     """

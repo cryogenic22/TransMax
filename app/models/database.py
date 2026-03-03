@@ -41,6 +41,9 @@ class Document(Base):
     target_language = Column(String(10), nullable=True)
     status = Column(String(50), default=DocumentStatus.UPLOADED.value, nullable=False)
     
+    # Glossary binding
+    glossary_id = Column(String, nullable=True)
+
     # TMX-011: Idempotency
     client_request_id = Column(String(255), unique=True, index=True, nullable=True)
     

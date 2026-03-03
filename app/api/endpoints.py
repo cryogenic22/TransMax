@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, BackgroundTasks, UploadFile, File, Form, Depends
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import uuid
@@ -8,6 +8,8 @@ import tempfile
 from app.services.db_service import DatabaseService
 from app.services.queue_service import QueueService
 from app.services.pdf_service import PDFService
+from app.auth.providers import AuthenticatedIdentity
+from app.auth.dependencies import get_current_user
 
 router = APIRouter()
 
@@ -47,7 +49,7 @@ class TranslationResponse(BaseModel):
 # ---------------------------------------------------------
 
 @router.post("/translate", response_model=TranslationResponse)
-async def translate_text(request: TranslationRequest, background_tasks: BackgroundTasks):
+async def translate_text(request: TranslationRequest, background_tasks: BackgroundTasks, user: AuthenticatedIdentity = Depends(get_current_user)):
     """
     Triggers the TransMax Agentic Workflow asynchronously.
     Returns immediately with PENDING status.
@@ -116,7 +118,7 @@ class QuickTranslateResponse(BaseModel):
     target_language: str
 
 @router.post("/translate/quick", response_model=QuickTranslateResponse)
-async def quick_translate(request: QuickTranslateRequest):
+async def quick_translate(request: QuickTranslateRequest, user: AuthenticatedIdentity = Depends(get_current_user)):
     """
     High-quality synchronous translation for short text snippets.
     Uses the same pharma-grade prompting and quality checks as the full pipeline.
@@ -124,20 +126,21 @@ async def quick_translate(request: QuickTranslateRequest):
     """
     from app.services.llm import get_llm
     from app.services.quality_gate import QualityGateService
+    from app.services.language_detection import detect_language, get_language_name, LANGUAGE_NAMES
     from langchain_core.messages import SystemMessage, HumanMessage
-    
+
     try:
         llm = get_llm()
         gate_service = QualityGateService()
-        
-        # Language mapping
-        lang_names = {
-            'de': 'German', 'fr': 'French', 'es': 'Spanish',
-            'it': 'Italian', 'ja': 'Japanese', 'zh': 'Chinese',
-            'ar': 'Arabic', 'pt': 'Portuguese', 'en': 'English'
-        }
-        target_name = lang_names.get(request.target_language, request.target_language)
-        source_name = lang_names.get(request.source_language, request.source_language)
+
+        # Auto-detect source language if set to "auto" or empty
+        source_lang = request.source_language
+        if not source_lang or source_lang == "auto":
+            detection = detect_language(request.text)
+            source_lang = detection.language
+
+        target_name = get_language_name(request.target_language)
+        source_name = get_language_name(source_lang)
         
         # Use the same pharma-grade prompt as the full pipeline
         system_msg = SystemMessage(content=f"""You are an expert pharmaceutical/medical translator specializing in regulatory documents.
@@ -160,10 +163,11 @@ Return ONLY the translation with no explanations or notes.""")
         
         # Run comprehensive quality checks (same as pipeline)
         violations = gate_service.check_segment(
-            request.text, 
-            translated_text, 
+            request.text,
+            translated_text,
             {},  # No glossary constraints for quick translate
-            request.target_language
+            request.target_language,
+            source_lang=source_lang
         )
         
         # Analyze violation types
@@ -212,6 +216,7 @@ async def translate_file_upload(
     file: UploadFile = File(...),
     target_language: str = Form("fr"),
     source_language: str = Form("en"),
+    user: AuthenticatedIdentity = Depends(get_current_user),
 ):
     """
     Accepts file upload (PDF, TXT), extracts text, and triggers translation pipeline.
@@ -281,7 +286,7 @@ async def translate_file_upload(
             os.unlink(tmp_path)
 
 @router.get("/translate/{job_id}")
-async def get_translation_job(job_id: str):
+async def get_translation_job(job_id: str, user: AuthenticatedIdentity = Depends(get_current_user)):
     """
     Polls the status of a translation job.
     """
