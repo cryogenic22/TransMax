@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Dict, Any, List
 from sqlalchemy import func
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.services.db_service import DatabaseService
 from app.models.models import TranslationJobQueue, QualityScorecard, AuditRecord, AuditLogEntry
@@ -43,7 +43,7 @@ class EvidenceService:
             audit_trails = session.query(AuditRecord).count()
             
             return {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "volume": {
                     "total_jobs": total_jobs,
                     "completed": completed_jobs,

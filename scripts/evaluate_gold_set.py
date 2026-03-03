@@ -4,7 +4,7 @@ import os
 import json
 import uuid
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Add project root
 sys.path.append(os.getcwd())
@@ -64,7 +64,7 @@ def evaluate_gold_set(set_id: str):
     # 4. Generate Report
     report = {
         "set_id": set_id,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "exact_match": exact_match,
         "drift_score_vs_ref": drift_score, # Should be 100
         "defects_count": len(defects),

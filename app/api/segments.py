@@ -2,7 +2,7 @@
 TransMax Platform v2.0 - Segment API Router
 Operations for segments: read, update, reverse translate, change log.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -84,7 +84,7 @@ async def update_segment(
     original_text = seg.translated_text or ""
     seg.translated_text = update.translated_text
     seg.status = SegmentStatus.EDITED
-    seg.updated_at = datetime.utcnow()
+    seg.updated_at = datetime.now(timezone.utc)
     
     db.commit()
     db.refresh(seg)

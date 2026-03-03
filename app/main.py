@@ -105,6 +105,10 @@ app.include_router(tools_router, prefix="/api/tools", tags=["tools"])
 from app.api.knowledge import router as knowledge_router
 app.include_router(knowledge_router, prefix="/api/knowledge", tags=["knowledge"])
 
+# Dashboard Stats
+from app.api.dashboard import router as dashboard_router
+app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize database on startup."""

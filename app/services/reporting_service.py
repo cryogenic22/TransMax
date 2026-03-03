@@ -1,5 +1,5 @@
 import io
-from datetime import datetime
+from datetime import datetime, timezone
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import inch
@@ -46,7 +46,7 @@ class ReportingService:
         c.setFont("Helvetica", 12)
         c.drawString(1 * inch, y, f"Job ID: {doc.id}")
         y -= 0.25 * inch
-        c.drawString(1 * inch, y, f"Date: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}")
+        c.drawString(1 * inch, y, f"Date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
         y -= 0.25 * inch
         c.drawString(1 * inch, y, f"Source Language: {doc.source_language.upper()}")
         y -= 0.25 * inch

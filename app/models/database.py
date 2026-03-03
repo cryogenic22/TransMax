@@ -4,7 +4,7 @@ SQLAlchemy ORM models for Document, Segment, and ChangeLog.
 Compatible with SQLAlchemy 2.0+ using Mapped[] annotations.
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from sqlalchemy import Column, String, Text, Float, Integer, DateTime, ForeignKey, JSON, Enum as SQLEnum
 from sqlalchemy.orm import relationship, declarative_base
@@ -60,8 +60,8 @@ class Document(Base):
     confidence_score = Column(Float, nullable=True)  # Average of all segments
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships (use string reference to avoid circular import issues)
     segments = relationship("Segment", back_populates="document", cascade="all, delete-orphan")
@@ -100,8 +100,8 @@ class Segment(Base):
     gate_results = Column(JSON, nullable=True)  # { units_ok, negation_ok, pii_redacted, ... }
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships
     document = relationship("Document", back_populates="segments")
@@ -130,7 +130,7 @@ class ChangeLog(Base):
     user_name = Column(String(255), nullable=True)
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships
     segment = relationship("Segment", back_populates="change_logs")

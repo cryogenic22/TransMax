@@ -5,7 +5,7 @@ Only created when AUTH_MODE != 'none'. Uses the same Base as other models
 so create_all() picks it up automatically when the model is imported.
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, String, Boolean, DateTime
 
 from app.models.database import Base
@@ -24,8 +24,8 @@ class User(Base):
     external_id = Column(String(255), nullable=True, index=True)  # SSO subject ID
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     last_login_at = Column(DateTime, nullable=True)
 
     def __repr__(self):

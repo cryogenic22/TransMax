@@ -103,7 +103,7 @@ async def _provision_sso_user(external_id: str, email: str, name: str,
     """Create or update a user from SSO login."""
     from app.core.database import SessionLocal
     from app.models.auth import User
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     db = SessionLocal()
     try:
@@ -111,7 +111,7 @@ async def _provision_sso_user(external_id: str, email: str, name: str,
         if user:
             user.email = email
             user.name = name
-            user.last_login_at = datetime.utcnow()
+            user.last_login_at = datetime.now(timezone.utc)
             db.commit()
             db.refresh(user)
             return user
