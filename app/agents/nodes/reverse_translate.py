@@ -22,7 +22,7 @@ async def reverse_translate_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     # Use correct state variable names that match TransMaxState
     target_lang = state.get("target_language", "de")  # The language we translated to (e.g., German)
-    source_lang = "en"  # Always translate back to English (original source)
+    source_lang = state.get("source_language", "en")  # Back-translate to actual source language
     
     segments = state.get("segments", [])
     if not segments:

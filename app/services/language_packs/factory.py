@@ -4,6 +4,9 @@ from .japanese import JapanesePack
 from .french import FrenchPack
 from .german import GermanPack
 from .spanish import SpanishPack
+from .chinese import ChinesePack
+from .korean import KoreanPack
+from .portuguese import PortuguesePack
 
 import re
 from typing import List, Dict, Any
@@ -160,23 +163,29 @@ class LanguagePackFactory:
         "de": GermanPack(),
         "es": SpanishPack(),
         
-        # Tier 1 Variants & Extended
+        # Tier 1: Deep Quality Packs (CJK)
+        "zh": ChinesePack("simplified"),
+        "zh-cn": ChinesePack("simplified"),
+        "zh-tw": ChinesePack("traditional"),
+        "ko": KoreanPack(),
+
+        # Tier 1: Deep Quality Packs (European)
+        "pt": PortuguesePack("brazilian"),
+        "pt-br": PortuguesePack("brazilian"),
+        "pt-pt": PortuguesePack("european"),
+
+        # Tier 1 Variants
         "fr-ca": GenericLanguagePack("Use Canadian French (fr-CA) terminology and conventions."),
-        "zh-tw": GenericLanguagePack("ENSURE HIGH RIGOR: Use formal Traditional Chinese (zh-TW) suitable for professional/medical contexts in Taiwan."),
-        
-        # Tier 1 (Pending Deep Pack -> Uses Generic for now)
+
+        # Tier 1 (Generic fallback)
         "en": GenericLanguagePack(),
-        "zh": GenericLanguagePack("ENSURE HIGH RIGOR: Use formal Simplified Chinese (zh-CN) for professional/medical contexts."),
-        "zh-cn": GenericLanguagePack("ENSURE HIGH RIGOR: Use formal Simplified Chinese (zh-CN) for professional/medical contexts."),
-        "pt": GenericLanguagePack(),
-        "ru": GenericLanguagePack(),
-        "it": GenericLanguagePack(),
-        
+        "ru": GenericLanguagePack("ENSURE HIGH RIGOR: Use formal Russian suitable for medical/pharmaceutical regulatory contexts."),
+        "it": GenericLanguagePack("ENSURE HIGH RIGOR: Use formal Italian suitable for pharmaceutical documents per AIFA guidelines."),
+
         # Tier 2: Generic Support (Universal Gates)
-        "hi": GenericLanguagePack("ENSURE HIGH RIGOR: Use formal, grammatically precise Hindi suitable for professional/medical contexts. Avoid colloquialisms."), 
+        "hi": GenericLanguagePack("ENSURE HIGH RIGOR: Use formal, grammatically precise Hindi suitable for professional/medical contexts. Avoid colloquialisms."),
         "ta": GenericLanguagePack("ENSURE HIGH RIGOR: Use formal, grammatically precise Tamil suitable for professional/medical contexts. Avoid colloquialisms."),
         "bn": GenericLanguagePack(), # Bengali
-        "ko": GenericLanguagePack("ENSURE HIGH RIGOR: Use formal (Honorific/Polite) Korean suitable for professional/medical contexts."),
         "vi": GenericLanguagePack(), # Vietnamese
         "tr": GenericLanguagePack(), # Turkish
         "pl": GenericLanguagePack(), # Polish

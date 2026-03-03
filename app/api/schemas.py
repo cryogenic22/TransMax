@@ -36,6 +36,7 @@ class DocumentUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     target_language: Optional[str] = Field(None, max_length=10)
     status: Optional[DocumentStatus] = None
+    glossary_id: Optional[str] = None
 
 class DocumentResponse(BaseModel):
     """Schema for document responses."""
@@ -49,6 +50,7 @@ class DocumentResponse(BaseModel):
     page_count: Optional[int]
     word_count: Optional[int]
     confidence_score: Optional[float]
+    glossary_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     segment_count: Optional[int] = None

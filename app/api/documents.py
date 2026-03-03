@@ -8,6 +8,7 @@ import aiofiles
 from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -18,6 +19,9 @@ from app.api.schemas import (
     TranslationJobRequest, TranslationJobResponse
 )
 from app.services.pdf_service import PDFService
+from app.auth.providers import AuthenticatedIdentity
+from app.auth.dependencies import get_current_user, require_permission
+from app.auth.permissions import Permission
 
 router = APIRouter(prefix="/api/documents", tags=["Documents"])
 
@@ -42,6 +46,7 @@ def document_to_response(doc: Document, db: Session) -> DocumentResponse:
         page_count=doc.page_count,
         word_count=doc.word_count,
         confidence_score=doc.confidence_score,
+        glossary_id=doc.glossary_id,
         created_at=doc.created_at,
         updated_at=doc.updated_at,
         segment_count=segment_count
@@ -60,7 +65,9 @@ async def create_document(
     name: Optional[str] = None,
     source_language: str = "en",
     target_language: Optional[str] = None,
-    db: Session = Depends(get_db)
+    glossary_id: Optional[str] = Query(None, description="Optional glossary ID to bind"),
+    db: Session = Depends(get_db),
+    user: AuthenticatedIdentity = Depends(require_permission(Permission.DOCUMENT_CREATE)),
 ):
     """
     Upload a new document, digitize it (extract text segments), and store in DB.
@@ -88,11 +95,27 @@ async def create_document(
             # For now, we assume PDFService is synchronous.
             # Ideally: await run_in_threadpool(ingest_service.extract_text, file_path)
             blocks = ingest_service.extract_text(file_path)
+        elif file_ext == ".docx":
+            from docx import Document as DocxDocument
+            docx_doc = DocxDocument(file_path)
+            blocks = []
+            for para in docx_doc.paragraphs:
+                text = para.text.strip()
+                if text:
+                    blocks.append({"text": text, "type": "Paragraph"})
+            # Also extract text from table cells
+            for table in docx_doc.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        text = cell.text.strip()
+                        if text:
+                            blocks.append({"text": text, "type": "TableCell"})
         else:
-            # Placeholder for DOCX/TXT - minimal fallback
+            # TXT fallback - split by paragraphs (double newline)
             async with aiofiles.open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = await f.read()
-                blocks = [{"text": content, "type": "PlainText"}]
+            paragraphs = [p.strip() for p in content.split("\n\n") if p.strip()]
+            blocks = [{"text": p, "type": "PlainText"} for p in paragraphs] if paragraphs else [{"text": content, "type": "PlainText"}]
     except Exception as e:
         print(f"Ingestion failed: {e}")
         # Non-blocking failure? Or fail request?
@@ -111,6 +134,7 @@ async def create_document(
         name=name or file.filename,
         source_language=source_language,
         target_language=target_language,
+        glossary_id=glossary_id,
         status=DocumentStatus.UPLOADED.value,
         file_path=file_path,
         file_type=file_ext.replace(".", ""),
@@ -147,7 +171,8 @@ async def list_documents(
     page_size: int = Query(20, ge=1, le=100),
     status: Optional[DocumentStatus] = None,
     search: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: AuthenticatedIdentity = Depends(get_current_user),
 ):
     """
     List all documents with pagination and filters.
@@ -171,7 +196,7 @@ async def list_documents(
 
 
 @router.get("/{doc_id}", response_model=DocumentResponse)
-async def get_document(doc_id: str, db: Session = Depends(get_db)):
+async def get_document(doc_id: str, db: Session = Depends(get_db), user: AuthenticatedIdentity = Depends(get_current_user)):
     """
     Get a single document by ID.
     """
@@ -185,7 +210,9 @@ async def get_document(doc_id: str, db: Session = Depends(get_db)):
 async def update_document(
     doc_id: str,
     update: DocumentUpdate,
-    db: Session = Depends(get_db)
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    user: AuthenticatedIdentity = Depends(require_permission(Permission.DOCUMENT_UPDATE)),
 ):
     """
     Update a document's metadata.
@@ -217,7 +244,7 @@ async def update_document(
 
 
 @router.get("/{doc_id}/audit-export")
-async def export_audit_certificate(doc_id: str):
+async def export_audit_certificate(doc_id: str, user: AuthenticatedIdentity = Depends(require_permission(Permission.AUDIT_EXPORT))):
     """
     TMX-022: Download Audit Certificate.
     """
@@ -232,7 +259,7 @@ async def export_audit_certificate(doc_id: str):
     })
 
 @router.delete("/{doc_id}", status_code=204)
-async def delete_document(doc_id: str, db: Session = Depends(get_db)):
+async def delete_document(doc_id: str, db: Session = Depends(get_db), user: AuthenticatedIdentity = Depends(require_permission(Permission.DOCUMENT_DELETE))):
     """
     Delete a document and its associated file.
     """
@@ -254,7 +281,8 @@ async def translate_document(
     doc_id: str,
     request: TranslationJobRequest,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: AuthenticatedIdentity = Depends(require_permission(Permission.TRANSLATE_EXECUTE)),
 ):
     """
     Trigger a translation job for a document.
@@ -269,7 +297,7 @@ async def translate_document(
     
     # Update document
     doc.target_language = request.target_language
-    doc.status = DocumentStatus.PROCESSING
+    doc.status = DocumentStatus.PROCESSING.value
     doc.updated_at = datetime.utcnow()
     db.commit()
     
@@ -287,4 +315,61 @@ async def translate_document(
         document_id=doc_id,
         status="processing",
         message=f"Translation job started for {request.target_language}{segment_info}"
+    )
+
+
+@router.get("/{doc_id}/download-translated")
+async def download_translated(
+    doc_id: str,
+    db: Session = Depends(get_db),
+    user: AuthenticatedIdentity = Depends(require_permission(Permission.DOCUMENT_READ)),
+):
+    """
+    Download the translated document in its original format.
+    DOCX -> DOCX (format-preserving), TXT -> TXT, PDF -> DOCX (fallback).
+    """
+    doc = db.query(Document).filter(Document.id == doc_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    valid_statuses = {DocumentStatus.TRANSLATED.value, DocumentStatus.IN_REVIEW.value, DocumentStatus.APPROVED.value}
+    if doc.status not in valid_statuses:
+        raise HTTPException(status_code=400, detail="Document has not been translated yet")
+
+    # Get translated segments in order
+    segments = (
+        db.query(Segment)
+        .filter(Segment.document_id == doc_id)
+        .order_by(Segment.order_index)
+        .all()
+    )
+    seg_dicts = [
+        {
+            "order_index": s.order_index,
+            "source_text": s.source_text,
+            "translated_text": s.translated_text,
+        }
+        for s in segments
+    ]
+
+    from app.services.document_export import DocumentExportService
+    export_service = DocumentExportService()
+
+    doc_name_base = os.path.splitext(doc.name)[0]
+
+    if doc.file_type == "txt":
+        buffer = export_service.export_txt(seg_dicts)
+        filename = f"{doc_name_base}_translated.txt"
+        media_type = "text/plain"
+    else:
+        # DOCX or PDF -> DOCX
+        original_path = doc.file_path if doc.file_type == "docx" else None
+        buffer = export_service.export_docx(original_path or "", seg_dicts, force_new=(doc.file_type == "pdf"))
+        filename = f"{doc_name_base}_translated.docx"
+        media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+    return StreamingResponse(
+        buffer,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

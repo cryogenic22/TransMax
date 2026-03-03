@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from app.api.endpoints import router as api_router
 from app.api.documents import router as documents_router
 from app.api.segments import router as segments_router
+from app.api.auth import router as auth_router
 from app.core.config import settings
 from app.core.database import init_db
 from app.api.v1.translations import router as translations_v1_router
@@ -16,12 +17,16 @@ from fastapi import Request
 # CORS origins - centralized configuration
 CORS_ORIGINS = [
     "http://localhost:3000",
-    "http://localhost:3001", 
+    "http://localhost:3001",
+    "http://localhost:3009",
     "http://localhost:3060",
     "http://localhost:8078",
+    "http://localhost:8079",
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:3009",
     "http://127.0.0.1:3060",
     "http://127.0.0.1:8078",
+    "http://127.0.0.1:8079",
 ]
 
 class ObservabilityMiddleware(BaseHTTPMiddleware):
@@ -78,6 +83,9 @@ async def global_exception_handler(request: Request, exc: Exception):
         headers=headers,
     )
 
+# Auth router (always mounted; endpoints self-gate based on AUTH_MODE)
+app.include_router(auth_router)
+
 # Legacy translation router
 app.include_router(api_router, prefix=settings.api_prefix)
 
@@ -101,6 +109,12 @@ app.include_router(knowledge_router, prefix="/api/knowledge", tags=["knowledge"]
 async def startup_event():
     """Initialize database on startup."""
     init_db()
+    # Create auth tables only when auth is enabled (not in no-auth mode)
+    if getattr(settings, "auth_mode", "none") != "none":
+        from app.models.auth import User  # noqa: F401 — registers model with Base
+        from app.models.database import Base
+        from app.core.database import engine
+        Base.metadata.create_all(bind=engine)
 
 @app.get("/health")
 async def health_check():

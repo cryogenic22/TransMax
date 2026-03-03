@@ -10,10 +10,13 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.database import Document, Segment, ChangeLog, SegmentStatus
 from app.api.schemas import (
-    SegmentResponse, SegmentUpdate, 
+    SegmentResponse, SegmentUpdate,
     SegmentReverseResponse,
     ChangeLogResponse
 )
+from app.auth.providers import AuthenticatedIdentity
+from app.auth.dependencies import get_current_user, require_permission
+from app.auth.permissions import Permission
 
 router = APIRouter(prefix="/api", tags=["Segments"])
 
@@ -39,7 +42,7 @@ def segment_to_response(seg: Segment) -> SegmentResponse:
 # --- Endpoints ---
 
 @router.get("/documents/{doc_id}/segments", response_model=List[SegmentResponse])
-async def list_segments(doc_id: str, db: Session = Depends(get_db)):
+async def list_segments(doc_id: str, db: Session = Depends(get_db), user: AuthenticatedIdentity = Depends(get_current_user)):
     """
     List all segments for a document.
     """
@@ -52,7 +55,7 @@ async def list_segments(doc_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/segments/{segment_id}", response_model=SegmentResponse)
-async def get_segment(segment_id: str, db: Session = Depends(get_db)):
+async def get_segment(segment_id: str, db: Session = Depends(get_db), user: AuthenticatedIdentity = Depends(get_current_user)):
     """
     Get a single segment by ID.
     """
@@ -66,7 +69,8 @@ async def get_segment(segment_id: str, db: Session = Depends(get_db)):
 async def update_segment(
     segment_id: str,
     update: SegmentUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: AuthenticatedIdentity = Depends(require_permission(Permission.SEGMENT_EDIT)),
 ):
     """
     Update a segment's translation. Requires a reason for the change.
@@ -95,7 +99,8 @@ async def update_segment(
             original=original_text,
             new=update.translated_text,
             reason=update.reason,
-            user_id="api_user" # Placeholder until Auth
+            user_id=user.user_id,
+            user_name=user.name
         )
     except Exception as e:
         print(f"Failed to write ChangeLog: {e}")
@@ -107,7 +112,8 @@ async def update_segment(
 @router.post("/segments/{segment_id}/reverse", response_model=SegmentReverseResponse)
 async def reverse_translate_segment(
     segment_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user: AuthenticatedIdentity = Depends(get_current_user),
 ):
     """
     Perform reverse translation on a segment to verify accuracy.
@@ -133,7 +139,7 @@ async def reverse_translate_segment(
 
 
 @router.get("/segments/{segment_id}/changelog", response_model=List[ChangeLogResponse])
-async def get_segment_changelog(segment_id: str, db: Session = Depends(get_db)):
+async def get_segment_changelog(segment_id: str, db: Session = Depends(get_db), user: AuthenticatedIdentity = Depends(get_current_user)):
     """
     Get the change history for a segment.
     """
@@ -159,7 +165,7 @@ async def get_segment_changelog(segment_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/documents/{doc_id}/audit", response_model=List[ChangeLogResponse])
-async def get_document_audit_trail(doc_id: str, db: Session = Depends(get_db)):
+async def get_document_audit_trail(doc_id: str, db: Session = Depends(get_db), user: AuthenticatedIdentity = Depends(get_current_user)):
     """
     Get the full audit trail for a document (all segment changes).
     """

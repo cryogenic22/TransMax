@@ -648,7 +648,7 @@ class DatabaseService:
         finally:
             db.close()
 
-    def log_segment_change(self, segment_id: str, original: str, new: str, reason: str, user_id: str = "system"):
+    def log_segment_change(self, segment_id: str, original: str, new: str, reason: str, user_id: str = "system", user_name: str = "SystemUser"):
         """
         TMX-062: Log manual segment changes.
         """
@@ -663,7 +663,7 @@ class DatabaseService:
                 new_text=new,
                 reason=reason,
                 user_id=user_id,
-                user_name="SystemUser" # Placeholder or fetch user
+                user_name=user_name
             )
             db.add(log)
             # Commit log first

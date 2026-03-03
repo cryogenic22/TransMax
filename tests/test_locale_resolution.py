@@ -1,6 +1,6 @@
 
 import pytest
-from app.services.language_packs.factory import LanguagePackFactory, DefaultPack
+from app.services.language_packs.factory import LanguagePackFactory, GenericLanguagePack as DefaultPack
 from app.services.language_packs.base import BaseLanguagePack
 
 # Mock Packs for Testing
