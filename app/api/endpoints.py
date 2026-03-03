@@ -332,10 +332,49 @@ async def get_translation_job(job_id: str, user: AuthenticatedIdentity = Depends
 @router.get("/audit/{audit_id}")
 async def get_audit_log(audit_id: str):
     """
-    Retrieves the structured audit log.
+    Retrieves the structured audit log including chain entries and integrity status.
     """
-    # TODO: Fetch from DB using audit_id
-    return {"audit_id": audit_id, "status": "Not implemented in prototype"}
+    from app.services.audit_service import AuditService
+    from app.services.db_service import DatabaseService
+
+    db_service = DatabaseService()
+    session = db_service.get_session()
+    try:
+        from app.models.models import AuditRecord, AuditLogEntry
+        record = session.query(AuditRecord).filter(AuditRecord.audit_id == audit_id).first()
+        if not record:
+            raise HTTPException(status_code=404, detail="Audit record not found")
+
+        entries = (
+            session.query(AuditLogEntry)
+            .filter(AuditLogEntry.audit_id == audit_id)
+            .order_by(AuditLogEntry.sequence_index)
+            .all()
+        )
+
+        integrity = AuditService(db_service).verify_chain_integrity(audit_id)
+
+        return {
+            "audit_id": audit_id,
+            "job_id": record.job_id,
+            "final_decision": record.final_decision,
+            "chain_head_hash": record.chain_head_hash,
+            "is_tampered": not integrity.get("valid", True),
+            "integrity": integrity,
+            "created_at": record.created_at.isoformat() if record.created_at else None,
+            "entries": [
+                {
+                    "sequence_index": e.sequence_index,
+                    "event_type": e.event_type,
+                    "timestamp": e.timestamp.isoformat() if e.timestamp else None,
+                    "entry_hash": e.entry_hash,
+                    "payload": e.payload,
+                }
+                for e in entries
+            ],
+        }
+    finally:
+        session.close()
 
 @router.get("/knowledge/rules")
 async def list_knowledge_rules(status: str = "ACTIVE"):

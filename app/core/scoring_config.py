@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 class ScoringWeights(BaseModel):
     """
@@ -29,8 +29,7 @@ class ScoringWeights(BaseModel):
     penalty_process_no_reflexion: float = Field(5.0, description="Skipped self-correction step")
     penalty_process_no_audit: float = Field(10.0, description="Audit log incomplete")
 
-    class Config:
-        frozen = True
+    model_config = ConfigDict(frozen=True)
 
 # Default instance (Singleton-ish)
 SCORING_CONFIG = ScoringWeights()

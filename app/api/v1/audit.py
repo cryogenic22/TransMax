@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.models import AuditRecord
 from app.schemas.api_v1 import AuditRecordResponse
+from app.services.audit_service import AuditService
 
 router = APIRouter()
 
@@ -33,3 +34,23 @@ def get_audit_record(audit_id: str, db: Session = Depends(get_db)):
         full_payload=record.full_payload,
         created_at=record.created_at
     )
+
+
+@router.get("/{audit_id}/verify")
+def verify_audit_integrity(audit_id: str, db: Session = Depends(get_db)):
+    """
+    TMX-020: Verify tamper-evident hash chain integrity for an audit trail.
+    Returns detailed integrity report including broken link location if tampered.
+    """
+    record = db.query(AuditRecord).filter(AuditRecord.audit_id == audit_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Audit record not found")
+
+    report = AuditService().verify_chain_integrity(audit_id)
+    return {
+        "audit_id": audit_id,
+        "job_id": record.job_id,
+        "is_tampered": not report.get("valid", True),
+        "chain_head_hash": record.chain_head_hash,
+        **report,
+    }
