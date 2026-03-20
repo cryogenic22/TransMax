@@ -44,9 +44,12 @@ ENV PYTHONUNBUFFERED=1
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 USER appuser
 
+# Default port (Railway overrides via $PORT)
+ENV PORT=8000
+
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:${PORT}/health || exit 1
 
 # Run Application with Env Validation
-CMD ["/bin/bash", "-c", "python scripts/check_env.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["/bin/bash", "-c", "python scripts/check_env.py && uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
