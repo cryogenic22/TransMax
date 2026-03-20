@@ -14,11 +14,11 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8001
     
-    # Supabase
-    supabase_url: str
-    supabase_key: str
-    supabase_service_key: str
-    database_url: str
+    # Supabase (optional — only needed if using Supabase as backend)
+    supabase_url: str = ""
+    supabase_key: str = ""
+    supabase_service_key: str = ""
+    database_url: str = "sqlite:///./transmax.db"
     
     # Redis
     redis_url: str = "redis://localhost:6379/1"
@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     digitization_service_url: str = "http://localhost:8000/api/v1"
     
     # Security
-    secret_key: str
+    secret_key: str = "change-me-in-production"
     access_token_expire_minutes: int = 30
 
     # Auth — fully optional, defaults to no-auth for dev/demo

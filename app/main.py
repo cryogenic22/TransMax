@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -28,6 +29,11 @@ CORS_ORIGINS = [
     "http://127.0.0.1:8078",
     "http://127.0.0.1:8079",
 ]
+
+# Allow Railway-deployed frontend origins via env var
+_extra_origins = os.getenv("CORS_ORIGINS", "")
+if _extra_origins:
+    CORS_ORIGINS.extend([o.strip() for o in _extra_origins.split(",") if o.strip()])
 
 class ObservabilityMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
