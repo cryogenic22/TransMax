@@ -59,6 +59,14 @@ def init_db():
     Initialize the database by creating all tables.
     """
     try:
+        # Enable pgvector extension on PostgreSQL (no-op if already enabled)
+        if "postgresql" in DATABASE_URL:
+            from sqlalchemy import text
+            with engine.connect() as conn:
+                conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+                conn.commit()
+                print("pgvector extension enabled.")
+
         from app.models.database import Base
         Base.metadata.create_all(bind=engine)
         print("Database tables created successfully.")
