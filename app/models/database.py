@@ -58,6 +58,10 @@ class Document(Base):
     
     # Scores
     confidence_score = Column(Float, nullable=True)  # Average of all segments
+
+    # Financial metrics (Feature 5)
+    total_tokens = Column(Integer, nullable=True, default=0)
+    total_cost_usd = Column(Float, nullable=True, default=0.0)
     
     # Timestamps
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
@@ -96,6 +100,10 @@ class Segment(Base):
     reverse_translation = Column(Text, nullable=True) # Back-translation
     validation_score = Column(Float, nullable=True)   # Semantic Similarity (0-1)
     
+    # DOCX element tracking
+    element_type = Column(String(50), nullable=True)  # Paragraph, TableCell, Header, Footer, Footnote, Endnote, TextBox
+    element_meta = Column(JSON, nullable=True)  # e.g. {"section_idx": 0, "variant": "default"}
+
     # Gate results from the agent
     gate_results = Column(JSON, nullable=True)  # { units_ok, negation_ok, pii_redacted, ... }
     
@@ -137,6 +145,30 @@ class ChangeLog(Base):
 
     def __repr__(self):
         return f"<ChangeLog(id={self.id}, segment={self.segment_id}, created={self.created_at})>"
+
+
+class DeletionRecord(Base):
+    """
+    Permanent audit record created before a document is deleted.
+    Captures a snapshot of the document metadata for forensic purposes.
+    """
+    __tablename__ = "deletion_records"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    document_id = Column(String(36), nullable=False, index=True)
+    document_name = Column(String(255), nullable=False)
+    file_type = Column(String(50), nullable=True)
+    source_language = Column(String(10), nullable=True)
+    target_language = Column(String(10), nullable=True)
+    segment_count = Column(Integer, nullable=False, default=0)
+    status_before_delete = Column(String(50), nullable=False)
+    deleted_by = Column(String(36), nullable=True)
+    reason = Column(Text, nullable=True)
+    deleted_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    metadata_snapshot = Column(JSON, nullable=True)
+
+    def __repr__(self):
+        return f"<DeletionRecord(id={self.id}, doc={self.document_id}, deleted_at={self.deleted_at})>"
 
 
 # --- Database Setup ---
