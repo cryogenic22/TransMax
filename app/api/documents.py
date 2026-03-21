@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.core.database import get_db
-from app.models.database import Document, Segment, DocumentStatus, SegmentStatus
+from app.models.database import Document, Segment, DeletionRecord, DocumentStatus, SegmentStatus
 from app.api.schemas import (
     DocumentUpdate, DocumentResponse, DocumentListResponse,
     TranslationJobRequest, TranslationJobResponse
@@ -26,7 +26,8 @@ from app.auth.permissions import Permission
 router = APIRouter(prefix="/api/documents", tags=["Documents"])
 
 # --- Constants ---
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "uploads")
+# Use /tmp/uploads in containers (writable by non-root), fallback to project-relative locally
+UPLOAD_DIR = os.environ.get("UPLOAD_DIR", os.path.join(os.path.dirname(__file__), "..", "..", "uploads"))
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
@@ -47,6 +48,8 @@ def document_to_response(doc: Document, db: Session) -> DocumentResponse:
         word_count=doc.word_count,
         confidence_score=doc.confidence_score,
         glossary_id=doc.glossary_id,
+        total_tokens=doc.total_tokens,
+        total_cost_usd=doc.total_cost_usd,
         created_at=doc.created_at,
         updated_at=doc.updated_at,
         segment_count=segment_count
@@ -96,20 +99,8 @@ async def create_document(
             # Ideally: await run_in_threadpool(ingest_service.extract_text, file_path)
             blocks = ingest_service.extract_text(file_path)
         elif file_ext == ".docx":
-            from docx import Document as DocxDocument
-            docx_doc = DocxDocument(file_path)
-            blocks = []
-            for para in docx_doc.paragraphs:
-                text = para.text.strip()
-                if text:
-                    blocks.append({"text": text, "type": "Paragraph"})
-            # Also extract text from table cells
-            for table in docx_doc.tables:
-                for row in table.rows:
-                    for cell in row.cells:
-                        text = cell.text.strip()
-                        if text:
-                            blocks.append({"text": text, "type": "TableCell"})
+            from app.services.docx_ingestion import DocxIngestionService
+            blocks = DocxIngestionService().extract_blocks(file_path)
         else:
             # TXT fallback - split by paragraphs (double newline)
             async with aiofiles.open(file_path, "r", encoding="utf-8", errors="ignore") as f:
@@ -154,6 +145,8 @@ async def create_document(
             document_id=doc_id,
             order_index=idx + 1,
             source_text=clean_text,
+            element_type=block.get("type"),
+            element_meta=block.get("meta"),
             status=SegmentStatus.PENDING,
             gate_results={} # Empty initially
         )
@@ -258,22 +251,141 @@ async def export_audit_certificate(doc_id: str, user: AuthenticatedIdentity = De
         "Content-Disposition": f"attachment; filename=audit_cert_{doc_id}.txt"
     })
 
-@router.delete("/{doc_id}", status_code=204)
-async def delete_document(doc_id: str, db: Session = Depends(get_db), user: AuthenticatedIdentity = Depends(require_permission(Permission.DOCUMENT_DELETE))):
+@router.get("/deletions")
+async def list_deletions(
+    db: Session = Depends(get_db),
+    user: AuthenticatedIdentity = Depends(require_permission(Permission.AUDIT_READ)),
+):
     """
-    Delete a document and its associated file.
+    List all deletion audit records, most recent first.
+    """
+    records = db.query(DeletionRecord).order_by(DeletionRecord.deleted_at.desc()).all()
+    return [
+        {
+            "id": r.id,
+            "document_id": r.document_id,
+            "document_name": r.document_name,
+            "file_type": r.file_type,
+            "source_language": r.source_language,
+            "target_language": r.target_language,
+            "segment_count": r.segment_count,
+            "status_before_delete": r.status_before_delete,
+            "deleted_by": r.deleted_by,
+            "reason": r.reason,
+            "deleted_at": r.deleted_at.isoformat() if r.deleted_at else None,
+            "metadata_snapshot": r.metadata_snapshot,
+        }
+        for r in records
+    ]
+
+
+@router.delete("/{doc_id}", status_code=200)
+async def delete_document(
+    doc_id: str,
+    reason: Optional[str] = Query(None, description="Reason for deletion"),
+    db: Session = Depends(get_db),
+    user: AuthenticatedIdentity = Depends(require_permission(Permission.DOCUMENT_DELETE)),
+):
+    """
+    Delete a document and its associated file, creating an audit record first.
     """
     doc = db.query(Document).filter(Document.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    
+
+    # Count segments before deletion
+    segment_count = db.query(func.count(Segment.id)).filter(Segment.document_id == doc_id).scalar() or 0
+
+    # Create deletion audit record with full metadata snapshot
+    deletion_record = DeletionRecord(
+        document_id=doc.id,
+        document_name=doc.name,
+        file_type=doc.file_type,
+        source_language=doc.source_language,
+        target_language=doc.target_language,
+        segment_count=segment_count,
+        status_before_delete=doc.status,
+        deleted_by=user.user_id if user else None,
+        reason=reason,
+        metadata_snapshot={
+            "id": doc.id,
+            "name": doc.name,
+            "file_type": doc.file_type,
+            "source_language": doc.source_language,
+            "target_language": doc.target_language,
+            "status": doc.status,
+            "glossary_id": doc.glossary_id,
+            "page_count": doc.page_count,
+            "word_count": doc.word_count,
+            "confidence_score": doc.confidence_score,
+            "total_tokens": doc.total_tokens,
+            "total_cost_usd": doc.total_cost_usd,
+            "created_at": doc.created_at.isoformat() if doc.created_at else None,
+            "updated_at": doc.updated_at.isoformat() if doc.updated_at else None,
+        },
+    )
+    db.add(deletion_record)
+
     # Delete file if exists
     if doc.file_path and os.path.exists(doc.file_path):
         os.remove(doc.file_path)
-    
+
     db.delete(doc)
     db.commit()
-    return None
+
+    return {"deletion_id": deletion_record.id, "document_name": doc.name}
+
+
+@router.get("/{doc_id}/estimate")
+async def estimate_translation(
+    doc_id: str,
+    db: Session = Depends(get_db),
+    user: AuthenticatedIdentity = Depends(get_current_user),
+):
+    """
+    Pre-translation cost/time estimate for a document.
+    """
+    import math
+
+    doc = db.query(Document).filter(Document.id == doc_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    segment_count = db.query(func.count(Segment.id)).filter(Segment.document_id == doc_id).scalar() or 0
+    word_count = doc.word_count or 0
+
+    batch_size = 5
+    translation_batches = math.ceil(segment_count / batch_size) if segment_count > 0 else 0
+    reverse_calls = segment_count  # One reverse-translate call per segment
+    total_llm_calls = translation_batches + reverse_calls
+
+    # Token estimate: ~1.3 tokens per word for input, ~1.5x for output
+    est_input_tokens = int(word_count * 1.3 * 2)  # system + user prompt overhead
+    est_output_tokens = int(word_count * 1.5)
+    estimated_total_tokens = est_input_tokens + est_output_tokens
+
+    # Cost: gpt-4o-mini pricing ($0.15/1M input, $0.60/1M output)
+    estimated_cost_usd = round(
+        (est_input_tokens * 0.00000015) + (est_output_tokens * 0.0000006), 6
+    )
+
+    # Time estimate: ~3s per batch (concurrent), ~1s per reverse call (batched)
+    max_concurrent = 4
+    estimated_seconds = (
+        math.ceil(translation_batches / max_concurrent) * 3
+        + math.ceil(reverse_calls / max_concurrent) * 1
+    )
+
+    return {
+        "segment_count": segment_count,
+        "word_count": word_count,
+        "translation_batches": translation_batches,
+        "total_llm_calls": total_llm_calls,
+        "estimated_total_tokens": estimated_total_tokens,
+        "estimated_cost_usd": estimated_cost_usd,
+        "estimated_seconds": estimated_seconds,
+        "model": "gpt-4o-mini",
+    }
 
 
 @router.post("/{doc_id}/translate", response_model=TranslationJobResponse)
@@ -348,6 +460,8 @@ async def download_translated(
             "order_index": s.order_index,
             "source_text": s.source_text,
             "translated_text": s.translated_text,
+            "element_type": s.element_type,
+            "element_meta": s.element_meta,
         }
         for s in segments
     ]

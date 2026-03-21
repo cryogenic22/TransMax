@@ -40,6 +40,10 @@ COPY . .
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 
+# Create writable uploads dir before switching to non-root
+RUN mkdir -p /app/uploads && chmod 777 /app/uploads
+ENV UPLOAD_DIR=/app/uploads
+
 # Security: Non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 USER appuser

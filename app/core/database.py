@@ -54,20 +54,39 @@ def get_db_session():
         db.close()
 
 
+def _enable_pgvector():
+    """Try to enable pgvector extension. Returns True if available."""
+    if "postgresql" not in DATABASE_URL:
+        return False
+    try:
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            conn.commit()
+        print("pgvector extension enabled.")
+        return True
+    except Exception as e:
+        print(f"WARNING: pgvector extension not available ({e}). Embedding columns will be skipped.")
+        return False
+
+
 def init_db():
     """
     Initialize the database by creating all tables.
     """
     try:
-        # Enable pgvector extension on PostgreSQL (no-op if already enabled)
-        if "postgresql" in DATABASE_URL:
-            from sqlalchemy import text
-            with engine.connect() as conn:
-                conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-                conn.commit()
-                print("pgvector extension enabled.")
+        has_pgvector = _enable_pgvector()
 
         from app.models.database import Base
+
+        if not has_pgvector:
+            # Remove vector columns from metadata so create_all doesn't fail
+            from pgvector.sqlalchemy import Vector
+            for table in Base.metadata.tables.values():
+                cols_to_remove = [c for c in table.columns if isinstance(c.type, Vector)]
+                for col in cols_to_remove:
+                    table._columns.remove(col)
+
         Base.metadata.create_all(bind=engine)
         print("Database tables created successfully.")
     except Exception as e:
