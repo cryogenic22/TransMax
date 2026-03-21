@@ -73,21 +73,22 @@ def _enable_pgvector():
 def init_db():
     """
     Initialize the database by creating all tables.
+    Tables are created individually so a failure on one (e.g. pgvector)
+    doesn't block creation of the rest.
     """
-    try:
-        has_pgvector = _enable_pgvector()
+    _enable_pgvector()
 
-        from app.models.database import Base
+    from app.models.database import Base
 
-        if not has_pgvector:
-            # Remove vector columns from metadata so create_all doesn't fail
-            from pgvector.sqlalchemy import Vector
-            for table in Base.metadata.tables.values():
-                cols_to_remove = [c for c in table.columns if isinstance(c.type, Vector)]
-                for col in cols_to_remove:
-                    table._columns.remove(col)
+    failed = []
+    for table in Base.metadata.sorted_tables:
+        try:
+            table.create(bind=engine, checkfirst=True)
+        except Exception as e:
+            failed.append(table.name)
+            print(f"WARNING: Could not create table '{table.name}': {e}")
 
-        Base.metadata.create_all(bind=engine)
+    if failed:
+        print(f"Database init complete with skipped tables: {failed}")
+    else:
         print("Database tables created successfully.")
-    except Exception as e:
-        print(f"WARNING: Database initialization failed. App will start but DB features may not work. Error: {e}")
