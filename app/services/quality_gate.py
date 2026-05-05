@@ -572,6 +572,7 @@ class QualityGateService:
         """
         TMX-031: Canonical Frequency Matching (BID, QD, TID, QID).
         """
+        import unicodedata
         defects = []
 
         # Pharma frequency abbreviations -> canonical frequency per day
@@ -583,16 +584,38 @@ class QualityGateService:
             'qhs': 1.0,  # at bedtime
         }
 
-        # Multilingual frequency patterns
+        # Multilingual frequency patterns. Patterns are stored unaccented
+        # (NFKD-folded) — the lookup folds the input the same way so accented
+        # input ("dos veces al día") matches without duplicating entries.
+        # See TMX-3409 — adding Spanish unblocks eval `good_001`.
         FREQ_PATTERNS = {
-            'une fois par jour': 1.0, 'once daily': 1.0,
-            'deux fois par jour': 2.0, 'twice daily': 2.0,
-            'trois fois par jour': 3.0, 'three times daily': 3.0,
-            'quatre fois par jour': 4.0, 'four times daily': 4.0,
+            # English
+            'once daily': 1.0,
+            'twice daily': 2.0,
+            'three times daily': 3.0,
+            'four times daily': 4.0,
+            # French
+            'une fois par jour': 1.0,
+            'deux fois par jour': 2.0,
+            'trois fois par jour': 3.0,
+            'quatre fois par jour': 4.0,
+            # Spanish (TMX-3409)
+            'una vez al dia': 1.0,
+            'dos veces al dia': 2.0,
+            'tres veces al dia': 3.0,
+            'cuatro veces al dia': 4.0,
         }
 
+        def _fold_accents(s: str) -> str:
+            # NFKD then strip combining marks: "día" -> "dia". Safe for ñ
+            # (which is its own NFKD code point, not n+combining-tilde).
+            return "".join(
+                c for c in unicodedata.normalize("NFKD", s)
+                if not unicodedata.combining(c)
+            )
+
         def extract_freq(text):
-            text_lower = text.lower()
+            text_lower = _fold_accents(text.lower())
             found = []
             # Check longer patterns first
             for pattern, freq in sorted(FREQ_PATTERNS.items(), key=lambda x: -len(x[0])):

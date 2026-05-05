@@ -89,7 +89,7 @@ Per plan §9 + §III.D — the Programme Lead (Kapil) owes:
 Two cases in `tests/evals/data/en_es/critical_safety.jsonl` failed at the start of Sprint 1, surfacing real bugs in the deterministic gates:
 
 - **`number_001`** (TMX-3408) — `NUMERIC_MISMATCH` did NOT fire on a 10mg→100mg tamper because `SpanishPack.check_numbers` used Python `in` (substring containment), so "10" was "found" inside "100". **[Done, pending commit]** — see `.context/loops/TMX-3408.md`. Eval moved 8/10 → 9/10.
-- **`good_001`** (TMX-3409) — false-positive `FREQUENCY_MISMATCH` on canonical EN→ES because `check_frequency` lacks Spanish patterns. **[Pending — Loop 3].**
+- **`good_001`** (TMX-3409) — false-positive `FREQUENCY_MISMATCH` on canonical EN→ES because `check_frequency` lacked Spanish patterns. **[Done, pending commit]** — see `.context/loops/TMX-3409.md`. Eval moved 9/10 → 10/10. All EN→ES critical-safety cases now pass. Spawned TMX-3411 (Sprint 2) for the cross-language frequency-pattern sweep covering DE/IT/PT/KO/ZH/JA/AR.
 
 ### TMX-3410 — Cross-pack `check_numbers` sweep (HIGH PRIORITY, Sprint 1)
 
@@ -107,4 +107,5 @@ Loop 2 red-team surfaced that the substring-`in` bug fixed in `SpanishPack` exis
 - **2026-05-01**: Sprint 0 safe portion executed — TMX-3002 through TMX-3009 complete; TMX-3000 and TMX-3001 blocked on Kapil.
 - **2026-05-05**: Loop board stood up at `.context/loops/` with multi-agent coordination protocol. Parallel team (Pod A: Auth & Tenancy) handed off the multi-tenant DB rewrite chain (TMX-3010 → 3011 → 3015 → 3012 → 3100); see `.context/loops/HANDOFF_TO_PARALLEL_TEAM.md`. Antigravity (Pod B: Agent & AI) running TMX-3212 → eval fixes → TMX-3600 → TMX-3200/3201.
 - **2026-05-05**: Loop 1 — TMX-3212 closed (committed `5bfafd3`). `app/agents/graph.py` lines 150 + 439 audit timestamps replaced with `datetime.now(timezone.utc).isoformat()`. 4 regression tests added in `tests/test_graph_audit_timestamps.py`, all passing. Ratchet 17/17 green.
-- **2026-05-05**: Loop 2 — TMX-3408 closed (pending commit). `SpanishPack.check_numbers` now word-bounded; 10mg→100mg tamper fires NUMERIC_MISMATCH. 7 new unit tests in `tests/test_spanish_pack_numbers.py`. Eval 8/10 → 9/10. Red-team surfaced TMX-3410 (cross-pack sweep, 7 other packs affected) — added to Sprint 1 backlog.
+- **2026-05-05**: Loop 2 — TMX-3408 closed (committed `181ff7c`). `SpanishPack.check_numbers` now word-bounded; 10mg→100mg tamper fires NUMERIC_MISMATCH. 7 new unit tests in `tests/test_spanish_pack_numbers.py`. Eval 8/10 → 9/10. Red-team surfaced TMX-3410 (cross-pack sweep, 7 other packs affected) — added to Sprint 1 backlog.
+- **2026-05-05**: Loop 3 — TMX-3409 closed (pending commit). `QualityGateService.check_frequency` extended with Spanish patterns + NFKD accent-fold. 7 new unit tests in `tests/test_quality_gate_frequency.py`. Eval 9/10 → 10/10 — both real findings resolved. Spawned TMX-3411 (cross-language frequency sweep) for Sprint 2.
