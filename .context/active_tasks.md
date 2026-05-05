@@ -84,14 +84,16 @@ Per plan §9 + §III.D — the Programme Lead (Kapil) owes:
 
 ---
 
-## Real eval-harness findings (deferred to v3.0 backlog)
+## Real eval-harness findings (Sprint 1 / loop-driven)
 
-Two cases in `tests/evals/data/en_es/critical_safety.jsonl` fail today, surfacing real bugs in the deterministic gates:
+Two cases in `tests/evals/data/en_es/critical_safety.jsonl` failed at the start of Sprint 1, surfacing real bugs in the deterministic gates:
 
-- **`good_001`** — false-positive `FREQUENCY_MISMATCH` on canonical EN→ES translation of "twice daily" → "dos veces al dia". The Spanish language pack's frequency check fires when it shouldn't. **Owner: Quality & Regulatory pod. Sprint: 2.**
-- **`number_001`** — `NUMERIC_MISMATCH` does NOT fire on a 10mg→100mg tamper that should be a critical defect. The gate misses an order-of-magnitude tampering. **Owner: Quality & Regulatory pod. Sprint: 2.**
+- **`number_001`** (TMX-3408) — `NUMERIC_MISMATCH` did NOT fire on a 10mg→100mg tamper because `SpanishPack.check_numbers` used Python `in` (substring containment), so "10" was "found" inside "100". **[Done, pending commit]** — see `.context/loops/TMX-3408.md`. Eval moved 8/10 → 9/10.
+- **`good_001`** (TMX-3409) — false-positive `FREQUENCY_MISMATCH` on canonical EN→ES because `check_frequency` lacks Spanish patterns. **[Pending — Loop 3].**
 
-These get TMX-3408 / TMX-3409-extended treatment; new ticket IDs to be assigned at Sprint 2 planning.
+### TMX-3410 — Cross-pack `check_numbers` sweep (HIGH PRIORITY, Sprint 1)
+
+Loop 2 red-team surfaced that the substring-`in` bug fixed in `SpanishPack` exists in **7 other language packs** (German, French, Portuguese, Korean, Chinese, Japanese, factory default). Every active language pair silently fails on order-of-magnitude dose tampering. Filed as TMX-3410 — must close before Sprint 1 ends. **Owner: Quality & Regulatory pod. Sprint: 1 (loop-driven, slotted after TMX-3409).**
 
 ---
 
@@ -104,4 +106,5 @@ These get TMX-3408 / TMX-3409-extended treatment; new ticket IDs to be assigned 
 - **2026-05-01**: AI eval harness implemented — `tests/evals/`, golden corpus, runner, README, `.github/workflows/eval.yml`.
 - **2026-05-01**: Sprint 0 safe portion executed — TMX-3002 through TMX-3009 complete; TMX-3000 and TMX-3001 blocked on Kapil.
 - **2026-05-05**: Loop board stood up at `.context/loops/` with multi-agent coordination protocol. Parallel team (Pod A: Auth & Tenancy) handed off the multi-tenant DB rewrite chain (TMX-3010 → 3011 → 3015 → 3012 → 3100); see `.context/loops/HANDOFF_TO_PARALLEL_TEAM.md`. Antigravity (Pod B: Agent & AI) running TMX-3212 → eval fixes → TMX-3600 → TMX-3200/3201.
-- **2026-05-05**: Loop 1 — TMX-3212 closed (pending commit). `app/agents/graph.py` lines 150 + 439 audit timestamps replaced with `datetime.now(timezone.utc).isoformat()`. 4 regression tests added in `tests/test_graph_audit_timestamps.py`, all passing. Ratchet 17/17 green.
+- **2026-05-05**: Loop 1 — TMX-3212 closed (committed `5bfafd3`). `app/agents/graph.py` lines 150 + 439 audit timestamps replaced with `datetime.now(timezone.utc).isoformat()`. 4 regression tests added in `tests/test_graph_audit_timestamps.py`, all passing. Ratchet 17/17 green.
+- **2026-05-05**: Loop 2 — TMX-3408 closed (pending commit). `SpanishPack.check_numbers` now word-bounded; 10mg→100mg tamper fires NUMERIC_MISMATCH. 7 new unit tests in `tests/test_spanish_pack_numbers.py`. Eval 8/10 → 9/10. Red-team surfaced TMX-3410 (cross-pack sweep, 7 other packs affected) — added to Sprint 1 backlog.
