@@ -1,63 +1,107 @@
-# TransMax Program Backlog
+# TransMax v3.0 "Pilot Ready" — Active Backlog
 
-**Protocol**:
-1.  **Work**: Pick `[READY]` tickets.
-2.  **Questions**: Write in `.context/questions_to_lead.md`.
-3.  **Decisions**: Read `.context/lead_decisions.md`.
+**Status**: v3.0 release plan signed off 2026-05-01. Sprint 0 in progress.
+**Plan**: `research/v3_pilot_ready_release_plan.md` (Parts I + II + III)
+**Parking lot**: `parking_lot/deferred_features.md`
+**Backlog protocol**: `[READY]` claimable → `[WIP]` in progress → `[Done]` completed → `[Blocked]` waiting on input
 
-## 👑 Program Lead (Antigravity) Priority
-- [ ] **[READY]** Ticket-10: Error Taxonomy & Golden Set Definition (QA/Validation).
-    - *Goal*: Define Critical/Major/Minor errors and create golden set schema.
-- [x] **[Done]** Ticket-11: Authentication & Tenancy Design.
-    - *Outcome*: Selected OAuth2 + Postgres RLS. See `auth_design.md`.
-- [x] **[Done]** Ticket-12: Composite Scoring Logic.
-    - *Outcome*: Implemented deterministic scoring in `quality_gate.py` with unit tests.
+This file replaces the legacy ticket list (Tickets 10-23) which were Phase 1-3 historical work, now superseded by the v3.0 epic structure.
 
-## 👷 Worker Agent Queue (Open Tickets)
-- [x] **[Done]** Ticket-13: Production Dockerfile (Multi-stage, Optimized).
-    - *Resolution*: Fixed in Ticket-04 (Supabase/Pydantic pinning, Build deps added).
-- [x] **[Done]** Ticket-14: CI/CD Pipeline Setup (GitHub Actions).
-    - *Lane C (Infra)*
-- [x] **[Done]** Ticket-16: Resilience Patterns (LLM Retries).
-    - *Outcome*: Implemented `ResilienceService` with `tenacity` exponential backoff.
-- [x] **[Done]** Ticket-17: Observability (Latency, Cost, Violations).
-    - *Outcome*: Implemented `ObservabilityService` & Middleware.
-- [x] **[Done]** Ticket-18: Immutable Audit Logs (SHA-256 Hashing).
-    - *Lane B (Services)*
-- [x] **[Done]** Ticket-19: PII Redaction (Sanitization).
-    - *Outcome*: Implemented generic `PIIService` and LangGraph node.
+---
 
-## 📦 Recently Completed
-- [x] **[Done]** Phase 3: Core Logic - Implement `draft_translate` with real LLM calls.
-- [x] **[Lead Implemented]** Phase 3: Core Logic - Connect `compile_constraints` to pgvector.
-    - **Goal**: Implement `app/services/queue_service.py` (or similar) to handle background job processing.
-    - **Acceptance**: `POST /translate` returns immediately with "PENDING" status.
-    - **Lane**: Lane D (API).
+## Sprint 0 — "Stop the Bleeding" (week 0; in progress)
 
-- [x] **[Done]** Ticket-03: PDF Ingestion Prototype
-    - **Goal**: Research and create a prototype `app/services/pdf_ingestion.py` using `pypdf` or `unstructured`.
-    - **Acceptance**: Extract text from a sample PDF while preserving block structure.
-    - **Lane**: Lane B (Services).
+The non-negotiable list. Day-1 work; no sprint-planning needed.
 
-- [x] **[Done]** Ticket-04: Infrastructure Hardening
-    - **Goal**: Add Redis to `docker-compose.yml` (required for caching) and create a `Dockerfile` for the app.
-    - **Acceptance**: `docker-compose up` spins up both Postgres and Redis. App image builds successfully.
-    - **Lane**: Lane C (Infra).
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-3000 | Rotate exposed OpenAI API key + history-purge `.env` via `git filter-repo` | Programme Lead (Kapil) + Auth | **[Blocked — needs Kapil]** | Kapil must rotate in OpenAI dashboard first; then Antigravity executes the filter-repo. Destructive op gated on explicit confirmation. |
+| TMX-3001 | Move secrets to vault (1Password Secrets Automation or AWS Secrets Manager); GHA env injection only | Auth + Platform | **[Blocked — needs vault decision]** | Choice of vault is a Programme Lead call; see §9 D-3 |
+| TMX-3002 | `.gitignore` *.db, *.log, .env, debug_*, *.txt artefacts; `git rm --cached` historical artefacts | Platform | **[WIP]** — `.gitignore` updated; `git rm --cached` deferred to Kapil confirmation | New .gitignore covers all classes; ratchet metric `hygiene.committed_db_files` etc. unchanged until rm is run |
+| TMX-3003 | Force `AUTH_MODE != none` in production (refuse to start); break build on default `SECRET_KEY` | Auth | **[Done]** | `app/core/config.py:assert_production_safe()` raises `InsecureProductionConfigError` when `APP_ENV != dev` and any insecure default. Called from `get_settings()`. |
+| TMX-3004 | Strip mock-data fallback from `app/review/[jobId]/page.tsx`; replace with explicit error UX | Frontend | **[Done]** | `MOCK_TRANSLATIONS`, `SOURCE_SENTENCES`, `getMockSegments` removed. Both fallback paths replaced with explicit error state. Console.log noise stripped. |
+| TMX-3005 | Strip admin-fallback in `lib/auth.tsx`; replace with retry / re-auth UX | Frontend | **[Done]** | Both dev-admin fallback paths removed (`fetch.catch` + `autoLoginNoAuth.catch`). Backend unreachability now surfaces as null user. |
+| TMX-3006 | Fix `tailwindcss-animate` import in `tailwind.config.ts`; get the frontend build green | Frontend | **[Done]** | `require('@tailwindcss/typography')` replaced with ESM `import typography from "@tailwindcss/typography"`. Verify with `cd frontend && npm run build`. |
+| TMX-3007 | Add `SECURITY.md`, incident-response runbook stub, privacy notice | Pilot/GTM | **[Done]** | `SECURITY.md`, `docs/incident_response.md`, `docs/privacy_notice.md` all written. Counsel review pending before pilot signing (TMX-4001). |
+| TMX-3008 | Stand up Dependabot + gitleaks pre-commit + secret scanning in GHA | Platform | **[Done]** | `.github/dependabot.yml`, `.github/workflows/secret-scan.yml` (PR + push + nightly), gitleaks already in `.pre-commit-config.yaml`. |
+| TMX-3009 | CI gates: backend pytest + frontend build + ESLint + secret scan; PRs blocked on failure | Platform | **[Done]** | `.github/CODEOWNERS` + `docs/branch_protection.md` document the required-status-checks. Kapil applies in GitHub UI. |
 
-- [x] **[x]** Ticket-20: API Refinement (Structured Input).
-    - **Goal**: Update `TranslationRequest` to accept `List[ContentBlock]` instead of raw string.
-    - **Lane**: Lane D (API).
-- [x] **[x]** Ticket-22: Pharma Hardening (Gates, PII, Fix Packets).
-    - **Goal**: Implement "Near-Zero Critical Escape" architecture.
-    - **Lane**: Lane D (API/Backend).
-- [x] **[x]** Ticket-23: Next-Gen Frontend (Shazam-style).
-    - **Goal**: Implement "Magic Button" Upload and "Glass Box" status.
-    - **Lane**: Lane A (Frontend).
-- [x] **[x]** Ticket-21: Next-Gen Frontend (React/Next.js).
-    - **Goal**: Create beautiful agentic UI for document upload & translation visualization.
-    - **Lane**: Lane A (Frontend).
+**Sprint 0 exit gate**: TMX-3000, TMX-3001, TMX-3002 all complete. Then Sprint 1 starts.
 
-## 🏁 Completed
-- [x] Phase 1: Config & Migration
-- [x] Phase 2: DB Schema
-- [x] Phase 2.5: Infrastructure
+---
+
+## Sprint 1 — "Foundations everyone else needs" (weeks 1-2)
+
+**Status**: Not started. Depends on Sprint 0 completion + steering decisions.
+
+| Ticket | Title | Owner | Size | Sprint |
+|---|---|---|---|---|
+| TMX-3010 | Add `organizations` table + tenant model | Auth | M | 1 |
+| TMX-3011 | Add `organization_id` to all domain tables | Auth | M | 1 |
+| TMX-3012 | Tenant-scoped session factory | Auth | M | 1 |
+| TMX-3013 | Auth0 / Keycloak integration; OIDC + SAML; MFA enforced | Auth | L | 1-2 |
+| TMX-3015 | Soft-delete columns + filter logic | Auth | M | 1 |
+| TMX-3100 | `audit_events_v2` schema + migration | Audit | M | 1 |
+| TMX-3700 | DOCX ingestion v2 with tracked-changes preservation | Pipeline | L | 1-2 |
+| TMX-3705 | File-type sniffing + size cap + AV scan trigger | Pipeline | M | 1 |
+| TMX-3800 | Sentence segmenter service skeleton + interface | Pipeline | M | 1 |
+| TMX-3200 | Prompt registry directory layout + loader | Agent | M | 1 |
+| TMX-3201 | Migrate `prompts.py` constants to v1.0.0 YAML files | Agent | M | 1 |
+| TMX-3212 | Audit timestamp bug fix (datetime UTC ISO) | Agent | XS | 1 — **[Done, pending commit]** — see `.context/loops/TMX-3212.md` |
+| TMX-3600 | Pick canonical IA = `/workspace/*`; redirect map | Frontend | S | 0-1 |
+| TMX-3601 | Theme unification — light default, dark via prefers-color-scheme | Frontend + Design | M | 1 |
+| TMX-3614 | Vitest unit + Playwright e2e suites; CI gate | Frontend + Platform | M | 1-2 |
+| TMX-3615 | CSP / HSTS / X-Frame-Options / Permissions-Policy via next.config.ts | Frontend | S | 1 |
+| TMX-3616 | Cookie hardening — httpOnly Secure SameSite=Strict + CSRF tokens | Frontend + Auth | M | 1 |
+| TMX-3618 | File upload validation + size cap + AV trigger | Frontend + Pipeline | M | 1 |
+| TMX-3900 | OpenTelemetry SDK wired across LangGraph nodes | Platform | M | 1 |
+
+---
+
+## Sprints 2-6 — see plan
+
+Tickets for sprints 2-6 are in `research/v3_pilot_ready_release_plan.md` §16 and §C.3. The full backlog with ACs and dependencies is in §17. Once Sprint 0 closes and the steering decisions land, this file gets the per-sprint expansion.
+
+---
+
+## Open decisions blocking sprint planning
+
+Per plan §9 + §III.D — the Programme Lead (Kapil) owes:
+
+1. **D-1 Pilot customer profile** — recommendation: 2 mid-market pharma €500M-€2B
+2. **D-2 Audit anchor** — S3 Object Lock (QLDB rejected; deprecated by AWS)
+3. **D-3 IdP** — Auth0 recommended; vault decision in TMX-3001
+4. **D-4 LLM strategy** — hosted-only for v3.0 pilot
+5. **D-5 Region** — single EU-Central
+6. **D-6 Pricing** — closed by headless spec adoption: Pilot + Enterprise + Regulatory Pack
+7. **D-7 Positioning** — defer to Sprint 2
+8. **D-8 Open-source kit** — keep proprietary v3.0
+9. **D-9 CLI lang (v3.1)** — Rust recommended
+10. **D-10 Hosted review domain (v3.1)** — separated `review.transmax.io`
+11. **D-11 CMK breadth** — AWS KMS only v3.1
+12. **D-12 Air-gapped deployments** — not until €20M ARR
+13. **D-13 Bug bounty** — Phase 2 REST + MCP via HackerOne
+
+---
+
+## Real eval-harness findings (deferred to v3.0 backlog)
+
+Two cases in `tests/evals/data/en_es/critical_safety.jsonl` fail today, surfacing real bugs in the deterministic gates:
+
+- **`good_001`** — false-positive `FREQUENCY_MISMATCH` on canonical EN→ES translation of "twice daily" → "dos veces al dia". The Spanish language pack's frequency check fires when it shouldn't. **Owner: Quality & Regulatory pod. Sprint: 2.**
+- **`number_001`** — `NUMERIC_MISMATCH` does NOT fire on a 10mg→100mg tamper that should be a critical defect. The gate misses an order-of-magnitude tampering. **Owner: Quality & Regulatory pod. Sprint: 2.**
+
+These get TMX-3408 / TMX-3409-extended treatment; new ticket IDs to be assigned at Sprint 2 planning.
+
+---
+
+## Recently completed
+
+- Phase 0 / pre-v3 work (the legacy backlog: Tickets 10-23) — all done before 2026-05-01; superseded by the v3.0 epic structure.
+- **2026-05-01**: v3.0 release plan written (`research/v3_pilot_ready_release_plan.md` Parts I + II + III). Signed off by Kapil. Parking lot at `parking_lot/deferred_features.md` registers all deferred features.
+- **2026-05-01**: KP_SDLC harness bootstrapped — `CLAUDE.md`, `AGENTS.md`, skills, slash commands, hooks, ADR templates, pre-commit, `scripts/{check,setup}.sh`.
+- **2026-05-01**: Ratchet system implemented — `scripts/ratchet.py`, `ratchet/baseline.json`, `.github/workflows/ratchet.yml`, README.
+- **2026-05-01**: AI eval harness implemented — `tests/evals/`, golden corpus, runner, README, `.github/workflows/eval.yml`.
+- **2026-05-01**: Sprint 0 safe portion executed — TMX-3002 through TMX-3009 complete; TMX-3000 and TMX-3001 blocked on Kapil.
+- **2026-05-05**: Loop board stood up at `.context/loops/` with multi-agent coordination protocol. Parallel team (Pod A: Auth & Tenancy) handed off the multi-tenant DB rewrite chain (TMX-3010 → 3011 → 3015 → 3012 → 3100); see `.context/loops/HANDOFF_TO_PARALLEL_TEAM.md`. Antigravity (Pod B: Agent & AI) running TMX-3212 → eval fixes → TMX-3600 → TMX-3200/3201.
+- **2026-05-05**: Loop 1 — TMX-3212 closed (pending commit). `app/agents/graph.py` lines 150 + 439 audit timestamps replaced with `datetime.now(timezone.utc).isoformat()`. 4 regression tests added in `tests/test_graph_audit_timestamps.py`, all passing. Ratchet 17/17 green.

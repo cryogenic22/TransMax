@@ -1,4 +1,5 @@
 from typing import TypedDict, List, Dict, Any, Optional
+from datetime import datetime, timezone
 import json
 import logging
 import uuid # For audit logging
@@ -146,7 +147,7 @@ async def validate_request(state: TransMaxState) -> TransMaxState:
             # 3. Log Genesis Event
             audit_svc.log_event(audit_id, "JOB_STARTED", {
                 "doc_id": state['doc_id'],
-                "timestamp": str(logging.Formatter.formatTime(logging.Formatter(), logging.LogRecord("",0,"","",None,None,None))) 
+                "timestamp": datetime.now(timezone.utc).isoformat()
             })
             
         except Exception as e:
@@ -437,7 +438,7 @@ async def run_quality_gates(state: TransMaxState) -> TransMaxState:
         new_history_entry = {
             "metrics": current_metrics,
             "status": status,
-            "timestamp": str(logging.Formatter.formatTime(logging.Formatter(), logging.LogRecord("",0,"","",None,None,None)))
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         history.append(new_history_entry)
         state['scorecard_history'] = history
