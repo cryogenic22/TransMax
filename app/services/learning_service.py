@@ -104,8 +104,11 @@ class LearningService:
         db_service = get_db_service()
         db = db_service.get_session()
         try:
+            from app.models.database import DEFAULT_ORG_ID
             rule = TranslationRule(
                 rule_id=str(uuid.uuid4()),
+                # TMX-3012 will replace with session-context injection.
+                organization_id=DEFAULT_ORG_ID,
                 source_pattern=source_pattern,
                 target_correction=target_correction,
                 confidence_score=confidence,

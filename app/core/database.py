@@ -81,6 +81,16 @@ def init_db():
     """
     _enable_pgvector()
 
+    # Import every model module so SQLAlchemy registers their tables on Base.metadata.
+    # Previously only `database.py` was imported, which silently skipped the auth,
+    # translation, audit, and models.py tables when init_db() ran from a fresh process.
+    # TMX-3011 made this visible: tenant_id columns added to those modules wouldn't
+    # appear in the SQLite dev DB until something else imported the module.
+    import app.models.database  # noqa: F401
+    import app.models.auth  # noqa: F401
+    import app.models.audit  # noqa: F401
+    import app.models.translation  # noqa: F401
+    import app.models.models  # noqa: F401
     from app.models.database import Base
 
     failed = []

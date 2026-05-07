@@ -8,7 +8,7 @@ import uuid
 import logging
 from datetime import datetime, timezone
 
-from app.models.database import engine, SessionLocal, Base, Document, DocumentStatus, Segment
+from app.models.database import engine, SessionLocal, Base, Document, DocumentStatus, Segment, DEFAULT_ORG_ID
 from app.models.models import TranslationJobQueue, AuditRecord, Glossary, GlossaryTerm, TMSegment, QualityScorecard
 from app.core.constants import SubstitutionType
 from app.core.config import settings
@@ -53,6 +53,8 @@ class DatabaseService:
             job_id = str(uuid.uuid4())
             job = TranslationJobQueue(
                 job_id=job_id,
+                # TMX-3012 will replace this with session-context org injection.
+                organization_id=request_data.get("organization_id", DEFAULT_ORG_ID),
                 request_id=request_data.get("request_id"),
                 source_language=request_data.get("source_language"),
                 target_language=request_data.get("target_language"),
@@ -180,6 +182,53 @@ class DatabaseService:
         finally:
             db.close()
 
+    def find_exact_matches_batch(self, segments: List[Dict[str, Any]], source_lang: str, target_lang: str) -> Dict[str, Dict[str, Any]]:
+        """
+        Batch exact-match lookup: computes SHA256 hashes for all segments,
+        then issues a single DB query to find TM matches.
+        Returns dict mapping segment_id -> match_result for exact hits only.
+        """
+        import hashlib
+        from app.models.models import TMSegment
+
+        if not segments:
+            return {}
+
+        # Build hash -> segment_id(s) mapping
+        hash_to_seg_ids: Dict[str, List[str]] = {}
+        for seg in segments:
+            normalized = seg['source_text'].strip()
+            content_hash = hashlib.sha256(normalized.encode('utf-8')).hexdigest()
+            hash_to_seg_ids.setdefault(content_hash, []).append(seg['segment_id'])
+
+        results: Dict[str, Dict[str, Any]] = {}
+        db = self.get_session()
+        try:
+            # Single query for all hashes
+            matches = db.query(TMSegment).filter(
+                TMSegment.source_content_hash.in_(list(hash_to_seg_ids.keys())),
+                TMSegment.source_language == source_lang,
+                TMSegment.target_language == target_lang,
+                TMSegment.segmentation_version == "v1",
+                TMSegment.normalization_version == "v1"
+            ).all()
+
+            for tm in matches:
+                seg_ids = hash_to_seg_ids.get(tm.source_content_hash, [])
+                for sid in seg_ids:
+                    results[sid] = {
+                        "source": tm.source_text,
+                        "target": tm.target_text,
+                        "score": 1.0,
+                        "type": SubstitutionType.TM_EXACT.value
+                    }
+        except Exception as e:
+            logger.error(f"Batch exact match error: {e}")
+        finally:
+            db.close()
+
+        return results
+
     def find_best_match(self, source_text: str, source_lang: str, target_lang: str) -> Optional[Dict[str, Any]]:
         """
         Finds the best TM match.
@@ -272,6 +321,8 @@ class DatabaseService:
             glossary = Glossary(
                 glossary_id=glossary_id,
                 version=version,
+                # TMX-3012 will replace with session-context injection.
+                organization_id=DEFAULT_ORG_ID,
                 is_active=True,
                 meta_json=meta or {}
             )
@@ -293,6 +344,8 @@ class DatabaseService:
             term_id = term_data.get("term_id") or str(uuid.uuid4())
             
             term = GlossaryTerm(
+                # TMX-3012 will replace with session-context injection.
+                organization_id=DEFAULT_ORG_ID,
                 glossary_id=glossary_id,
                 glossary_version=version,
                 term_id=term_id,
@@ -338,6 +391,8 @@ class DatabaseService:
             tm_segment = TMSegment(
                 tm_id=tm_id,
                 segment_hash=segment_hash,
+                # TMX-3012 will replace with session-context injection.
+                organization_id=DEFAULT_ORG_ID,
                 source_content_hash=content_hash,
                 source_text=normalized_source,
                 target_text=target,
@@ -404,6 +459,10 @@ class DatabaseService:
             
             audit = AuditRecord(
                 audit_id=audit_id,
+                # TMX-3012 will replace with session-context injection. Even on
+                # audit records (A3-sensitive), the transitional default is
+                # explicit — see worksheet TMX-3011 stage 6.
+                organization_id=DEFAULT_ORG_ID,
                 job_id=job_id,
                 final_decision=state.get("final_decision", "UNKNOWN"),
                 scores_json=state.get("quality_report", {}),
@@ -657,6 +716,8 @@ class DatabaseService:
         try:
             # Create Log
             log = ChangeLog(
+                # TMX-3012 will replace with session-context injection.
+                organization_id=DEFAULT_ORG_ID,
                 segment_id=segment_id,
                 original_text=original,
                 new_text=new,
@@ -701,6 +762,8 @@ class DatabaseService:
             # 2. Create Scorecard
             scorecard = QualityScorecard(
                 scorecard_id=str(uuid.uuid4()),
+                # TMX-3012 will replace with session-context injection.
+                organization_id=DEFAULT_ORG_ID,
                 job_id=job_id,
                 critical_defect_count=critical_count,
                 major_defect_count=major_count,
@@ -710,11 +773,13 @@ class DatabaseService:
                 status=scorecard_data.get('status', 'REV_REQ')
             )
             db.add(scorecard)
-            
+
             # 3. Create Entries
             for d in defects:
                 entry = ScorecardEntry(
                     entry_id=str(uuid.uuid4()),
+                    # TMX-3012 will replace with session-context injection.
+                    organization_id=DEFAULT_ORG_ID,
                     scorecard_id=scorecard.scorecard_id,
                     segment_id=d.get('segment_id'),
                     category=d.get('category', 'UNKNOWN'),
@@ -733,6 +798,21 @@ class DatabaseService:
             raise e
         finally:
             db.close()
+
+    def update_document_cost(self, doc_id: str, total_tokens: int, total_cost_usd: float) -> None:
+        """Persist token usage and cost for a document."""
+        session = self.get_session()
+        try:
+            doc = session.query(Document).filter(Document.id == doc_id).first()
+            if doc:
+                doc.total_tokens = total_tokens
+                doc.total_cost_usd = total_cost_usd
+                session.commit()
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Failed to update document cost: {e}")
+        finally:
+            session.close()
 
     def get_document_status(self, doc_id: str) -> str:
         """

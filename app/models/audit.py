@@ -5,15 +5,17 @@ import uuid
 from datetime import datetime, timezone
 
 from app.models.database import Base
+from app.models.types import GUID
 
 class AuditRecord(Base):
     __tablename__ = "audit_records"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     audit_trail_id = Column(UUID(as_uuid=True), index=True, nullable=False)  # Shared ID across related records
-    
-    organization_id = Column(UUID(as_uuid=True), nullable=False)
-    tenant_id = Column(String) # Optional tenant identifier
+
+    # TMX-3011: GUID + FK; was bare UUID. tenant_id (free-text) deprecated by TMX-3017.
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
+    tenant_id = Column(String) # Optional tenant identifier (deprecated; use organization_id)
     
     # Context
     job_id = Column(UUID(as_uuid=True), ForeignKey("translation_jobs.id"))

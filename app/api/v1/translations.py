@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 
 from app.core.database import get_db
-from app.models.database import Document, DocumentStatus, Segment
+from app.models.database import Document, DocumentStatus, Segment, DEFAULT_ORG_ID
 from app.schemas.api_v1 import JobCreateRequest, JobResponse, JobResult, ValidationSummary
 
 # We need to invoke the graph. For now, we import the runner.
@@ -38,6 +38,8 @@ async def create_translation_job(
     doc_id = str(uuid.uuid4())
     new_doc = Document(
         id=doc_id,
+        # TMX-3012 will replace with session-context injection.
+        organization_id=DEFAULT_ORG_ID,
         name=request.document_name or "api_upload.txt",
         source_language=request.source_language,
         target_language=request.target_language,
@@ -54,10 +56,12 @@ async def create_translation_job(
         segments = [s.strip() for s in request.text_content.split('.') if s.strip()]
         for idx, text in enumerate(segments):
             seg = Segment(
+                # TMX-3012 will replace with session-context injection.
+                organization_id=DEFAULT_ORG_ID,
                 document_id=doc_id,
                 order_index=idx,
                 source_text=text,
-                status="pending" 
+                status="pending"
             )
             db.add(seg)
             

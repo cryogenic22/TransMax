@@ -6,7 +6,7 @@ import logging
 from unittest.mock import patch, MagicMock
 from app.services.db_service import DatabaseService
 from app.services.audit_service import AuditService
-from app.models.database import Document, Segment, DocumentStatus
+from app.models.database import Document, Segment, DocumentStatus, DEFAULT_ORG_ID
 from app.models.models import TranslationJobQueue
 from app.agents.graph import app as workflow_app
 from app.core.profile_enums import TranslationArchetype
@@ -36,24 +36,23 @@ def scaffold_job(db_service):
     try:
         # Create Doc
         doc = Document(
-            id=doc_id, name="nfr_test.txt", 
-            source_language="en", target_language="ja", 
+            id=doc_id, organization_id=DEFAULT_ORG_ID, name="nfr_test.txt",
+            source_language="en", target_language="ja",
             status="UPLOADED"
         )
         session.add(doc)
-        
+
         # Create Segment
-        # Using a safe text that won't trigger blocks unless we want it to
         seg = Segment(
-            id=seg_id, document_id=doc_id, order_index=1,
-            source_text="Test input for NFR validation.", 
+            id=seg_id, organization_id=DEFAULT_ORG_ID, document_id=doc_id, order_index=1,
+            source_text="Test input for NFR validation.",
             status="PENDING"
         )
         session.add(seg)
-        
+
         # Create Job
         job = TranslationJobQueue(
-            job_id=job_id, request_id=f"req_{job_id}",
+            job_id=job_id, organization_id=DEFAULT_ORG_ID, request_id=f"req_{job_id}",
             source_language="en", target_language="ja",
             status="PROCESSING", request_json={"source": "Test input"}
         )

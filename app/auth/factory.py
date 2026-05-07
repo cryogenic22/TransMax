@@ -116,7 +116,11 @@ async def _provision_sso_user(external_id: str, email: str, name: str,
             db.refresh(user)
             return user
         # Create new user
+        from app.models.database import DEFAULT_ORG_ID
         user = User(
+            # TMX-3012 will replace with session-context injection (or
+            # TMX-3013 onboarding will resolve from the IdP claims).
+            organization_id=DEFAULT_ORG_ID,
             email=email,
             name=name,
             role=role.value,
