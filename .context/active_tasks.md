@@ -37,7 +37,7 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 | Ticket | Title | Owner | Size | Sprint |
 |---|---|---|---|---|
 | TMX-3010 | Add `organizations` table + tenant model | Auth | M | 1 — **[Done]** c0ac3a3 — see `.context/loops/TMX-3010.md` |
-| TMX-3011 | Add `organization_id` to all domain tables | Auth | M | 1 — **[WIP]** |
+| TMX-3011 | Add `organization_id` to all domain tables | Auth | M | 1 — **[Done]** bf58ae4 — see `.context/loops/TMX-3011.md` |
 | TMX-3012 | Tenant-scoped session factory | Auth | M | 1 |
 | TMX-3013 | Auth0 / Keycloak integration; OIDC + SAML; MFA enforced | Auth | L | 1-2 |
 | TMX-3015 | Soft-delete columns + filter logic | Auth | M | 1 |
@@ -48,7 +48,8 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 | TMX-3200 | Prompt registry directory layout + loader | Agent | M | 1 |
 | TMX-3201 | Migrate `prompts.py` constants to v1.0.0 YAML files | Agent | M | 1 |
 | TMX-3212 | Audit timestamp bug fix (datetime UTC ISO) | Agent | XS | 1 — **[Done, pending commit]** — see `.context/loops/TMX-3212.md` |
-| TMX-3600 | Pick canonical IA = `/workspace/*`; redirect map | Frontend | S | 0-1 |
+| TMX-3600 | Pick canonical IA = `/workspace/*`; redirect map | Frontend | S | 1 — **[Blocked]** code complete locally; ship gated on TMX-3606 (frontend-repo structural fix) — see `.context/loops/TMX-3600.md` |
+| TMX-3606 | De-tangle frontend nested-git-repo (no `.gitmodules`, no remote); pick one of: (a) formal submodule + remote, (b) merge into parent repo, (c) split-repo with its own deploy hook | Frontend + Platform | S | 1 — **[Needs Kapil decision]** |
 | TMX-3601 | Theme unification — light default, dark via prefers-color-scheme | Frontend + Design | M | 1 |
 | TMX-3614 | Vitest unit + Playwright e2e suites; CI gate | Frontend + Platform | M | 1-2 |
 | TMX-3615 | CSP / HSTS / X-Frame-Options / Permissions-Policy via next.config.ts | Frontend | S | 1 |
