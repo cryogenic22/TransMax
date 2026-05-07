@@ -31,27 +31,16 @@ class SpanishPack(BaseLanguagePack):
         return violations
 
     def check_numbers(self, source: str, target: str) -> List[Dict[str, Any]]:
-        # Word-bounded match: substring `in` would treat "10" as present in "100 mg"
-        # and silently miss order-of-magnitude tampering (TMX-3408 / eval number_001).
-        # Accept both `.` and `,` decimal separators per Spanish convention.
-        vocab = re.findall(r'\b\d+(?:[\.,]\d+)?\b', source)
+        # Delegates to BaseLanguagePack._find_missing_numbers — see TMX-3410
+        # for the cross-pack consolidation.
         violations = []
-        for num in vocab:
-            forms = {num}
-            if '.' in num:
-                forms.add(num.replace('.', ','))
-            if ',' in num:
-                forms.add(num.replace(',', '.'))
-            found = any(
-                re.search(rf'\b{re.escape(form)}\b', target) for form in forms
-            )
-            if not found:
-                v_type = ViolationType.NUMBER_MISMATCH
-                violations.append({
-                    "type": v_type.value,
-                    "message": f"Missing number {num}",
-                    "severity": get_severity(v_type).value
-                })
+        for num in self._find_missing_numbers(source, target, accept_decimal_swap=True):
+            v_type = ViolationType.NUMBER_MISMATCH
+            violations.append({
+                "type": v_type.value,
+                "message": f"Missing number {num}",
+                "severity": get_severity(v_type).value
+            })
         return violations
 
     def check_punctuation(self, target_text: str) -> List[Dict[str, Any]]:

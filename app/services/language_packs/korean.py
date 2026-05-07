@@ -57,21 +57,17 @@ class KoreanPack(BaseLanguagePack):
         return violations
 
     def check_numbers(self, source_text: str, target_text: str) -> List[Dict[str, Any]]:
-        """Korean pharma uses Western Arabic numerals for dosages."""
-        source_nums = re.findall(r'\d+(?:[\.,]\d+)?', source_text)
-        if not source_nums:
-            return []
-
+        """Korean pharma uses Western Arabic numerals for dosages.
+        Word-bounded numeric check (TMX-3410)."""
         violations = []
-        for num in source_nums:
-            if num not in target_text:
-                v_type = ViolationType.NUMBER_MISMATCH
-                violations.append({
-                    "type": v_type.value,
-                    "message": f"Number '{num}' missing in Korean target text.",
-                    "severity": get_severity(v_type).value,
-                    "segment_id": "unknown",
-                })
+        for num in self._find_missing_numbers(source_text, target_text):
+            v_type = ViolationType.NUMBER_MISMATCH
+            violations.append({
+                "type": v_type.value,
+                "message": f"Number '{num}' missing in Korean target text.",
+                "severity": get_severity(v_type).value,
+                "segment_id": "unknown",
+            })
         return violations
 
     def check_punctuation(self, target_text: str) -> List[Dict[str, Any]]:

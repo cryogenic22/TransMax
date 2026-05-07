@@ -36,25 +36,22 @@ class JapanesePack(BaseLanguagePack):
         return violations
 
     def check_numbers(self, source_text: str, target_text: str) -> List[Dict[str, Any]]:
-        # Japanese typically uses Western numbers in Pharma 
-        # or Zenkaku (Full-width) numbers ０-９.
-        source_nums = re.findall(r'\d+(?:[\.,]\d+)?', source_text)
-        if not source_nums:
-            return []
-
-        trans_table = str.maketrans("0123456789", "０１２３４５６７８９")
-        
+        """
+        Japanese pharma uses Half-width (Western) digits or Zenkaku (Full-width) ０-９.
+        Word-bounded numeric check (TMX-3410); preserves the full-width translate.
+        """
+        digit_translate = dict(zip("0123456789", "０１２３４５６７８９"))
         violations = []
-        for num in source_nums:
-            # Check Half-width and Full-width
-            if num not in target_text and num.translate(trans_table) not in target_text:
-                 v_type = ViolationType.NUMBER_MISMATCH
-                 violations.append({
-                    "type": v_type.value,
-                    "message": f"Number '{num}' missing in Target (checked Half/Full-width).",
-                    "severity": get_severity(v_type).value,
-                    "segment_id": "unknown"
-                })
+        for num in self._find_missing_numbers(
+            source_text, target_text, digit_translate=digit_translate
+        ):
+            v_type = ViolationType.NUMBER_MISMATCH
+            violations.append({
+                "type": v_type.value,
+                "message": f"Number '{num}' missing in Target (checked Half/Full-width).",
+                "severity": get_severity(v_type).value,
+                "segment_id": "unknown"
+            })
         return violations
 
     def check_punctuation(self, target_text: str) -> List[Dict[str, Any]]:

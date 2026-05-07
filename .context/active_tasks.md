@@ -36,8 +36,8 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 
 | Ticket | Title | Owner | Size | Sprint |
 |---|---|---|---|---|
-| TMX-3010 | Add `organizations` table + tenant model | Auth | M | 1 |
-| TMX-3011 | Add `organization_id` to all domain tables | Auth | M | 1 |
+| TMX-3010 | Add `organizations` table + tenant model | Auth | M | 1 — **[Done]** c0ac3a3 — see `.context/loops/TMX-3010.md` |
+| TMX-3011 | Add `organization_id` to all domain tables | Auth | M | 1 — **[WIP]** |
 | TMX-3012 | Tenant-scoped session factory | Auth | M | 1 |
 | TMX-3013 | Auth0 / Keycloak integration; OIDC + SAML; MFA enforced | Auth | L | 1-2 |
 | TMX-3015 | Soft-delete columns + filter logic | Auth | M | 1 |
@@ -91,9 +91,9 @@ Two cases in `tests/evals/data/en_es/critical_safety.jsonl` failed at the start 
 - **`number_001`** (TMX-3408) — `NUMERIC_MISMATCH` did NOT fire on a 10mg→100mg tamper because `SpanishPack.check_numbers` used Python `in` (substring containment), so "10" was "found" inside "100". **[Done, pending commit]** — see `.context/loops/TMX-3408.md`. Eval moved 8/10 → 9/10.
 - **`good_001`** (TMX-3409) — false-positive `FREQUENCY_MISMATCH` on canonical EN→ES because `check_frequency` lacked Spanish patterns. **[Done, pending commit]** — see `.context/loops/TMX-3409.md`. Eval moved 9/10 → 10/10. All EN→ES critical-safety cases now pass. Spawned TMX-3411 (Sprint 2) for the cross-language frequency-pattern sweep covering DE/IT/PT/KO/ZH/JA/AR.
 
-### TMX-3410 — Cross-pack `check_numbers` sweep (HIGH PRIORITY, Sprint 1)
+### TMX-3410 — Cross-pack `check_numbers` sweep — **[Done, pending commit + push]**
 
-Loop 2 red-team surfaced that the substring-`in` bug fixed in `SpanishPack` exists in **7 other language packs** (German, French, Portuguese, Korean, Chinese, Japanese, factory default). Every active language pair silently fails on order-of-magnitude dose tampering. Filed as TMX-3410 — must close before Sprint 1 ends. **Owner: Quality & Regulatory pod. Sprint: 1 (loop-driven, slotted after TMX-3409).**
+Closed 2026-05-07. Word-bounded `_find_missing_numbers` helper added to `BaseLanguagePack`; all 8 packs (Spanish, German, French, Portuguese, Korean, Chinese, Japanese, GenericLanguagePack) now delegate. Japanese preserves full-width digit handling via `digit_translate` arg. 13 parametrised tests in `tests/test_lang_packs_numeric_word_boundary.py`; combined 50/50 unit tests across all 4 loops. Eval 10/10. See `.context/loops/TMX-3410.md`.
 
 ---
 

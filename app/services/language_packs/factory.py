@@ -58,19 +58,17 @@ class GenericLanguagePack(BaseLanguagePack):
             })
         return violations
 
-    def check_numbers(self, source: str, target: str) -> List[Dict[str, Any]]: 
-         # Basic Western number check
-         vocab = re.findall(r'\b\d+(?:[\.,]\d+)?\b', source)
-         violations = []
-         for num in vocab:
-             if num not in target:
-                 v_type = ViolationType.NUMBER_MISMATCH
-                 violations.append({
-                     "type": v_type.value, 
-                     "message": f"Missing number {num} (Default)", 
-                     "severity": get_severity(v_type).value
-                 })
-         return violations
+    def check_numbers(self, source: str, target: str) -> List[Dict[str, Any]]:
+        # Word-bounded numeric check (TMX-3410). Default pack — Western numerals only.
+        violations = []
+        for num in self._find_missing_numbers(source, target):
+            v_type = ViolationType.NUMBER_MISMATCH
+            violations.append({
+                "type": v_type.value,
+                "message": f"Missing number {num} (Default)",
+                "severity": get_severity(v_type).value
+            })
+        return violations
     def check_punctuation(self, t): return []
     def check_variants(self, t): return []
 

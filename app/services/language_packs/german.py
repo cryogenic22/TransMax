@@ -31,20 +31,16 @@ class GermanPack(BaseLanguagePack):
         return violations
 
     def check_numbers(self, source: str, target: str) -> List[Dict[str, Any]]:
-         vocab = re.findall(r'\b\d+(?:[\.,]\d+)?\b', source)
-         violations = []
-         for num in vocab:
-             if num not in target:
-                 # German decimal comma
-                 alt = num.replace('.', ',')
-                 if alt not in target:
-                     v_type = ViolationType.NUMBER_MISMATCH
-                     violations.append({
-                         "type": v_type.value, 
-                         "message": f"Missing number {num}", 
-                         "severity": get_severity(v_type).value
-                     })
-         return violations
+        # Word-bounded numeric check (TMX-3410). German uses comma decimal.
+        violations = []
+        for num in self._find_missing_numbers(source, target, accept_decimal_swap=True):
+            v_type = ViolationType.NUMBER_MISMATCH
+            violations.append({
+                "type": v_type.value,
+                "message": f"Missing number {num}",
+                "severity": get_severity(v_type).value
+            })
+        return violations
 
     def check_punctuation(self, t): return []
     def check_variants(self, t): return []

@@ -68,22 +68,17 @@ class ChinesePack(BaseLanguagePack):
     def check_numbers(self, source_text: str, target_text: str) -> List[Dict[str, Any]]:
         """
         Chinese pharma uses Western (Arabic) numerals for dosages.
-        Also check for Chinese numeral equivalents in non-dose contexts.
+        Word-bounded numeric check (TMX-3410).
         """
-        source_nums = re.findall(r'\d+(?:[\.,]\d+)?', source_text)
-        if not source_nums:
-            return []
-
         violations = []
-        for num in source_nums:
-            if num not in target_text:
-                v_type = ViolationType.NUMBER_MISMATCH
-                violations.append({
-                    "type": v_type.value,
-                    "message": f"Number '{num}' missing in Chinese target text.",
-                    "severity": get_severity(v_type).value,
-                    "segment_id": "unknown",
-                })
+        for num in self._find_missing_numbers(source_text, target_text):
+            v_type = ViolationType.NUMBER_MISMATCH
+            violations.append({
+                "type": v_type.value,
+                "message": f"Number '{num}' missing in Chinese target text.",
+                "severity": get_severity(v_type).value,
+                "segment_id": "unknown",
+            })
         return violations
 
     def check_punctuation(self, target_text: str) -> List[Dict[str, Any]]:
