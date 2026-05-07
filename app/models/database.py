@@ -6,10 +6,32 @@ Compatible with SQLAlchemy 2.0+ using Mapped[] annotations.
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from sqlalchemy import Column, String, Text, Float, Integer, DateTime, ForeignKey, JSON, Enum as SQLEnum
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    Enum as SQLEnum,
+    Float,
+    ForeignKey,
+    Integer,
+    JSON,
+    String,
+    Text,
+)
 from sqlalchemy.orm import relationship, declarative_base
 
+from app.models.types import GUID
+
 Base = declarative_base()
+
+# Identity of the seeded "system" organization. TMX-3011 will backfill all
+# existing rows to this id before flipping organization_id NOT NULL.
+DEFAULT_ORG_ID = "00000000-0000-0000-0000-000000000001"
+
+# Allowed values for Organization.org_kind. Kept in code so callers can
+# reference the canonical set without re-deriving from the CheckConstraint.
+ORG_KINDS = ("system", "customer", "partner")
 
 # --- Enums ---
 
@@ -28,6 +50,40 @@ class SegmentStatus(str, Enum):
     BLOCKED = "blocked"
 
 # --- Models ---
+
+class Organization(Base):
+    """
+    Tenant root. Every domain row hangs off an organization (TMX-3011 wires
+    the FK on each table). The seeded `system` org with id DEFAULT_ORG_ID
+    owns historical rows that pre-date multi-tenancy.
+    """
+    __tablename__ = "organizations"
+
+    id = Column(GUID, primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(255), nullable=False)
+    slug = Column(String(64), unique=True, nullable=False, index=True)
+    org_kind = Column(String(32), nullable=False, default="customer")
+    is_active = Column(Boolean, nullable=False, default=True)
+    metadata_json = Column(JSON, nullable=True)
+
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "org_kind IN ('system','customer','partner')",
+            name="ck_organizations_org_kind",
+        ),
+    )
+
+    def __repr__(self):
+        return f"<Organization(id={self.id}, slug='{self.slug}', kind={self.org_kind})>"
+
 
 class Document(Base):
     """
