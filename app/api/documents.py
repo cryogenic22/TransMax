@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.core.database import get_db
-from app.models.database import Document, Segment, DeletionRecord, DocumentStatus, SegmentStatus
+from app.models.database import Document, Segment, DeletionRecord, DocumentStatus, SegmentStatus, DEFAULT_ORG_ID
 from app.api.schemas import (
     DocumentUpdate, DocumentResponse, DocumentListResponse,
     TranslationJobRequest, TranslationJobResponse
@@ -122,6 +122,8 @@ async def create_document(
     # Create document record
     doc = Document(
         id=doc_id,
+        # TMX-3012 will replace with session-context injection.
+        organization_id=DEFAULT_ORG_ID,
         name=name or file.filename,
         source_language=source_language,
         target_language=target_language,
@@ -142,6 +144,8 @@ async def create_document(
             continue
             
         segment = Segment(
+            # TMX-3012 will replace with session-context injection.
+            organization_id=DEFAULT_ORG_ID,
             document_id=doc_id,
             order_index=idx + 1,
             source_text=clean_text,
@@ -298,6 +302,8 @@ async def delete_document(
 
     # Create deletion audit record with full metadata snapshot
     deletion_record = DeletionRecord(
+        # TMX-3012 will replace with session-context injection.
+        organization_id=DEFAULT_ORG_ID,
         document_id=doc.id,
         document_name=doc.name,
         file_type=doc.file_type,

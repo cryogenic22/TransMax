@@ -6,15 +6,17 @@ so create_all() picks it up automatically when the model is imported.
 """
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Boolean, DateTime
+from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey
 
 from app.models.database import Base
+from app.models.types import GUID
 
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255), nullable=False)
     hashed_password = Column(String(255), nullable=True)  # Null for SSO users

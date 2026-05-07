@@ -5,6 +5,7 @@ from pgvector.sqlalchemy import Vector
 import uuid
 
 from app.models.database import Base
+from app.models.types import GUID
 
 class TranslationRule(Base):
     """
@@ -14,6 +15,7 @@ class TranslationRule(Base):
     __tablename__ = "translation_rules"
 
     rule_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
 
     source_pattern = Column(String, nullable=False, index=True) # Text or Regex
     target_correction = Column(String, nullable=False)
@@ -46,6 +48,7 @@ class TranslationJobQueue(Base):
     __tablename__ = "translation_jobs_queue"
 
     job_id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     request_id = Column(String, unique=True, index=True, nullable=False)
     status = Column(String, default="PENDING")
     
@@ -61,7 +64,10 @@ class TranslationJobQueue(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # audit_trail_id removed to avoid circular dependency. AuditRecord links to Job via job_id.
-    audit_record = relationship("AuditRecord", back_populates="job", uselist=False)
+    # Fully-qualified path: there is also an `AuditRecord` in app.models.audit
+    # (the v3 audit_records table). TMX-3017 will rationalise. Until then SQLAlchemy
+    # needs the dotted name to disambiguate.
+    audit_record = relationship("app.models.models.AuditRecord", back_populates="job", uselist=False)
     config_snapshot = relationship("JobConfigSnapshot", back_populates="job", uselist=False)
     scorecard = relationship("QualityScorecard", back_populates="job", uselist=False)
 
@@ -72,8 +78,9 @@ class JobConfigSnapshot(Base):
     Ensures reproducibility even if system config changes later.
     """
     __tablename__ = "job_config_snapshots"
-    
+
     snapshot_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     job_id = Column(String, ForeignKey("translation_jobs_queue.job_id"), unique=True, nullable=False)
     
     # The frozen config blob
@@ -92,8 +99,9 @@ class AuditLogEntry(Base):
     Each entry is cryptographically linked to the previous one (Blockchain-style).
     """
     __tablename__ = "audit_log_entries"
-    
+
     entry_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     audit_id = Column(String, ForeignKey("audit_records_queue.audit_id"), nullable=False, index=True)
     
     sequence_index = Column(Integer, nullable=False) # 0, 1, 2...
@@ -107,7 +115,7 @@ class AuditLogEntry(Base):
     
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
-    audit_trail = relationship("AuditRecord", back_populates="log_entries")
+    audit_trail = relationship("app.models.models.AuditRecord", back_populates="log_entries")
 
 class QualityScorecard(Base):
     """
@@ -116,8 +124,9 @@ class QualityScorecard(Base):
     One scorecard per job (immutable once finalized).
     """
     __tablename__ = "quality_scorecards"
-    
+
     scorecard_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     job_id = Column(String, ForeignKey("translation_jobs_queue.job_id"), unique=True, nullable=False)
     
     # Aggregated Metrics
@@ -140,8 +149,9 @@ class ScorecardEntry(Base):
     Granular defect entry linked to the scorecard.
     """
     __tablename__ = "scorecard_entries"
-    
+
     entry_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     scorecard_id = Column(String, ForeignKey("quality_scorecards.scorecard_id"), nullable=False, index=True)
     
     segment_id = Column(String, nullable=True) # Could be document-level issue
@@ -159,9 +169,10 @@ class AuditRecord(Base):
     Now acts as the summary container.
     """
     __tablename__ = "audit_records_queue"
-    
+
     audit_id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
-    job_id = Column(String, ForeignKey("translation_jobs_queue.job_id"), nullable=True) 
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
+    job_id = Column(String, ForeignKey("translation_jobs_queue.job_id"), nullable=True)
     
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
@@ -196,7 +207,8 @@ class Glossary(Base):
 
     glossary_id = Column(String, primary_key=True, index=True) # e.g., 'global_pharma_v2'
     version = Column(String, primary_key=True) # e.g., '2.4.0'
-    
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
+
     is_active = Column(Boolean, default=True)
     meta_json = Column(JSON, nullable=True)
     
@@ -206,8 +218,9 @@ class Glossary(Base):
 
 class GlossaryTerm(Base):
     __tablename__ = "glossary_terms"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     glossary_id = Column(String, nullable=False)
     glossary_version = Column(String, nullable=False)
     
@@ -234,10 +247,11 @@ class GlossaryTerm(Base):
 
 class TMSegment(Base):
     __tablename__ = "tm_segments"
-    
+
     # TM Identity
     tm_id = Column(String, nullable=False) # Grouping ID
     segment_hash = Column(String, primary_key=True, index=True) # Unique ID of this entry
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     
     # Content Integrity (Sprint 6)
     source_content_hash = Column(String(64), index=True, nullable=False) # SHA256(normalized_source)
@@ -264,8 +278,9 @@ class DeadLetterQueue(Base):
     Prevents "poison pills" from blocking the queue.
     """
     __tablename__ = "dead_letter_queue"
-    
+
     dlq_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     job_id = Column(String, index=True, nullable=True) # Soft link to job
     
     error_code = Column(String, nullable=False) # e.g. "LLM_TIMEOUT", "PARSE_ERROR"

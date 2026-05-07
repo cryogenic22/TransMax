@@ -10,6 +10,7 @@ sys.path.append(os.getcwd())
 from app.services.db_service import DatabaseService
 from app.services.audit_service import AuditService
 from app.services.quality_gate import QualityGateService
+from app.models.database import DEFAULT_ORG_ID
 from app.models.models import QualityScorecard, AuditRecord, AuditLogEntry, TranslationJobQueue
 
 @pytest.fixture
@@ -36,15 +37,15 @@ def scaffold_governance(db):
     session = db.get_session()
     try:
         # Create Job
-        job = TranslationJobQueue(job_id=job_id, request_id=f"req_{job_id}", source_language="en", target_language="fr", request_json={})
+        job = TranslationJobQueue(job_id=job_id, organization_id=DEFAULT_ORG_ID, request_id=f"req_{job_id}", source_language="en", target_language="fr", request_json={})
         session.add(job)
-        
+
         # Create Audit Record
-        ar = AuditRecord(audit_id=audit_id, job_id=job_id)
+        ar = AuditRecord(audit_id=audit_id, organization_id=DEFAULT_ORG_ID, job_id=job_id)
         session.add(ar)
-        
+
         # Create Scorecard
-        qs = QualityScorecard(scorecard_id=scorecard_id, job_id=job_id, status="REVIEW_REQUIRED")
+        qs = QualityScorecard(scorecard_id=scorecard_id, organization_id=DEFAULT_ORG_ID, job_id=job_id, status="REVIEW_REQUIRED")
         session.add(qs)
         
         session.commit()
@@ -91,11 +92,11 @@ def test_governance_blocked_status(db, gate):
     
     try:
         # 1. Create Job (Fixes FK violation)
-        job = TranslationJobQueue(job_id=job_id, request_id=f"req_{job_id}", source_language="en", target_language="fr", request_json={})
+        job = TranslationJobQueue(job_id=job_id, organization_id=DEFAULT_ORG_ID, request_id=f"req_{job_id}", source_language="en", target_language="fr", request_json={})
         session.add(job)
-        
+
         # 2. Create Scorecard
-        qs = QualityScorecard(job_id=job_id, status="BLOCKED")
+        qs = QualityScorecard(job_id=job_id, organization_id=DEFAULT_ORG_ID, status="BLOCKED")
         session.add(qs)
         session.commit()
     except:

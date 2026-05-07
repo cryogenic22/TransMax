@@ -144,7 +144,10 @@ class ResilienceService:
         db = get_db_service()
         session = db.get_session()
         try:
+            from app.models.database import DEFAULT_ORG_ID
             dlq_entry = DeadLetterQueue(
+                # TMX-3012 will replace with session-context injection.
+                organization_id=DEFAULT_ORG_ID,
                 job_id=job_id,
                 error_code=error_code,
                 error_trace=error_trace,

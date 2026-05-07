@@ -155,7 +155,11 @@ async def register(request: RegisterRequest):
 
     db = SessionLocal()
     try:
+        from app.models.database import DEFAULT_ORG_ID
         user = User(
+            # TMX-3012 / TMX-3013 will replace with the resolved org from
+            # session context or IdP claims.
+            organization_id=DEFAULT_ORG_ID,
             email=request.email,
             name=request.name,
             hashed_password=hash_password(request.password),

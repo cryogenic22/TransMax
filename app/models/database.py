@@ -92,6 +92,7 @@ class Document(Base):
     __tablename__ = "documents"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     name = Column(String(255), nullable=False, index=True)
     source_language = Column(String(10), nullable=False, default="en")
     target_language = Column(String(10), nullable=True)
@@ -137,6 +138,7 @@ class Segment(Base):
     __tablename__ = "segments"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     document_id = Column(String(36), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True)
     order_index = Column(Integer, nullable=False)  # Position in document
     
@@ -182,8 +184,9 @@ class ChangeLog(Base):
     __tablename__ = "change_logs"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     segment_id = Column(String(36), ForeignKey("segments.id", ondelete="CASCADE"), nullable=False, index=True)
-    
+
     # Change details
     original_text = Column(Text, nullable=False)
     new_text = Column(Text, nullable=False)
@@ -211,6 +214,7 @@ class DeletionRecord(Base):
     __tablename__ = "deletion_records"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     document_id = Column(String(36), nullable=False, index=True)
     document_name = Column(String(255), nullable=False)
     file_type = Column(String(50), nullable=True)

@@ -7,6 +7,7 @@ import enum
 from pgvector.sqlalchemy import Vector
 
 from app.models.database import Base
+from app.models.types import GUID
 
 
 class TranslationStatus(str, enum.Enum):
@@ -30,10 +31,11 @@ class TranslationJob(Base):
     __tablename__ = "translation_jobs"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    
+
     # Source document reference (from digitization service)
     source_document_id = Column(UUID(as_uuid=True), nullable=False)
-    organization_id = Column(UUID(as_uuid=True), nullable=False)
+    # TMX-3011: GUID + FK; was bare UUID
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     
     # Translation configuration
     source_language = Column(String, nullable=False)
@@ -84,8 +86,9 @@ class ChunkTranslation(Base):
     __tablename__ = "chunk_translations"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     job_id = Column(UUID(as_uuid=True), ForeignKey("translation_jobs.id"), nullable=False)
-    
+
     # Source chunk reference
     source_chunk_id = Column(UUID(as_uuid=True), nullable=False)
     chunk_index = Column(Integer, nullable=False)
@@ -126,8 +129,9 @@ class QualityReport(Base):
     __tablename__ = "quality_reports"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     job_id = Column(UUID(as_uuid=True), ForeignKey("translation_jobs.id"), nullable=False)
-    
+
     # Overall metrics
     overall_confidence = Column(Float)
     consistency_score = Column(Float)
@@ -157,9 +161,10 @@ class QualityReport(Base):
 
 class TranslationGlossary(Base):
     __tablename__ = "translation_glossaries"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id = Column(UUID(as_uuid=True), nullable=False)
+    # TMX-3011: GUID + FK; was bare UUID
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     
     name = Column(String, nullable=False)
     description = Column(Text)
@@ -181,9 +186,10 @@ class TranslationGlossary(Base):
 
 class TranslationMemory(Base):
     __tablename__ = "translation_memory"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id = Column(UUID(as_uuid=True), nullable=False)
+    # TMX-3011: GUID + FK; was bare UUID
+    organization_id = Column(GUID, ForeignKey("organizations.id"), nullable=False, index=True)
     
     # Content
     source_text = Column(Text, nullable=False)
