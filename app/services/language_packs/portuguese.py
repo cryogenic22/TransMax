@@ -69,24 +69,17 @@ class PortuguesePack(BaseLanguagePack):
         """
         Portuguese uses comma for decimal separator (1.5 → 1,5)
         and period/space for thousands (1,000 → 1.000 or 1 000).
+        Word-bounded numeric check (TMX-3410).
         """
-        source_nums = re.findall(r'\b\d+(?:[\.,]\d+)?\b', source_text)
-        if not source_nums:
-            return []
-
         violations = []
-        for num in source_nums:
-            if num not in target_text:
-                # Check comma variant (1.5 → 1,5)
-                alt = num.replace('.', ',')
-                if alt not in target_text:
-                    v_type = ViolationType.NUMBER_MISMATCH
-                    violations.append({
-                        "type": v_type.value,
-                        "message": f"Number '{num}' missing in Portuguese target (checked both '.' and ',' decimal).",
-                        "severity": get_severity(v_type).value,
-                        "segment_id": "unknown",
-                    })
+        for num in self._find_missing_numbers(source_text, target_text, accept_decimal_swap=True):
+            v_type = ViolationType.NUMBER_MISMATCH
+            violations.append({
+                "type": v_type.value,
+                "message": f"Number '{num}' missing in Portuguese target (checked both '.' and ',' decimal).",
+                "severity": get_severity(v_type).value,
+                "segment_id": "unknown",
+            })
         return violations
 
     def check_punctuation(self, target_text: str) -> List[Dict[str, Any]]:

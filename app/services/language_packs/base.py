@@ -1,6 +1,7 @@
 
+import re
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 class Violation(Dict[str, Any]):
     """Type alias for a violation dictionary."""
@@ -11,6 +12,37 @@ class BaseLanguagePack(ABC):
     Abstract base class for Language Drivers.
     Each language pack implements specific validation logic for its script/locale.
     """
+
+    def _find_missing_numbers(
+        self,
+        source_text: str,
+        target_text: str,
+        *,
+        accept_decimal_swap: bool = False,
+        digit_translate: Optional[Dict[str, str]] = None,
+    ) -> List[str]:
+        # Critical safety: substring `in` is unsafe (e.g. '10' is contained in
+        # '100', silently passing 10 mg -> 100 mg dose tampering). Use word-
+        # bounded regex on every candidate form. See TMX-3408 / TMX-3410.
+        nums = re.findall(r'\b\d+(?:[\.,]\d+)?\b', source_text)
+        missing: List[str] = []
+        for num in nums:
+            forms = {num}
+            if accept_decimal_swap:
+                if '.' in num:
+                    forms.add(num.replace('.', ','))
+                if ',' in num:
+                    forms.add(num.replace(',', '.'))
+            if digit_translate:
+                trans_table = str.maketrans(digit_translate)
+                forms.add(num.translate(trans_table))
+            found = any(
+                re.search(rf'\b{re.escape(form)}\b', target_text)
+                for form in forms
+            )
+            if not found:
+                missing.append(num)
+        return missing
     
     @property
     @abstractmethod
