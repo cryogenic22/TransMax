@@ -1,11 +1,14 @@
 """
 Database connection and session management.
 """
+import logging
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from contextlib import contextmanager
+
+logger = logging.getLogger(__name__)
 
 # Load .env file
 load_dotenv()
@@ -92,3 +95,36 @@ def init_db():
         print(f"Database init complete with skipped tables: {failed}")
     else:
         print("Database tables created successfully.")
+
+    _seed_default_org()
+
+
+def _seed_default_org() -> None:
+    """Seed the system default-org row (TMX-3010).
+
+    Idempotent — uses INSERT ... ON CONFLICT / INSERT OR IGNORE so re-running
+    init_db() in dev or CI does not raise. This mirrors the alembic migration
+    so the row exists regardless of which init path was used (alembic upgrade
+    vs. SessionLocal-only test setup).
+    """
+    from datetime import datetime, timezone
+    from sqlalchemy import text
+    from app.models.database import DEFAULT_ORG_ID
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    is_postgres = "postgresql" in DATABASE_URL
+    sql = (
+        "INSERT INTO organizations (id, name, slug, org_kind, is_active, created_at, updated_at) "
+        "VALUES (:id, 'default', 'default', 'system', :truthy, :ts, :ts) "
+        + ("ON CONFLICT (id) DO NOTHING" if is_postgres else "")
+    )
+    if not is_postgres:
+        sql = sql.replace("INSERT INTO", "INSERT OR IGNORE INTO", 1)
+
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text(sql).bindparams(id=DEFAULT_ORG_ID, ts=now_iso, truthy=True if is_postgres else 1)
+            )
+    except Exception as e:
+        logger.warning("default-org seed failed (%s). TMX-3011 backfill will fail until resolved.", e)
