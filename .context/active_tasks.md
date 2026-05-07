@@ -45,8 +45,9 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 | TMX-3700 | DOCX ingestion v2 with tracked-changes preservation | Pipeline | L | 1-2 |
 | TMX-3705 | File-type sniffing + size cap + AV scan trigger | Pipeline | M | 1 |
 | TMX-3800 | Sentence segmenter service skeleton + interface | Pipeline | M | 1 |
-| TMX-3200 | Prompt registry directory layout + loader | Agent | M | 1 |
-| TMX-3201 | Migrate `prompts.py` constants to v1.0.0 YAML files | Agent | M | 1 |
+| TMX-3200 | Prompt registry directory layout + loader | Agent | M | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3200-3201.md` |
+| TMX-3201 | Migrate `prompts.py` constants to v1.0.0 YAML files | Agent | M | 1 — **[Done, pending commit + push]** — bundled with TMX-3200 in same loop |
+| TMX-3204 | Wire `lang_instruction` into `_build_translation_prompt` (graph.py) and `BatchTranslator._build_prompt` — currently substituted to empty-string as a TMX-3201 stop-gap | Agent | XS | 2 — **[Spawned by TMX-3201 red-team]** |
 | TMX-3212 | Audit timestamp bug fix (datetime UTC ISO) | Agent | XS | 1 — **[Done, pending commit]** — see `.context/loops/TMX-3212.md` |
 | TMX-3600 | Pick canonical IA = `/workspace/*`; redirect map | Frontend | S | 1 — **[Blocked]** code complete locally; ship gated on TMX-3606 (frontend-repo structural fix) — see `.context/loops/TMX-3600.md` |
 | TMX-3606 | De-tangle frontend nested-git-repo (no `.gitmodules`, no remote); pick one of: (a) formal submodule + remote, (b) merge into parent repo, (c) split-repo with its own deploy hook | Frontend + Platform | S | 1 — **[Needs Kapil decision]** |

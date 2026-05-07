@@ -21,7 +21,7 @@ from app.services.llm import get_llm
 from app.services.json_parser import RobustParser
 from app.services.quality_gate import QualityGateService
 from app.services.db_service import DatabaseService
-from app.agents.prompts import TransMaxPrompts
+from app.agents.prompts import PromptRegistry
 from app.models.database import SegmentStatus
 from app.core.constants import SubstitutionType
 
@@ -293,7 +293,8 @@ class BatchTranslator:
         constraint_pack: Dict[str, Any]
     ) -> list:
         """Builds LLM prompt messages."""
-        user_content = TransMaxPrompts.TRANSLATOR_USER_V1.replace(
+        prompt = PromptRegistry.load("translator")
+        user_content = prompt.user.replace(
             "{{target_language}}", target_language
         ).replace(
             "{{audience}}", "general"
@@ -302,13 +303,15 @@ class BatchTranslator:
         ).replace(
             "{{risk_level}}", "high"
         ).replace(
+            "{{language_instruction}}", ""
+        ).replace(
             "{{constraint_pack_json}}", json.dumps(constraint_pack)
         ).replace(
             "{{segments_json}}", json.dumps(input_segments)
         )
-        
+
         return [
-            SystemMessage(content=TransMaxPrompts.TRANSLATOR_SYSTEM_V1),
+            SystemMessage(content=prompt.system),
             HumanMessage(content=user_content)
         ]
 
