@@ -45,7 +45,7 @@ from app.services.llm import get_llm
 from app.services.json_parser import RobustParser
 from app.services.quality_gate import QualityGateService
 from app.services.db_service import DatabaseService
-from app.agents.prompts import TransMaxPrompts
+from app.agents.prompts import PromptRegistry
 from app.models.database import SegmentStatus, DocumentStatus
 from app.core.constants import SubstitutionType
 from app.services.language_packs.factory import LanguagePackFactory
@@ -573,7 +573,8 @@ class TranslationEngine:
         except Exception:
             lang_instruction = ""
 
-        user_content = TransMaxPrompts.TRANSLATOR_USER_V1.replace(
+        prompt = PromptRegistry.load("translator")
+        user_content = prompt.user.replace(
             "{{target_language}}", target_language
         ).replace(
             "{{audience}}", "general"
@@ -588,9 +589,9 @@ class TranslationEngine:
         ).replace(
             "{{segments_json}}", json.dumps(input_segments)
         )
-        
+
         return [
-            SystemMessage(content=TransMaxPrompts.TRANSLATOR_SYSTEM_V1),
+            SystemMessage(content=prompt.system),
             HumanMessage(content=user_content)
         ]
     

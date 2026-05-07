@@ -8,7 +8,7 @@ from langgraph.graph import StateGraph, END
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI
 
-from app.agents.prompts import TransMaxPrompts
+from app.agents.prompts import PromptRegistry
 from app.services.quality_gate import QualityGateService
 from app.services.db_service import DatabaseService
 from app.services.audit_service import AuditService
@@ -274,21 +274,24 @@ def _prepare_translation_payload(to_translate: List[Dict[str, Any]], all_segment
 
 def _build_translation_prompt(state: TransMaxState, input_segments: List[Dict[str, Any]]) -> list[Any]:
     """Constructs the LLM prompt messages."""
-    user_content = TransMaxPrompts.TRANSLATOR_USER_V1.replace(
+    prompt = PromptRegistry.load("translator")
+    user_content = prompt.user.replace(
         "{{target_language}}", state['target_language']
     ).replace(
         "{{audience}}", "general"
     ).replace(
         "{{domain}}", "pharma"
     ).replace(
-        "{{risk_level}}", "high" 
+        "{{risk_level}}", "high"
+    ).replace(
+        "{{language_instruction}}", ""
     ).replace(
         "{{constraint_pack_json}}", json.dumps(state['constraint_pack'])
     ).replace(
         "{{segments_json}}", json.dumps(input_segments)
     )
     return [
-        SystemMessage(content=TransMaxPrompts.TRANSLATOR_SYSTEM_V1),
+        SystemMessage(content=prompt.system),
         HumanMessage(content=user_content)
     ]
 
@@ -516,16 +519,17 @@ async def refine_translation(state: TransMaxState) -> TransMaxState:
     refinement_payload = json.dumps(to_refine, indent=2)
     
     # Use Targeted Fixer Prompt
-    user_content = TransMaxPrompts.FIXER_USER_V1.replace(
+    fixer_prompt = PromptRegistry.load("fixer")
+    user_content = fixer_prompt.user.replace(
         "{{target_language}}", state['target_language']
     ).replace(
         "{{constraint_pack_json}}", json.dumps(constraint_pack)
     ).replace(
         "{{segments_to_fix_json}}", refinement_payload
     )
-    
+
     messages = [
-        SystemMessage(content=TransMaxPrompts.FIXER_SYSTEM_V1),
+        SystemMessage(content=fixer_prompt.system),
         HumanMessage(content=user_content)
     ]
     
