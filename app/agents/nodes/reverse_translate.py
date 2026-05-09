@@ -4,9 +4,11 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from app.services.llm import get_llm
 from app.services.db_service import get_db_service
 from app.services.quality_gate import get_quality_gate_service
+from app.services.tracing import traced
 
 CONCURRENCY_LIMIT = 10
 
+@traced("graph.node.reflexion")
 async def reverse_translate_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     TMX-D020: Performs reverse translation for Reflexion.

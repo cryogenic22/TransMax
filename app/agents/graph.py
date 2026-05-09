@@ -10,6 +10,7 @@ from langchain_openai import ChatOpenAI
 
 from app.agents.prompts import PromptRegistry
 from app.services.language_packs.factory import LanguagePackFactory
+from app.services.tracing import traced
 from app.services.quality_gate import QualityGateService
 from app.services.db_service import DatabaseService
 from app.services.audit_service import AuditService
@@ -79,6 +80,7 @@ class TransMaxState(TypedDict):
 # NODES
 # ---------------------------------------------------------
 
+@traced("graph.node.validate")
 async def validate_request(state: TransMaxState) -> TransMaxState:
     """
     Validates input and ensures document exists.
@@ -157,6 +159,7 @@ async def validate_request(state: TransMaxState) -> TransMaxState:
             
     return state
 
+@traced("graph.node.load_segments")
 async def load_segments(state: TransMaxState) -> TransMaxState:
     """
     Loads segments from the database (v2.0 table) into the graph state.
@@ -179,6 +182,7 @@ async def load_segments(state: TransMaxState) -> TransMaxState:
         
     return state
 
+@traced("graph.node.constraints")
 async def compile_constraints(state: TransMaxState) -> TransMaxState:
     """
     Fetches Glossary terms and TM matches via pgvector.
@@ -365,6 +369,7 @@ async def draft_translate(state: TransMaxState) -> TransMaxState:
 
 from app.core.defect_taxonomy import DefectSeverity, DefectCategory
 
+@traced("graph.node.gates")
 async def run_quality_gates(state: TransMaxState) -> TransMaxState:
     """
     Runs deterministic checks, updates Segment.gate_results, and persists Quality Scorecard.
@@ -485,6 +490,7 @@ async def run_quality_gates(state: TransMaxState) -> TransMaxState:
         
     return state
 
+@traced("graph.node.refine")
 async def refine_translation(state: TransMaxState) -> TransMaxState:
     """
     Auto-fixes non-critical violations.
@@ -597,6 +603,7 @@ def decide_next_step(state: TransMaxState):
             
     return "finalize"
 
+@traced("graph.node.finalize")
 async def finalize_job(state: TransMaxState) -> TransMaxState:
     """
     Marks document as TRANSLATED.

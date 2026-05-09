@@ -46,6 +46,7 @@ from app.services.json_parser import RobustParser
 from app.services.quality_gate import QualityGateService
 from app.services.db_service import DatabaseService
 from app.agents.prompts import PromptRegistry
+from app.services.tracing import traced
 from app.models.database import SegmentStatus, DocumentStatus
 from app.core.constants import SubstitutionType
 from app.services.language_packs.factory import LanguagePackFactory
@@ -656,6 +657,7 @@ def get_engine() -> TranslationEngine:
     return _engine
 
 
+@traced("graph.node.translate")
 async def translation_engine_node(state: dict) -> dict:
     """
     LangGraph node that uses the TranslationEngine.
