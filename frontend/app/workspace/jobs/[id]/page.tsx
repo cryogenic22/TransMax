@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/StatusLifecycle"
 import { ProvenanceChip } from "@/components/ui/ProvenanceChip"
 import { AgentLanes, type AgentActivity } from "@/components/ui/AgentLanes"
-import { useAgentActivity } from "@/hooks/useActivity"
+import { useAgentActivityByJob } from "@/hooks/useActivity"
 import { getErrMessage } from "@/lib/utils"
 
 // TMX-3603-jobs-id: canonical detail page for a single job. The legacy
@@ -60,11 +60,9 @@ function WorkspaceJobDetailInner() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
-    // The activity-feed endpoint exposes /agent-activity/{audit_id}, but for
-    // a job-id-shaped route we don't yet know the audit_id. v2 of the
-    // backend will let us pass job_id directly; for now the lanes panel
-    // renders empty when no audit_id is bound — no-op cost.
-    const { data: agentActivities } = useAgentActivity(null)
+    // TMX-3603-jobs-id: backend resolves job_id → audit_id internally so
+    // this hook delivers the AgentLanes data without knowing the audit_id.
+    const { data: agentActivities } = useAgentActivityByJob(jobId)
 
     const fetchData = useCallback(async () => {
         try {

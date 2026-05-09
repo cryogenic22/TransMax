@@ -151,6 +151,25 @@ def get_activity_feed(
     return {"items": items, "total": len(items)}
 
 
+def _audit_log_entries_to_agent_activities(entries: list[AuditLogEntry]) -> list[dict[str, Any]]:
+    """Map AuditLogEntry rows -> AgentActivity wire shape, filtered to the
+    four canonical agents only (system / synthetic events are skipped)."""
+    activities: list[dict[str, Any]] = []
+    for e in entries:
+        agent_meta = _EVENT_TYPE_TO_AGENT.get(e.event_type or "", {"id": "system"})
+        agent = agent_meta["id"]
+        if agent not in {"translator", "reviewer", "fixer", "auditor"}:
+            continue
+        activities.append({
+            "id": str(e.entry_id),
+            "agent": agent,
+            "label": _EVENT_TYPE_TO_ACTION.get(e.event_type or "", e.event_type or "step"),
+            "startedAt": e.timestamp.isoformat() if e.timestamp else None,
+            "status": "complete",
+        })
+    return activities
+
+
 @router.get("/agent-activity/{audit_id}")
 def get_agent_activity(audit_id: str, db: Session = Depends(get_db)) -> dict[str, Any]:
     """
@@ -165,22 +184,41 @@ def get_agent_activity(audit_id: str, db: Session = Depends(get_db)) -> dict[str
         .all()
     )
 
-    activities: list[dict[str, Any]] = []
-    for e in entries:
-        agent_meta = _EVENT_TYPE_TO_AGENT.get(e.event_type or "", {"id": "system"})
-        agent = agent_meta["id"]
-        # The AgentLanes component only accepts the four canonical agents;
-        # synthetic / system events are skipped for the lane view.
-        if agent not in {"translator", "reviewer", "fixer", "auditor"}:
-            continue
-        activities.append({
-            "id": str(e.entry_id),
-            "agent": agent,
-            "label": _EVENT_TYPE_TO_ACTION.get(e.event_type or "", e.event_type or "step"),
-            "startedAt": e.timestamp.isoformat() if e.timestamp else None,
-            "status": "complete",   # AuditLogEntry rows are always post-hoc; no in-flight state in this table
-        })
-    return {"activities": activities}
+    return {"activities": _audit_log_entries_to_agent_activities(entries)}
+
+
+@router.get("/agent-activity-by-job/{job_id}")
+def get_agent_activity_by_job(job_id: str, db: Session = Depends(get_db)) -> dict[str, Any]:
+    """
+    TMX-3603-jobs-id companion endpoint. Looks up the AuditRecord for
+    a job_id (typically the document id used by /workspace/jobs/[id]),
+    then returns per-agent activity for the chain in the same wire shape
+    as `/agent-activity/{audit_id}`.
+
+    Behaviour when the job_id has no audit chain (e.g. a fresh upload
+    that hasn't started translation yet) is empty `activities: []` —
+    the consumer renders the empty-state lanes without conditional
+    rendering.
+    """
+    record = (
+        db.query(AuditRecord)
+        .filter(AuditRecord.job_id == job_id)
+        .order_by(AuditRecord.created_at.desc())
+        .first()
+    )
+    if not record:
+        return {"activities": [], "audit_id": None}
+
+    entries = (
+        db.query(AuditLogEntry)
+        .filter(AuditLogEntry.audit_id == record.audit_id)
+        .order_by(AuditLogEntry.sequence_index.asc())
+        .all()
+    )
+    return {
+        "activities": _audit_log_entries_to_agent_activities(entries),
+        "audit_id": record.audit_id,
+    }
 
 
 @router.get("/stats")
