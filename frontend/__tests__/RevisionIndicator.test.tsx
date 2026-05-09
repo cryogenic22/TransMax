@@ -7,6 +7,8 @@ const baseRevisions = (overrides: Partial<SegmentRevisions> = {}): SegmentRevisi
     has_insertions: false,
     has_deletions: false,
     has_moves: false,
+    has_moves_from: false,
+    has_moves_to: false,
     authors: [],
     dates: [],
     ...overrides,
@@ -84,6 +86,88 @@ describe("<RevisionIndicator>", () => {
         expect(title).toContain("Has moves")
         expect(title).toContain("Authors: A, B")
         expect(title).toContain("Dates: 2026-04-01")
+    })
+
+    // ── TMX-3704-ui: directional move semantics ─────────────────────
+
+    it("renders 'moved out' when only has_moves_from is true", () => {
+        render(
+            <RevisionIndicator
+                revisions={baseRevisions({
+                    has_moves: true,
+                    has_moves_from: true,
+                    has_moves_to: false,
+                    authors: ["Mover"],
+                    dates: ["2026-04-03T12:00:00Z"],
+                })}
+            />
+        )
+        expect(screen.getByText(/moved out/)).toBeInTheDocument()
+        expect(screen.queryByText(/^tracked/)).not.toBeInTheDocument()
+    })
+
+    it("renders 'moved in' when only has_moves_to is true", () => {
+        render(
+            <RevisionIndicator
+                revisions={baseRevisions({
+                    has_moves: true,
+                    has_moves_from: false,
+                    has_moves_to: true,
+                    authors: ["Mover"],
+                    dates: ["2026-04-03T12:00:00Z"],
+                })}
+            />
+        )
+        expect(screen.getByText(/moved in/)).toBeInTheDocument()
+    })
+
+    it("renders 'moved' when both directions are true", () => {
+        render(
+            <RevisionIndicator
+                revisions={baseRevisions({
+                    has_moves: true,
+                    has_moves_from: true,
+                    has_moves_to: true,
+                    authors: ["Mover"],
+                    dates: ["2026-04-03T12:00:00Z"],
+                })}
+            />
+        )
+        const moved = screen.getByText(/moved/)
+        // Plain "moved" — not "moved out" / "moved in"
+        expect(moved.textContent).not.toMatch(/moved (in|out)/)
+    })
+
+    it("falls back to 'tracked' when moves combine with insertions/deletions", () => {
+        render(
+            <RevisionIndicator
+                revisions={baseRevisions({
+                    has_insertions: true,
+                    has_moves: true,
+                    has_moves_from: true,
+                    authors: ["A"],
+                    dates: ["2026-04-01T10:00:00Z"],
+                })}
+            />
+        )
+        expect(screen.getByText(/tracked/)).toBeInTheDocument()
+    })
+
+    it("title tooltip includes directional move info when present", () => {
+        const { container } = render(
+            <RevisionIndicator
+                revisions={baseRevisions({
+                    has_moves: true,
+                    has_moves_from: true,
+                    has_moves_to: false,
+                    authors: ["Mover"],
+                    dates: ["2026-04-03T12:00:00Z"],
+                })}
+            />
+        )
+        const title = container.querySelector("span[role='note']")?.getAttribute("title") ?? ""
+        expect(title).toContain("moves from")
+        expect(title).not.toContain("moves to")
     })
 
     it("uses the role='note' aria semantics", () => {

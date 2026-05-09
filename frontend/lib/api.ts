@@ -33,7 +33,12 @@ export interface Document {
 export interface SegmentRevisions {
     has_insertions: boolean
     has_deletions: boolean
+    /** OR of has_moves_from and has_moves_to — kept for back-compat (TMX-3704). */
     has_moves: boolean
+    /** TMX-3704: text was relocated AWAY from this block. */
+    has_moves_from?: boolean
+    /** TMX-3704: text arrived HERE from elsewhere. */
+    has_moves_to?: boolean
     authors: string[]
     dates: string[]
 }
