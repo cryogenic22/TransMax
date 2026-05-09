@@ -15,12 +15,16 @@ import nextTs from "eslint-config-next/typescript";
 //             GlossaryTerm, RuleAnalytics, RuleTestResult, ApiAck,
 //             SegmentChangelogEntry, ToolAuditReport,
 //             ToolBackTranslationResult, ToolMatrixResult,
-//             ToolUniversalResult). The catch-block `any` is gone.
-//             Interface fields `any[]` / `Record<string, any>` →
-//             `unknown[]` / `Record<string, unknown>`.
-//             no-explicit-any rule re-promoted to `error`.
-//             Residual 2 warnings: react-hooks/exhaustive-deps in
-//             document/[docId] and workspace/upload — TMX-3614-deps.
+//             ToolUniversalResult). no-explicit-any back to `error`.
+//   Loop 27 fire 3: 2 → 0. The two react-hooks/exhaustive-deps warnings
+//             (document/[docId] fetchDocData; workspace/upload
+//             handleFileUpload) hoisted to useCallback with proper
+//             dependency arrays. Lint is FULLY GREEN.
+//
+// All originally-demoted rules are now back to `error`. Cap = 0.
+// New additions cannot land an unused-var, an `any`, an unescaped
+// entity, a hoist-before-declare hook, a set-state-in-effect, or a
+// missing-dep effect without breaking CI.
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,

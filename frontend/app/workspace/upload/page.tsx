@@ -74,7 +74,9 @@ export default function TranslateDocumentPage() {
         : 0
 
     // --- Upload ---
-    const handleFileUpload = async (file: File) => {
+    // TMX-3614-deps: hoisted to useCallback so handleDrop can include it as
+    // a dep (was triggering react-hooks/exhaustive-deps).
+    const handleFileUpload = useCallback(async (file: File) => {
         setIsUploading(true)
         setError("")
         try {
@@ -90,14 +92,14 @@ export default function TranslateDocumentPage() {
         } finally {
             setIsUploading(false)
         }
-    }
+    }, [sourceLanguage, targetLanguage, selectedGlossary])
 
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault()
         setDragOver(false)
         const file = e.dataTransfer.files[0]
         if (file) handleFileUpload(file)
-    }, [sourceLanguage, targetLanguage])
+    }, [handleFileUpload])
 
     // --- Feature 4: Pre-translation estimate ---
     const handleTranslateClick = async () => {
