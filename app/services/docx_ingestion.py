@@ -14,7 +14,7 @@ from lxml import etree
 from app.services.docx_utils import (
     W, PNS, TBLNS, TCNS, TNS, TXBX_CONTENT,
     INS_NS, DEL_NS, MOVE_FROM_NS, MOVE_TO_NS,
-    AUTHOR_ATTR, DATE_ATTR, REVISION_TAGS,
+    AUTHOR_ATTR, DATE_ATTR, W_ID_ATTR, REVISION_TAGS,
     cell_text_excluding_nested,
 )
 
@@ -34,6 +34,8 @@ def _collect_revisions(element) -> Optional[dict]:
             "n_deletions":     int,   # count of <w:del>
             "n_moves_from":    int,   # count of <w:moveFrom>
             "n_moves_to":      int,   # count of <w:moveTo>
+            "move_from_ids":   list[str],  # w:id values on <w:moveFrom> (TMX-3704-pairing)
+            "move_to_ids":     list[str],  # w:id values on <w:moveTo>
             "authors":         list[str],
             "dates":           list[str],
         }
@@ -49,6 +51,10 @@ def _collect_revisions(element) -> Optional[dict]:
 
     TMX-3702-counts adds per-type integer counts so reviewers can triage
     by magnitude. Booleans are derived from counts.
+
+    TMX-3704-pairing captures `w:id` on each move mark so consumers can
+    correlate moveFrom/moveTo across blocks. Marks missing the attribute
+    are tolerated (still counted, but no ID entry).
     """
     n_ins = 0
     n_del = 0
@@ -56,8 +62,12 @@ def _collect_revisions(element) -> Optional[dict]:
     n_move_to = 0
     authors: List[str] = []
     dates: List[str] = []
+    move_from_ids: List[str] = []
+    move_to_ids: List[str] = []
     seen_authors = set()
     seen_dates = set()
+    seen_move_from_ids = set()
+    seen_move_to_ids = set()
 
     for descendant in element.iter():
         tag = descendant.tag
@@ -67,8 +77,16 @@ def _collect_revisions(element) -> Optional[dict]:
             n_del += 1
         elif tag == MOVE_FROM_NS:
             n_move_from += 1
+            move_id = descendant.get(W_ID_ATTR)
+            if move_id and move_id not in seen_move_from_ids:
+                move_from_ids.append(move_id)
+                seen_move_from_ids.add(move_id)
         elif tag == MOVE_TO_NS:
             n_move_to += 1
+            move_id = descendant.get(W_ID_ATTR)
+            if move_id and move_id not in seen_move_to_ids:
+                move_to_ids.append(move_id)
+                seen_move_to_ids.add(move_id)
         else:
             continue
         author = descendant.get(AUTHOR_ATTR)
@@ -97,6 +115,8 @@ def _collect_revisions(element) -> Optional[dict]:
         "n_deletions": n_del,
         "n_moves_from": n_move_from,
         "n_moves_to": n_move_to,
+        "move_from_ids": move_from_ids,
+        "move_to_ids": move_to_ids,
         "authors": authors,
         "dates": dates,
     }
