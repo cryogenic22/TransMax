@@ -10,9 +10,15 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 @pytest.fixture
 def db_service():
+    """TMX-3012: tests that hit DB directly (no FastAPI request) need to set
+    the tenant context themselves. Yield inside `org_context()` for the
+    duration of the test."""
+    from app.core.tenant_context import org_context
+    from app.models.database import DEFAULT_ORG_ID
+
     service = DatabaseService()
-    # Ensure tables exist
-    return service
+    with org_context(DEFAULT_ORG_ID):
+        yield service
 
 def test_glossary_ops(db_service):
     """

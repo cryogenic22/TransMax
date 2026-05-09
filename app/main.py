@@ -40,12 +40,39 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
         start_time = ObservabilityService.start_timer()
         response = await call_next(request)
         duration = ObservabilityService.end_timer(start_time)
-        
+
         # Track metric (simplified)
         ObservabilityService.track_request(duration_ms=duration)
-        
+
         # Add header for debug
         response.headers["X-Processing-Time-Ms"] = str(duration)
+        return response
+
+
+class TenantContextMiddleware(BaseHTTPMiddleware):
+    """TMX-3012 — set the tenant context for the duration of every request.
+
+    Resolves `organization_id` from the authenticated user (when TMX-3013
+    OIDC lands) or falls back to `DEFAULT_ORG_ID` for the single-tenant
+    pilot. The fallback is THE last A3-adjacent transitional measure in
+    the system; it lives at the request boundary, not in service code.
+
+    Without this middleware, every API test against tenant-scoped tables
+    would raise `TenantContextMissing` from the auto-filter listener.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        from app.core.tenant_context import set_org_id, clear_org
+        from app.models.database import DEFAULT_ORG_ID
+
+        # TMX-3013 will resolve from IdP claims / session cookie. Until then
+        # the pilot is single-tenant on DEFAULT_ORG_ID.
+        org_id = DEFAULT_ORG_ID
+        token = set_org_id(org_id)
+        try:
+            response = await call_next(request)
+        finally:
+            clear_org(token)
         return response
 
 app = FastAPI(
@@ -58,7 +85,11 @@ app = FastAPI(
 # IMPORTANT: Middleware order matters! They are processed in REVERSE order.
 # CORS must be added LAST so it wraps everything (processed FIRST).
 
-# Add observability middleware first (processed after CORS)
+# Tenant-context middleware (TMX-3012). Inner-most so request handlers see
+# the context but it's torn down before CORS/Observability finalises.
+app.add_middleware(TenantContextMiddleware)
+
+# Add observability middleware (processed after CORS)
 app.add_middleware(ObservabilityMiddleware)
 
 # CORS middleware - MUST be added LAST to be the outermost wrapper
