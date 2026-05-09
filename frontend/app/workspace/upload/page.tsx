@@ -12,6 +12,7 @@ import { api, Document, Segment } from "@/lib/api"
 import { BookOpen } from "lucide-react"
 import { LanguageSelector } from "@/components/ui/LanguageSelector"
 import { getLanguageName } from "@/lib/languages"
+import { getErrMessage } from "@/lib/utils"
 import { LiveIsland, AgentStep } from "@/components/ui/live-island"
 import { toast } from "sonner"
 import { addActiveJob, removeActiveJob } from "@/hooks/useTranslationNotifications"
@@ -74,8 +75,8 @@ export default function TranslateDocumentPage() {
             setSegments(segs)
             setTotalSegments(segs.length)
             setState("uploaded")
-        } catch (err: any) {
-            setError(err.message || "Failed to upload document.")
+        } catch (err) {
+            setError(getErrMessage(err, "Failed to upload document."))
         } finally {
             setIsUploading(false)
         }
@@ -226,8 +227,8 @@ export default function TranslateDocumentPage() {
             }, 2000)
 
 
-        } catch (err: any) {
-            setError(err.message || "Translation failed.")
+        } catch (err) {
+            setError(getErrMessage(err, "Translation failed."))
             setState("uploaded")
             if (document) removeActiveJob(document.id)
         }
@@ -247,8 +248,8 @@ export default function TranslateDocumentPage() {
             a.click()
             window.document.body.removeChild(a)
             URL.revokeObjectURL(url)
-        } catch (err: any) {
-            setError(err.message || "Download failed.")
+        } catch (err) {
+            setError(getErrMessage(err, "Download failed."))
         }
     }
 

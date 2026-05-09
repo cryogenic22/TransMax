@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth"
+import { getErrMessage } from "@/lib/utils"
 import { Languages, Loader2 } from "lucide-react"
 
 export default function LoginPage() {
@@ -48,8 +49,8 @@ export default function LoginPage() {
         await register(email, password, name)
       }
       router.replace("/workspace")
-    } catch (err: any) {
-      setError(err.message || "Authentication failed")
+    } catch (err) {
+      setError(getErrMessage(err, "Authentication failed"))
     }
     setSubmitting(false)
   }

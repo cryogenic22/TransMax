@@ -9,6 +9,7 @@ import {
 import Link from "next/link"
 import { api, Document, DeletionRecord } from "@/lib/api"
 import { ConfidenceMeter } from "@/components/ui/ConfidenceMeter"
+import { getErrMessage } from "@/lib/utils"
 
 interface EnrichedJob {
     id: string
@@ -23,7 +24,7 @@ interface EnrichedJob {
     translated_count: number
     quality_status?: string
     confidence_score?: number
-    score_breakdown?: any
+    score_breakdown?: unknown
     created_at: string
     completed_at?: string
     duration?: string
@@ -63,7 +64,7 @@ export function JobsView() {
                     try {
                         const segments = await api.segments.list(doc.id)
                         segmentCount = segments.length
-                        translatedCount = segments.filter((s: any) => s.translated_text).length
+                        translatedCount = segments.filter(s => s.translated_text).length
                     } catch { }
                 }
                 let jobStatus = 'queued'
@@ -78,15 +79,15 @@ export function JobsView() {
                     progress: jobStatus === 'completed' ? 100 : progress,
                     segment_count: segmentCount, translated_count: translatedCount,
                     quality_status: doc.status === 'in_review' ? 'review_required' : 'passed',
-                    confidence_score: doc.confidence_score, score_breakdown: (doc as any).score_breakdown,
+                    confidence_score: doc.confidence_score, score_breakdown: (doc as Document & { score_breakdown?: unknown }).score_breakdown,
                     created_at: doc.created_at, completed_at: doc.updated_at
                 }
             }))
             enrichedJobs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
             setJobs(enrichedJobs)
-        } catch (err: any) {
+        } catch (err) {
             console.error(err)
-            setError(err.message || "Failed to load jobs")
+            setError(getErrMessage(err, "Failed to load jobs"))
             setJobs([])
         } finally {
             setLoading(false)
@@ -103,7 +104,7 @@ export function JobsView() {
             setDeleteReason("")
             // Refresh deletion log if visible
             if (showDeletionLog) fetchDeletionLog()
-        } catch (err: any) {
+        } catch (err) {
             console.error("Delete failed:", err)
         } finally {
             setDeleting(false)
@@ -136,7 +137,7 @@ export function JobsView() {
     }, [jobs, searchQuery, statusFilter])
 
     const getStatusBadge = (status: string) => {
-        const styles: Record<string, any> = {
+        const styles: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
             completed: { bg: "bg-green-100", text: "text-green-800", icon: <CheckCircle2 size={14} /> },
             processing: { bg: "bg-blue-100", text: "text-blue-800", icon: <Play size={14} /> },
             queued: { bg: "bg-slate-100", text: "text-slate-600", icon: <Clock size={14} /> },
