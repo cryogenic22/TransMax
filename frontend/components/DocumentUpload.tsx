@@ -2,10 +2,11 @@
 
 import React, { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Upload, FileText, Loader2 } from 'lucide-react'
+import { Upload, FileText, Loader2, AlertCircle } from 'lucide-react'
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { validateUpload } from "@/lib/fileValidation"
 
 interface DocumentUploadProps {
     onUpload: (file: File) => void
@@ -15,6 +16,21 @@ interface DocumentUploadProps {
 export function DocumentUpload({ onUpload, isUploading }: DocumentUploadProps) {
     const [isDragActive, setIsDragActive] = useState(false)
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
+    const [validationError, setValidationError] = useState<string | null>(null)
+
+    // TMX-3618: validate size + extension + magic bytes before the file
+    // is even staged. Backend file_validation re-checks; this is the
+    // user-friendly first line.
+    const acceptFile = useCallback(async (file: File) => {
+        const result = await validateUpload(file)
+        if (!result.ok) {
+            setValidationError(result.error)
+            setSelectedFile(null)
+            return
+        }
+        setValidationError(null)
+        setSelectedFile(file)
+    }, [])
 
     const handleDrag = useCallback((e: React.DragEvent) => {
         e.preventDefault()
@@ -32,16 +48,16 @@ export function DocumentUpload({ onUpload, isUploading }: DocumentUploadProps) {
         setIsDragActive(false)
 
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            setSelectedFile(e.dataTransfer.files[0])
+            void acceptFile(e.dataTransfer.files[0])
         }
-    }, [])
+    }, [acceptFile])
 
     const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         e.preventDefault()
         if (e.target.files && e.target.files[0]) {
-            setSelectedFile(e.target.files[0])
+            void acceptFile(e.target.files[0])
         }
-    }, [])
+    }, [acceptFile])
 
     const handleUploadClick = () => {
         if (selectedFile) onUpload(selectedFile)
@@ -160,6 +176,16 @@ export function DocumentUpload({ onUpload, isUploading }: DocumentUploadProps) {
                     />
                 )}
             </Card>
+
+            {validationError ? (
+                <div
+                    role="alert"
+                    className="mt-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+                >
+                    <AlertCircle size={14} className="shrink-0 mt-0.5" aria-hidden />
+                    <span>{validationError}</span>
+                </div>
+            ) : null}
         </div>
     )
 }
