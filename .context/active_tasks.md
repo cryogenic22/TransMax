@@ -122,7 +122,7 @@ The 4-agent loop verification ran on 2026-05-09 over `HEAD~30..HEAD`. Reports ar
 
 | Ticket | Title | Source | Owner | Sprint |
 |---|---|---|---|---|
-| TMX-3012c | Complete service-layer DEFAULT_ORG_ID sweep (44 literals across 13 files) — finish what TMX-3012b (partial) started | Quality-audit Concern #1 | Auth | 2 |
+| TMX-3012c | Complete service-layer DEFAULT_ORG_ID sweep (44 literals across 13 files) — finish what TMX-3012b (partial) started | Quality-audit Concern #1 | Auth | 2 — **[Done]** a804b09 — see `.context/loops/TMX-3012c.md`. ~27 literals removed from `app/api/`, `app/auth/`, `app/services/`; runner now requires `org_id` kwarg and wraps the pipeline in `org_context(org_id)` so background DB writes inherit tenancy. 5 new tests (3 runner + 2 e2e). Foundation 43/43, ratchet 17/17. |
 | TMX-3412 | Split `quality_gate.py` (717L) into per-defect-class modules (numeric, frequency, unit, negation) — TMX-3411 already extracted frequency data; this completes the per-class split | Quality-audit Concern #2 | Quality | 2 |
 | TMX-3017a | Complete C-06 unwind for the 7 init_db-only tables (`audit_records`, `chunk_translations`, `quality_reports`, `translation_glossaries`, `translation_jobs`, `translation_memory`, `users`) before TMX-3017 rationalisation — defensive FK skip in `audit_events_v2` migration is the visible symptom | Quality-audit Concern #3 | Auth + Platform | 2 |
 | TMX-3618 | Add Playwright visual-snapshot test for `/workspace/design-system` page — covers TMX-3601 design-token regressions | Quality-audit Concern #4 | Frontend | 2 |
