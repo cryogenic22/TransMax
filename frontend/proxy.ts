@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 /**
- * Next.js middleware for auth-based route protection.
+ * Next.js 16+ proxy (formerly middleware) for auth-based route protection.
  *
  * Behaviour:
  * - Public paths (/, /login, /_next, /api, static assets) are always allowed
@@ -11,7 +11,10 @@ import type { NextRequest } from "next/server"
  * - If AUTH_MODE=none (or unknown), allow everything through
  *
  * The real auth validation happens server-side on each API call.
- * This middleware is a UX convenience to prevent flash-of-content.
+ * This proxy is a UX convenience to prevent flash-of-content.
+ *
+ * (TMX-3617 — renamed middleware.ts → proxy.ts per Next.js 16 deprecation.
+ * Export name `proxy` and config shape are otherwise identical.)
  */
 
 const PUBLIC_PATHS = ["/", "/login", "/_next", "/api", "/favicon.ico", "/health"]
@@ -20,7 +23,7 @@ function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + "/") || pathname.startsWith("/_next"))
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Always allow public paths
@@ -33,7 +36,7 @@ export function middleware(request: NextRequest) {
 
   if (!token) {
     // No token — redirect to login
-    // But only if we know auth is enabled. Since middleware runs before
+    // But only if we know auth is enabled. Since proxy runs before
     // the client can fetch /api/auth/config, we use a simple heuristic:
     // the NEXT_PUBLIC_AUTH_MODE env var (set at build time), defaulting to "none".
     const authMode = process.env.NEXT_PUBLIC_AUTH_MODE || "none"
