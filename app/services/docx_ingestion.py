@@ -25,21 +25,29 @@ def _collect_revisions(element) -> Optional[dict]:
 
     Returns a dict shaped:
         {
-            "has_insertions": bool,
-            "has_deletions": bool,
-            "has_moves": bool,
-            "authors": list[str],
-            "dates": list[str],
+            "has_insertions":  bool,
+            "has_deletions":   bool,
+            "has_moves_from":  bool,  # text was relocated AWAY from here
+            "has_moves_to":    bool,  # text arrived HERE from elsewhere
+            "has_moves":       bool,  # has_moves_from OR has_moves_to (back-compat)
+            "authors":         list[str],
+            "dates":           list[str],
         }
     or None if no revision marks are present (callers should omit the
     `meta.revisions` key entirely in that case for backward compatibility).
 
     Authors and dates are unique-deduplicated and ordered by first
     occurrence in the document tree.
+
+    TMX-3704 split `has_moves` into directional `has_moves_from` /
+    `has_moves_to` so a reviewer can distinguish "text left here" vs
+    "text arrived here". `has_moves` is retained as the OR of both for
+    backward compatibility with TMX-3702-v1's <RevisionIndicator>.
     """
     has_ins = False
     has_del = False
-    has_move = False
+    has_move_from = False
+    has_move_to = False
     authors: List[str] = []
     dates: List[str] = []
     seen_authors = set()
@@ -51,8 +59,10 @@ def _collect_revisions(element) -> Optional[dict]:
             has_ins = True
         elif tag == DEL_NS:
             has_del = True
-        elif tag in (MOVE_FROM_NS, MOVE_TO_NS):
-            has_move = True
+        elif tag == MOVE_FROM_NS:
+            has_move_from = True
+        elif tag == MOVE_TO_NS:
+            has_move_to = True
         else:
             continue
         author = descendant.get(AUTHOR_ATTR)
@@ -64,12 +74,15 @@ def _collect_revisions(element) -> Optional[dict]:
             dates.append(date)
             seen_dates.add(date)
 
-    if not (has_ins or has_del or has_move):
+    has_move_any = has_move_from or has_move_to
+    if not (has_ins or has_del or has_move_any):
         return None
     return {
         "has_insertions": has_ins,
         "has_deletions": has_del,
-        "has_moves": has_move,
+        "has_moves_from": has_move_from,
+        "has_moves_to": has_move_to,
+        "has_moves": has_move_any,
         "authors": authors,
         "dates": dates,
     }
