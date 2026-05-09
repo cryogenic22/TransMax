@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -74,8 +74,9 @@ export default function DocumentConsolePage() {
     const [changeReason, setChangeReason] = useState("")
 
     // --- Data Fetching ---
-
-    const fetchDocData = async () => {
+    // TMX-3614-deps: hoisted into a useCallback so the useEffect dep-list
+    // can include it correctly (was triggering react-hooks/exhaustive-deps).
+    const fetchDocData = useCallback(async () => {
         try {
             const docRes = await fetch(`${API_BASE}/documents/${docId}`)
             if (docRes.ok) {
@@ -103,7 +104,7 @@ export default function DocumentConsolePage() {
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [docId])
 
     useEffect(() => {
         fetchDocData()
@@ -114,7 +115,7 @@ export default function DocumentConsolePage() {
             }
         }, 3000)
         return () => clearInterval(interval)
-    }, [docId, isTranslating, agentStep])
+    }, [fetchDocData, isTranslating, agentStep])
 
 
     // --- Actions ---
