@@ -127,6 +127,51 @@ def test_collect_revisions_detects_moves() -> None:
     assert rev["has_moves"] is True
 
 
+def test_collect_revisions_distinguishes_move_from_and_move_to() -> None:
+    """TMX-3704: directional move semantics — moveFrom (text left here) vs
+    moveTo (text arrived here). Reviewer audit chain depends on this
+    distinction."""
+    # Block A: only <w:moveFrom> (text was relocated AWAY from here)
+    p_from = etree.Element(PNS)
+    mf = etree.SubElement(p_from, MOVE_FROM_NS)
+    mf.set(AUTHOR_ATTR, "Mover")
+    mf.set(DATE_ATTR, "2026-04-03T12:00:00Z")
+    r_from = etree.SubElement(mf, f"{{{W}}}r")
+    etree.SubElement(r_from, f"{{{W}}}delText").text = "originally here"
+    rev_from = _collect_revisions(p_from)
+    assert rev_from is not None
+    assert rev_from["has_moves_from"] is True
+    assert rev_from["has_moves_to"] is False
+    assert rev_from["has_moves"] is True  # backward-compat derived
+
+    # Block B: only <w:moveTo> (text arrived here from elsewhere)
+    p_to = etree.Element(PNS)
+    mt = etree.SubElement(p_to, MOVE_TO_NS)
+    mt.set(AUTHOR_ATTR, "Mover")
+    mt.set(DATE_ATTR, "2026-04-03T12:00:00Z")
+    r_to = etree.SubElement(mt, f"{{{W}}}r")
+    etree.SubElement(r_to, TNS).text = "arrived here"
+    rev_to = _collect_revisions(p_to)
+    assert rev_to is not None
+    assert rev_to["has_moves_from"] is False
+    assert rev_to["has_moves_to"] is True
+    assert rev_to["has_moves"] is True  # backward-compat derived
+
+    # Block C: both moveFrom and moveTo in the same block (rare but valid)
+    p_both = etree.Element(PNS)
+    mf2 = etree.SubElement(p_both, MOVE_FROM_NS)
+    mf2.set(AUTHOR_ATTR, "Mover")
+    mf2.set(DATE_ATTR, "2026-04-03T12:00:00Z")
+    mt2 = etree.SubElement(p_both, MOVE_TO_NS)
+    mt2.set(AUTHOR_ATTR, "Mover")
+    mt2.set(DATE_ATTR, "2026-04-03T12:00:00Z")
+    rev_both = _collect_revisions(p_both)
+    assert rev_both is not None
+    assert rev_both["has_moves_from"] is True
+    assert rev_both["has_moves_to"] is True
+    assert rev_both["has_moves"] is True
+
+
 # ── End-to-end through DocxIngestionService ───────────────────────────
 
 
