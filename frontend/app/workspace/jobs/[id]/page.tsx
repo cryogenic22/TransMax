@@ -60,19 +60,28 @@ function WorkspaceJobDetailInner() {
     const [segments, setSegments] = useState<Segment[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    // TMX-3603-jobs-id-err: per-section error so the segments fetch can
+    // fail without forcing a full-page error state. Doc header still
+    // renders if the doc itself loaded.
+    const [segmentsError, setSegmentsError] = useState<string | null>(null)
 
     // TMX-3603-jobs-id: backend resolves job_id → audit_id internally so
     // this hook delivers the AgentLanes data without knowing the audit_id.
     const { data: agentActivities } = useAgentActivityByJob(jobId)
 
     const fetchData = useCallback(async () => {
+        // TMX-3603-jobs-id-err: A3 — never silently substitute a default for
+        // a regulated-path fetch. Each fetch's error surfaces as its own
+        // state so the doc header still renders if only segments fail.
         try {
-            const [d, segs] = await Promise.all([
-                api.documents.get(jobId).catch(() => null),
-                api.segments.list(jobId).catch(() => [] as Segment[]),
-            ])
+            const d = await api.documents.get(jobId)
             setDoc(d)
-            setSegments(segs)
+            try {
+                const segs = await api.segments.list(jobId)
+                setSegments(segs)
+            } catch (segErr) {
+                setSegmentsError(getErrMessage(segErr, "Failed to load segments"))
+            }
         } catch (err) {
             setError(getErrMessage(err, "Failed to load job"))
         } finally {
@@ -129,6 +138,21 @@ function WorkspaceJobDetailInner() {
                     </div>
                 </div>
             </div>
+
+            {/* TMX-3603-jobs-id-err: degraded-state banner — doc loaded
+                but segments fetch failed. role='status' (polite) so SR
+                users hear it after the doc header, not as an interrupt;
+                also avoids colliding with Next.js's __next-route-announcer
+                which itself takes role='alert'. */}
+            {segmentsError ? (
+                <div
+                    role="status"
+                    aria-label="Segments failed to load"
+                    className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
+                >
+                    <strong>Couldn&apos;t load segments.</strong> {segmentsError}
+                </div>
+            ) : null}
 
             <ModeTabs jobId={jobId} active={mode} onChange={m => router.push(`/workspace/jobs/${jobId}${m === "overview" ? "" : `?mode=${m}`}`)} />
 
