@@ -43,7 +43,10 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 | TMX-3015 | Soft-delete columns + filter logic | Auth | M | 1 |
 | TMX-3100 | `audit_events_v2` schema + migration | Audit | M | 1 |
 | TMX-3700 | DOCX ingestion v2 with tracked-changes preservation | Pipeline | L | 1-2 |
-| TMX-3705 | File-type sniffing + size cap + AV scan trigger | Pipeline | M | 1 |
+| TMX-3705 | File-type sniffing + size cap + AV scan trigger | Pipeline | M | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3705.md` |
+| TMX-3706 | Deeper DOCX vs XLSX vs PPTX disambiguation (peek inside ZIP for `[Content_Types].xml`) | Pipeline | S | 2 — **[Spawned by TMX-3705]** |
+| TMX-3707 | AV scanner integration (clamd / Cloud DLP) — wire `emit_av_scan_request` to actual scanner | Pipeline + Platform | M | 2 — **[Spawned by TMX-3705]** |
+| TMX-3708 | Wire `validate_and_save_upload` into endpoints.py + knowledge.py upload routes | Pipeline | XS | 2 — **[Spawned by TMX-3705]** |
 | TMX-3800 | Sentence segmenter service skeleton + interface | Pipeline | M | 1 |
 | TMX-3200 | Prompt registry directory layout + loader | Agent | M | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3200-3201.md` |
 | TMX-3201 | Migrate `prompts.py` constants to v1.0.0 YAML files | Agent | M | 1 — **[Done, pending commit + push]** — bundled with TMX-3200 in same loop |

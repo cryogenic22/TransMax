@@ -75,20 +75,20 @@ async def create_document(
     """
     Upload a new document, digitize it (extract text segments), and store in DB.
     """
-    # Generate unique filename
+    # TMX-3705: validate magic bytes + size cap + AV trigger.
+    from app.services.file_validation import validate_and_save_upload
+
     file_ext = os.path.splitext(file.filename)[1].lower()
-    if file_ext not in [".pdf", ".docx", ".txt"]:
-        raise HTTPException(status_code=400, detail="Unsupported file type. Use PDF, DOCX, or TXT.")
-    
     doc_id = str(uuid.uuid4())
     safe_filename = f"{doc_id}{file_ext}"
     file_path = os.path.join(UPLOAD_DIR, safe_filename)
-    
-    # Save file
-    # Save file asynchronously
-    async with aiofiles.open(file_path, 'wb') as out_file:
-         while content := await file.read(1024 * 1024):  # 1MB chunks
-            await out_file.write(content)
+
+    await validate_and_save_upload(
+        upload_file=file,
+        dest_path=file_path,
+        allowed_extensions=(".pdf", ".docx", ".txt"),
+        av_metadata={"doc_id": doc_id, "uploaded_by": str(user.user_id)},
+    )
     
     # Ingest / Digitize Content
     ingest_service = PDFService()
@@ -332,11 +332,13 @@ async def delete_document(
     )
     db.add(deletion_record)
 
-    # Delete file if exists
+    # Delete file if exists (filesystem cleanup — does not touch the DB row).
     if doc.file_path and os.path.exists(doc.file_path):
         os.remove(doc.file_path)
 
-    db.delete(doc)
+    # TMX-3015: A9 — soft-delete only. The DeletionRecord above is the
+    # forensic snapshot; the soft-delete flag is the live status.
+    doc.soft_delete(actor_id=user.user_id if user else None)
     db.commit()
 
     return {"deletion_id": deletion_record.id, "document_name": doc.name}
