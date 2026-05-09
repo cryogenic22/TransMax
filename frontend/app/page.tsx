@@ -1,22 +1,18 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   ArrowRight,
   Shield,
   Zap,
-  Languages,
   FileSearch,
   CheckCircle2,
   Brain,
   Globe,
   Lock,
   Sparkles,
-  FileText,
-  Users
 } from "lucide-react"
 
 const heroSlides = [
@@ -38,7 +34,6 @@ const heroSlides = [
 ]
 
 export default function LandingPage() {
-  const router = useRouter()
   const [currentSlide, setCurrentSlide] = useState(0)
   // Fade-in is now CSS-driven (animation-delay on the hero container) so we
   // don't need a state-bound flip on mount — TMX-3614-lint kills the

@@ -58,7 +58,6 @@ export default function TranslationWarehouse({
 
     const pendingCount = batches.filter(b => b.status === "pending").length
     const processingCount = batches.filter(b => b.status === "processing").length
-    const completeCount = batches.filter(b => b.status === "complete").length
 
     return (
         <div style={{

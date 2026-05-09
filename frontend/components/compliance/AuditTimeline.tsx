@@ -1,5 +1,5 @@
 import * as React from "react"
-import { CheckCircle, AlertCircle, FileText, Activity, ShieldCheck, Lock } from "lucide-react"
+import { CheckCircle, ShieldCheck, Lock } from "lucide-react"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { cn } from "@/lib/utils"
 
@@ -27,7 +27,7 @@ export function AuditTimeline({ entries, chainHeadHash }: AuditTimelineProps) {
             </h3>
 
             <div className="relative border-l-2 border-slate-200 ml-3 space-y-8 pl-8 py-2">
-                {entries.map((entry, idx) => {
+                {entries.map((entry) => {
                     const isFailure = entry.event_type.includes("FAIL") || entry.event_type.includes("BLOCK");
                     const isCritical = entry.event_type.includes("GATE") || entry.event_type.includes("DECISION");
 

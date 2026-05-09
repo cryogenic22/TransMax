@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useParams } from "next/navigation"
 import Link from "next/link"
 import {
     ArrowLeft, FileText, Globe, CheckCircle2, AlertTriangle, XCircle,
-    Loader2, Upload, Download, Eye, Edit3, RefreshCw, ChevronDown,
-    ChevronRight, AlertCircle, Info, Save, Copy, File, CheckSquare,
+    Loader2, Download, Eye,
+    AlertCircle, Info, Save, CheckSquare,
     Languages
 } from "lucide-react"
 import { api, Document, Segment } from "@/lib/api"
@@ -36,7 +36,6 @@ type ViewMode = "scorecard" | "segments" | "preview"
 
 export default function DocumentReviewPage() {
     const params = useParams()
-    const router = useRouter()
     const docId = params.id as string
 
     const [document, setDocument] = useState<Document | null>(null)
@@ -861,7 +860,7 @@ export default function DocumentReviewPage() {
                         </div>
 
                         <div style={{ fontSize: "1rem", lineHeight: 1.8, color: "#202124" }}>
-                            {segments.map((seg, idx) => (
+                            {segments.map((seg) => (
                                 <p key={seg.id} style={{
                                     marginBottom: "1rem",
                                     padding: seg.gate_results?.violations?.length ? "0.5rem" : "0",

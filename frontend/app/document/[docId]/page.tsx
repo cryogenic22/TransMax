@@ -1,17 +1,16 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import {
-    ArrowLeft, Play, AlertTriangle, Edit2,
-    RotateCcw, FileText, CheckCircle2, X, Loader2,
+    ArrowLeft, AlertTriangle, Edit2,
+    CheckCircle2, X, Loader2,
     Activity, ShieldCheck, Sparkles, Languages,
-    History, AlertOctagon, CornerDownRight, Check
+    History, AlertOctagon, Check
 } from "lucide-react"
 import { LanguageSelector } from "@/components/ui/LanguageSelector"
-import { getLanguageName } from "@/lib/languages"
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001") + "/api"
 

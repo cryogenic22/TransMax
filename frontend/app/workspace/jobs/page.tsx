@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import {
     Clock, CheckCircle2, AlertCircle, Play, RefreshCw, FileText, Languages,
-    Search, Filter, ChevronDown, Eye, ArrowUpRight, Calendar, Zap, Target, WifiOff
+    Search, Eye, ArrowUpRight, Zap, Target, WifiOff
 } from "lucide-react"
 import Link from "next/link"
 import { api, Document } from "@/lib/api"

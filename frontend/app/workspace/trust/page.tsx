@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
-import { Shield, Book, BookOpen, Lock, CheckCircle, XCircle, AlertTriangle, RefreshCw } from "lucide-react"
+import { Shield, Book, BookOpen, Lock, CheckCircle, XCircle, RefreshCw } from "lucide-react"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { api } from "@/lib/api"
 

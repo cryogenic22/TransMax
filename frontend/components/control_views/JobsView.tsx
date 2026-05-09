@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react"
 import {
-    Clock, CheckCircle2, AlertCircle, Play, RefreshCw, FileText, Languages,
-    Search, Filter, Target, Eye, ArrowUpRight, Zap, WifiOff, Download, Trash2,
+    Clock, CheckCircle2, AlertCircle, Play, RefreshCw, FileText,
+    Search, Target, WifiOff, Download, Trash2,
     ChevronDown, ChevronUp, X
 } from "lucide-react"
 import Link from "next/link"

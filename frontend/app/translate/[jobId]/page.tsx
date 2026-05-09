@@ -77,7 +77,7 @@ export default function TranslatePage() {
     const targetLang = searchParams.get('target') || 'fr'
 
     const [steps, setSteps] = useState<PipelineStep[]>(PIPELINE_STEPS)
-    const [currentIndex, setCurrentIndex] = useState(0)
+    const [, setCurrentIndex] = useState(0)
     const [isComplete, setIsComplete] = useState(false)
     const [elapsedSeconds, setElapsedSeconds] = useState(0)
     const [logs, setLogs] = useState<string[]>([])
@@ -180,7 +180,7 @@ export default function TranslatePage() {
                 {/* Pipeline Steps */}
                 <div className="card-static mb-8">
                     <div className="space-y-1">
-                        {steps.map((step, index) => (
+                        {steps.map((step) => (
                             <div
                                 key={step.id}
                                 className={`flex items-center gap-4 p-4 rounded-lg transition-all ${step.status === 'active' ? 'bg-blue-50' : ''

@@ -3,22 +3,26 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
 // TMX-3614-lint baseline drift:
-//   Loop 16 fixed the three real-bug rule classes (re-promoted to `error`):
-//     - react-hooks/immutability      — auth.tsx hoist-before-declare resolved
-//     - react-hooks/set-state-in-effect — TranslationWarehouse + landing fade-in resolved
-//     - react/no-unescaped-entities   — 7 cosmetic cases escaped
-//   Demoted rules (still under cleanup):
-//     - @typescript-eslint/no-unused-vars  — 89 occurrences; sweep is TMX-3614-cleanup
-//     - @typescript-eslint/no-explicit-any — 82 occurrences; typing migration is TMX-3614-types
-//
-// `--max-warnings 172` pins the new baseline. New code cannot add warnings.
-// As the two follow-ups land, the cap drops in lockstep.
+//   Loop 16:  react-hooks/immutability + set-state-in-effect + no-unescaped-entities
+//             back to `error` (real bugs fixed).
+//   Loop 25:  @typescript-eslint/no-unused-vars back to `error` (89 → 0).
+//             ^_ ignore-pattern enabled for intentional placeholders.
+//   Loop 26:  @typescript-eslint/no-explicit-any drives the residual 84 down.
+//             Currently still `warn` until the typing migration completes.
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
     rules: {
-      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_",
+        },
+      ],
       "@typescript-eslint/no-explicit-any": "warn",
     },
   },

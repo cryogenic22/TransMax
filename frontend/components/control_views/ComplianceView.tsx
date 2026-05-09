@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect } from "react"
-import { Shield, Lock, CheckCircle, Activity, History, Clock, User, FileText, Edit3, RefreshCw } from "lucide-react"
+import { Shield, Lock, CheckCircle, History, User, FileText, Activity, Edit3, RefreshCw } from "lucide-react"
 import { api, AuditLog } from "@/lib/api"
 
 export function ComplianceView() {
@@ -94,7 +94,7 @@ function AuditLogList() {
         try {
             const data = await api.audit.list({ limit: 50 })
             setLogs(data)
-        } catch (err) {
+        } catch {
             setLogs([])
         } finally {
             setLoading(false)

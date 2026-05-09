@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react'
-import { CheckCircle2, AlertTriangle, AlertOctagon, BarChart3, Calculator, ChevronDown, ChevronUp, ShieldAlert, Fingerprint } from 'lucide-react'
+import { CheckCircle2, AlertTriangle, AlertOctagon, BarChart3, Calculator, ChevronDown, ChevronUp, ShieldAlert } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 // --- Types & Helpers ---

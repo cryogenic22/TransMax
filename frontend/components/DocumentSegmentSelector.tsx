@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronDown, ChevronRight, FileText, Check, Minus, X, Languages, Loader2 } from "lucide-react"
+import { ChevronDown, ChevronRight, FileText, Check, Minus, Languages, Loader2 } from "lucide-react"
 import { LanguageSelector } from "@/components/ui/LanguageSelector"
 
 interface Segment {

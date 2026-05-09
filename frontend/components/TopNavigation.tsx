@@ -4,8 +4,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
 import {
-    Languages, FileText, Briefcase, BookOpen,
-    Upload, LayoutDashboard, Bell, User
+    Languages, Briefcase, BookOpen,
+    Upload, LayoutDashboard, Bell,
 } from "lucide-react"
 import { api } from "@/lib/api"
 import UserMenu from "@/components/auth/UserMenu"

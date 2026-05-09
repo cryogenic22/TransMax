@@ -1,14 +1,12 @@
 "use client"
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
-import { CheckCircle2, AlertTriangle, ArrowRight, Wand2, FileText, Type, Copy, RefreshCw, Eraser, Sparkles, StopCircle, Info, Maximize2 } from 'lucide-react'
-import { ConfidenceMeter } from '@/components/ui/ConfidenceMeter'
+import { Wand2, FileText, Type, RefreshCw, Eraser, Sparkles } from 'lucide-react'
 import { FeedbackControls } from '@/app/workspace/tools/page'
 import { CopyButton } from '@/components/ui/CopyButton'
 import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import Link from 'next/link'
-import { cn } from "@/lib/utils"
 import { QualityDashboard } from '@/components/ui/QualityDashboard'
 
 export default function TrustedTranslatePage() {
