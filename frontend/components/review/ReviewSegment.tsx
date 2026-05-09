@@ -1,11 +1,26 @@
 "use client"
 
 import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Check, X, Edit2, Undo } from "lucide-react"
+import { motion } from "framer-motion"
+import { Check, Edit2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DefectChip } from "./DefectChip"
-import type { PharmaSegment } from "@/lib/mock_pharma_job"
+import { ConfidenceMeter } from "@/components/ui/ConfidenceMeter"
+import { ProvenanceChip } from "@/components/ui/ProvenanceChip"
+import {
+    StatusLifecycle,
+    type LifecycleStatus,
+} from "@/components/ui/StatusLifecycle"
+import type { PharmaSegment, SegmentStatus } from "@/lib/mock_pharma_job"
+
+// Map the segment-level status union (mock + real) onto the canonical
+// LifecycleStatus the design-system pill renders. TMX-3603-reviewer.
+const STATUS_TO_LIFECYCLE: Record<SegmentStatus, LifecycleStatus> = {
+    pending: "pending",
+    review_required: "reviewed",
+    approved: "approved",
+    rejected: "blocked",
+}
 
 interface ReviewSegmentProps {
     segment: PharmaSegment;
@@ -26,9 +41,11 @@ export function ReviewSegment({ segment, onStatusChange, onUpdateText }: ReviewS
         setIsEditing(false)
     }
 
-    const handleReject = () => {
-        onStatusChange(segment.id, 'review_required') // Keep it flagged
-    }
+    // Score 0-1 → 0-100 for the ConfidenceMeter scale.
+    const confidencePct = Math.round((segment.confidence_score ?? 0) * 100)
+    const lifecycleStatus = STATUS_TO_LIFECYCLE[segment.status]
+    // Latest agent in the reasoning trace becomes the provenance label.
+    const lastAgent = segment.reasoning_trace?.[segment.reasoning_trace.length - 1]
 
     return (
         <motion.div
@@ -42,10 +59,14 @@ export function ReviewSegment({ segment, onStatusChange, onUpdateText }: ReviewS
                 ${isApproved ? 'bg-green-50/10' : ''}
             `}
         >
-            {/* ID / Status Column */}
-            <div className="col-span-1 p-4 border-r border-slate-100 flex flex-col items-center justify-start text-xs text-slate-400 font-mono pt-6">
+            {/* ID / Status Column — TMX-3603-reviewer adds StatusLifecycle
+                + ConfidenceMeter so a reviewer scans status + trust at a
+                glance, not by reading status copy. */}
+            <div className="col-span-1 p-4 border-r border-slate-100 flex flex-col items-center justify-start gap-2 text-xs text-slate-400 font-mono pt-6">
                 <span>{segment.index}</span>
-                {isFlagged && <div className="mt-2 w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
+                <StatusLifecycle status={lifecycleStatus} />
+                <ConfidenceMeter score={confidencePct} />
+                {isFlagged && <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />}
             </div>
 
             {/* Source Text */}
@@ -87,6 +108,17 @@ export function ReviewSegment({ segment, onStatusChange, onUpdateText }: ReviewS
                         `}>
                             {segment.target_text}
                         </p>
+
+                        {/* Provenance — A1 audit-by-default made visible per
+                            row. Surfaces the producing step + when. */}
+                        {lastAgent ? (
+                            <div className="mt-3">
+                                <ProvenanceChip
+                                    source={lastAgent.step}
+                                    timestamp={lastAgent.timestamp}
+                                />
+                            </div>
+                        ) : null}
 
                         {/* Hover Actions */}
                         <div className="absolute top-0 right-0 opacity-0 group-hover/target:opacity-100 transition-opacity flex gap-2 bg-white/80 backdrop-blur px-2 py-1 rounded shadow-sm border border-slate-100 -mt-8">
