@@ -27,8 +27,8 @@ The redirect map is defined in `frontend/next.config.ts`. Every row's rationale 
 | `/new` | `/workspace/upload` | 308 | One-to-one. Upload is the entry point to the workspace pipeline. |
 | `/dashboard` | `/workspace` | 308 | The workspace root IS the dashboard. No content gap. |
 | `/design-system` | `/workspace/design-system` | 308 | TMX-3604: legacy page deleted, canonical lives under `/workspace/design-system` (TMX-3602-patterns demo). |
-| `/translate/:jobId` | `/workspace/jobs?focus=:jobId&action=translate` | 307 | Ambiguous — `/workspace/jobs/[id]` doesn't exist yet (TMX-3603 builds it). Land on the list with a focus param so the page can scroll-and-highlight; tighten to `/workspace/jobs/:jobId/translate` when TMX-3603 ships. |
-| `/review/:jobId` | `/workspace/jobs?focus=:jobId&action=review` | 307 | Same shape as `/translate/:jobId`. Tightens when TMX-3603 lands. |
+| `/translate/:jobId` | `/workspace/jobs/:jobId?mode=translate` | 308 | TMX-3603-jobs-id (Loop 27 fire 7) tightened from 307 → 308 once `/workspace/jobs/[id]` shipped. |
+| `/review/:jobId` | `/workspace/jobs/:jobId?mode=review` | 308 | TMX-3603-jobs-id tightened from 307 → 308 once `/workspace/jobs/[id]` shipped. |
 | `/knowledge` | `/workspace/tools` | 307 | Knowledge base maps to tools/glossary section per design v1. 307 because the IA may split into `/workspace/tools` and `/workspace/glossary` later. |
 
 ## Routes deliberately NOT redirected
@@ -46,7 +46,7 @@ The IA decision is now landed. Per-page content migration is tracked as:
 |---|---|
 | TMX-3601 | Theme unification (light default, dark via `prefers-color-scheme`) — already in Sprint 1 backlog. |
 | TMX-3602 | Move `/document/[docId]/page.tsx` body into `/workspace/documents/[id]/page.tsx`; delete legacy file. |
-| TMX-3603 | Build `/workspace/jobs/[id]` with `translate` and `review` sub-views; tighten the 307 redirects from `/translate/:jobId` and `/review/:jobId` to direct 308s. |
+| ~~TMX-3603~~ | ~~Build `/workspace/jobs/[id]`~~ — **CLOSED** (Loop 27 fire 7): page exists, redirects 308. |
 | ~~TMX-3604~~ | ~~Decide `/design-system` fate~~ — **CLOSED**: legacy page deleted, redirected 308 to `/workspace/design-system`. |
 | ~~TMX-3605~~ | ~~Internal-reference cleanup~~ — **subsumed by TMX-3600** — the 7 internal references found in the AC-7 grep audit were updated inline (Sidebar, dashboard, new, AssetsView). |
 
