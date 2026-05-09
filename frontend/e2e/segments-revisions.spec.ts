@@ -171,3 +171,89 @@ test.describe("RevisionIndicator page-level integration (TMX-3702-e2e)", () => {
     await expect(allCounts).toHaveCount(1)
   })
 })
+
+// ── TMX-3603-jobs-id-err: real fetch errors must be visible ─────────────
+
+test.describe("Workspace jobs page error UX (TMX-3603-jobs-id-err)", () => {
+  test("renders the actual server error when document fetch fails (not 'Job not found.')", async ({
+    page,
+  }) => {
+    // Simulate a backend 500 — common during deploys, DB hiccups, OOM.
+    // Pre-fix code silently swallowed this and showed "Job not found.",
+    // misleading reviewers into thinking the doc was deleted.
+    await page.route("**/api/**", async (route: Route) => {
+      const url = route.request().url()
+      if (url.endsWith(`/api/documents/${STUB_DOC_ID}`)) {
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ detail: "TMX-3603-test: simulated upstream failure" }),
+        })
+        return
+      }
+      // Other API calls: harmless empty success.
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({}),
+      })
+    })
+
+    await page.goto(`/workspace/jobs/${STUB_DOC_ID}?mode=review`)
+    await page.waitForLoadState("networkidle")
+
+    // The actual server-supplied detail must surface — proving we no
+    // longer mask 5xx as 404.
+    await expect(
+      page.getByText(/TMX-3603-test: simulated upstream failure/)
+    ).toBeVisible()
+    // And the misleading static fallback must NOT appear.
+    await expect(page.getByText("Job not found.")).toHaveCount(0)
+  })
+
+  test("doc loads + segments-error banner when only segments fail", async ({
+    page,
+  }) => {
+    // Doc fetch succeeds, segments fetch returns 500. The page should
+    // render the doc header (still useful) AND a per-section error
+    // banner so the reviewer knows something is wrong with segments.
+    await page.route("**/api/**", async (route: Route) => {
+      const url = route.request().url()
+      if (url.endsWith(`/api/documents/${STUB_DOC_ID}`)) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(STUB_DOC),
+        })
+        return
+      }
+      if (url.endsWith(`/api/documents/${STUB_DOC_ID}/segments`)) {
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ detail: "TMX-3603-test: segments index unavailable" }),
+        })
+        return
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({}),
+      })
+    })
+
+    await page.goto(`/workspace/jobs/${STUB_DOC_ID}?mode=review`)
+    await page.waitForLoadState("networkidle")
+
+    // Doc header is visible (graceful degradation).
+    await expect(
+      page.getByRole("heading", { name: /tracked-changes-fixture\.docx/ })
+    ).toBeVisible()
+    // Segments error banner uses role='status' (polite) so SR users
+    // hear it after the doc header. Identified by its aria-label since
+    // role='alert' would collide with Next.js's route-change announcer.
+    const banner = page.getByRole("status", { name: /segments failed to load/i })
+    await expect(banner).toBeVisible()
+    await expect(banner).toContainText(/segments index unavailable/)
+  })
+})
