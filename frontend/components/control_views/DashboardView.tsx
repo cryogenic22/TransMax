@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react'
-import { ArrowUpRight, CheckCircle2, Clock, FileText, Inbox, TrendingUp, Loader2, WifiOff, RefreshCw, Coins, Zap } from 'lucide-react'
+import { CheckCircle2, Inbox, Loader2, WifiOff, RefreshCw } from 'lucide-react'
 import { api } from '@/lib/api'
 import { ActivityFeed } from '@/components/ui/ActivityFeed'
 import { useActivityFeed } from '@/hooks/useActivity'
@@ -66,50 +66,13 @@ export function DashboardView() {
                 </div>
             )}
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <KPICard
-                    title="Total Documents"
-                    value={fmt(stats?.total_documents)}
-                    change={stats?.completed_24h ? `+${stats.completed_24h} today` : "—"}
-                    icon={<FileText className="text-blue-600" size={20} />}
-                />
-                <KPICard
-                    title="Active Jobs"
-                    value={fmt(stats?.active_jobs)}
-                    change={stats?.active_jobs === 0 ? "All clear" : "In progress"}
-                    icon={<Clock className="text-orange-600" size={20} />}
-                />
-                <KPICard
-                    title="Quality Score"
-                    value={stats?.avg_quality_pct != null ? `${stats.avg_quality_pct}%` : "—"}
-                    change={stats?.avg_quality_pct != null && stats.avg_quality_pct >= 90 ? "On target" : "Needs review"}
-                    icon={<CheckCircle2 className="text-green-600" size={20} />}
-                />
-                <KPICard
-                    title="Segments"
-                    value={fmt(stats?.translated_segments)}
-                    change={stats?.total_segments ? `of ${fmt(stats.total_segments)} total` : "—"}
-                    icon={<TrendingUp className="text-purple-600" size={20} />}
-                />
-                <KPICard
-                    title="Total Tokens"
-                    value={fmt(stats?.total_tokens)}
-                    change="LLM usage"
-                    icon={<Zap className="text-amber-600" size={20} />}
-                />
-                <KPICard
-                    title="Total Cost"
-                    value={stats?.total_cost_usd != null ? `$${stats.total_cost_usd.toFixed(4)}` : "—"}
-                    change="USD spent"
-                    icon={<Coins className="text-emerald-600" size={20} />}
-                />
-            </div>
-
+            {/* TMX-3603-statstrip: rescape Direction 2 — Activity Feed as
+                the dashboard HERO, system health beside it, KPI cards
+                demoted to a small footer strip. The 6 stat cards used to
+                dominate the page even when most were 0; now they fit on
+                one horizontal line and the eye lands on the audit stream. */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Activity Feed — TMX-3603-dashboard: the audit chain event
-                    stream as the dashboard hero, replacing the hand-rolled
-                    "Pending: 0 / Active: 0" stat cards (rescape Direction 2). */}
+                {/* Activity Feed (hero) */}
                 <div className="col-span-2 space-y-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -131,7 +94,7 @@ export function DashboardView() {
                     )}
                 </div>
 
-                {/* Summary panel */}
+                {/* System Health (sidebar) */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                     <div className="flex items-center gap-2 mb-6">
                         <CheckCircle2 size={20} className="text-slate-400" />
@@ -145,22 +108,30 @@ export function DashboardView() {
                     </div>
                 </div>
             </div>
+
+            {/* Stat Strip — compressed footer summary (rescape: "demote
+                stat-cards"). Six numbers in one row, scannable, no
+                individual card chrome. */}
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+                    <StatStripItem label="Documents" value={fmt(stats?.total_documents)} sub={stats?.completed_24h ? `+${stats.completed_24h} 24h` : null} />
+                    <StatStripItem label="Active" value={fmt(stats?.active_jobs)} sub={stats?.active_jobs === 0 ? "all clear" : "in flight"} />
+                    <StatStripItem label="Quality" value={stats?.avg_quality_pct != null ? `${stats.avg_quality_pct}%` : "—"} sub={stats?.avg_quality_pct != null && stats.avg_quality_pct >= 90 ? "on target" : "needs review"} />
+                    <StatStripItem label="Segments" value={fmt(stats?.translated_segments)} sub={stats?.total_segments ? `of ${fmt(stats.total_segments)}` : null} />
+                    <StatStripItem label="Tokens" value={fmt(stats?.total_tokens)} sub="LLM usage" />
+                    <StatStripItem label="Cost" value={stats?.total_cost_usd != null ? `$${stats.total_cost_usd.toFixed(4)}` : "—"} sub="USD" />
+                </div>
+            </div>
         </div>
     )
 }
 
-function KPICard({ title, value, change, icon }: { title: string; value: string; change: string; icon: React.ReactNode }) {
+function StatStripItem({ label, value, sub }: { label: string; value: string; sub?: string | null }) {
     return (
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start justify-between">
-            <div>
-                <p className="text-slate-500 text-sm font-medium mb-1">{title}</p>
-                <div className="text-2xl font-bold text-slate-900">{value}</div>
-                <div className="flex items-center gap-1 mt-1 text-xs font-medium text-green-600">
-                    <ArrowUpRight size={12} />
-                    {change}
-                </div>
-            </div>
-            <div className="p-2 bg-slate-50 rounded-lg">{icon}</div>
+        <div className="px-3 py-2">
+            <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{label}</div>
+            <div className="text-lg font-semibold text-slate-900 leading-tight">{value}</div>
+            {sub ? <div className="text-[11px] text-slate-400 mt-0.5">{sub}</div> : null}
         </div>
     )
 }
