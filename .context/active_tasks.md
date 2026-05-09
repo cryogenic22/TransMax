@@ -44,8 +44,12 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 | TMX-3100 | `audit_events_v2` schema + migration | Audit | M | 1 — **[Done]** (local; awaiting push) — see `.context/loops/TMX-3100.md` |
 | TMX-3700 | DOCX ingestion v2 with tracked-changes preservation | Pipeline | L | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3700.md` |
 | TMX-3701 | Round-trip DOCX export with revision-mark preservation (export side) | Pipeline | M | 2 — **[Spawned by TMX-3700]** |
-| TMX-3702 | Reviewer-frontend UX for accept/reject revisions | Frontend | M | 2 — **[Spawned by TMX-3700; blocked on TMX-3606]** |
-| TMX-3703 | Differential rendering (current vs. proposed) | Frontend | M | 2 — **[Spawned by TMX-3700; blocked on TMX-3606]** |
+| TMX-3702 | Reviewer-frontend UX for accept/reject revisions | Frontend | M | 2 — **[Spawned by TMX-3700]** (TMX-3606 unblocked) |
+| TMX-3703 | Differential rendering (current vs. proposed) | Frontend | M | 2 — **[Spawned by TMX-3700]** (TMX-3606 unblocked) |
+| TMX-3603-* | /workspace/jobs/[id] page chain | Frontend | M | 1 — **[Done]** in Loop 27 chain (7ed25d3, ea6c7d9, cfb0032, 729a66b, c93c6a6). `/workspace/jobs/[id]` page with overview/translate/review modes; agent-activity-by-job endpoint; live AgentLanes; ActivityFeed = dashboard hero. |
+| TMX-3604 | Migrate `/design-system` under `/workspace/*` | Frontend | XS | 1 — **[Done]** (c7c4e6c + 252a4ad). Legacy page deleted; 308 redirect; e2e test. |
+| TMX-3617 | Rename `middleware.ts` → `proxy.ts` (Next.js 16 deprecation) | Frontend | XS | 1 — **[Done]** (0f21dc3). |
+| TMX-3616-auth0 | Server-issue cookies via Auth0 with httpOnly + add CSRF tokens | Frontend + Auth | M | 2 — **[Spawned by TMX-3616 partial close; blocked on TMX-3013 Auth0 wiring]** |
 | TMX-3704 | `<w:moveFrom>` / `<w:moveTo>` semantic handling | Pipeline | S | 2 — **[Spawned by TMX-3700]** |
 | TMX-3705 | File-type sniffing + size cap + AV scan trigger | Pipeline | M | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3705.md` |
 | TMX-3706 | Deeper DOCX vs XLSX vs PPTX disambiguation (peek inside ZIP for `[Content_Types].xml`) | Pipeline | S | 2 — **[Spawned by TMX-3705]** |
@@ -59,13 +63,13 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 | TMX-3201 | Migrate `prompts.py` constants to v1.0.0 YAML files | Agent | M | 1 — **[Done, pending commit + push]** — bundled with TMX-3200 in same loop |
 | TMX-3204 | Wire `lang_instruction` into graph.py + batch_translator.py | Agent | XS | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3204.md` |
 | TMX-3212 | Audit timestamp bug fix (datetime UTC ISO) | Agent | XS | 1 — **[Done, pending commit]** — see `.context/loops/TMX-3212.md` |
-| TMX-3600 | Pick canonical IA = `/workspace/*`; redirect map | Frontend | S | 1 — **[Blocked]** code complete locally; ship gated on TMX-3606 (frontend-repo structural fix) — see `.context/loops/TMX-3600.md` |
-| TMX-3606 | De-tangle frontend nested-git-repo (no `.gitmodules`, no remote); pick one of: (a) formal submodule + remote, (b) merge into parent repo, (c) split-repo with its own deploy hook | Frontend + Platform | S | 1 — **[Needs Kapil decision]** |
-| TMX-3601 | Theme unification — light default, dark via prefers-color-scheme | Frontend + Design | M | 1 |
-| TMX-3614 | Vitest unit + Playwright e2e suites; CI gate | Frontend + Platform | M | 1-2 |
-| TMX-3615 | CSP / HSTS / X-Frame-Options / Permissions-Policy via next.config.ts | Frontend | S | 1 |
-| TMX-3616 | Cookie hardening — httpOnly Secure SameSite=Strict + CSRF tokens | Frontend + Auth | M | 1 |
-| TMX-3618 | File upload validation + size cap + AV trigger | Frontend + Pipeline | M | 1 |
+| TMX-3600 | Pick canonical IA = `/workspace/*`; redirect map | Frontend | S | 1 — **[Done]** — shipped via TMX-3606 de-tangle (cbef01f). 308 redirects for `/document`, `/new`, `/dashboard`, `/design-system`; 308 for `/translate/:jobId`, `/review/:jobId` (TMX-3603-jobs-id tightened from 307); 307 for `/knowledge`. Legacy page files deleted in cleanup commit 252a4ad. |
+| TMX-3606 | De-tangle frontend nested-git-repo | Frontend + Platform | S | 1 — **[Done]** (cbef01f) — option (b) merge into parent. History preserved at `parking_lot/frontend-pre-detangle-history.bundle`. |
+| TMX-3601 | Theme unification + design tokens + brand mark | Frontend + Design | M | 1 — **[Done]** (cdef0e2) — TMX tokens in `:root` + `.dark` (AI gradient, Provenance chip, Status Lifecycle, Agent identity); brand mark at `frontend/public/transmax-mark.svg`. |
+| TMX-3614 | Vitest unit + Playwright e2e suites; CI gate | Frontend + Platform | M | 1-2 — **[Done]** (1b0a2fe + Loop 27 chain). 71/71 vitest · 6/6 mocked Playwright · 14/14 live-stack integration. Lint 0/0, all rules at error. CI workflow `frontend` + `frontend-integration` jobs. |
+| TMX-3615 | CSP / HSTS / X-Frame-Options / Permissions-Policy via next.config.ts | Frontend | S | 1 — **[Done]** (f46dae8) — 6 headers via `headers()`; 2 integration tests verify they ship + ride redirect destinations. |
+| TMX-3616 | Cookie hardening — httpOnly Secure SameSite=Strict + CSRF tokens | Frontend + Auth | M | 1 — **[Done partial]** (48427d9) — Secure flag on https; SameSite=Lax kept (Strict breaks OAuth callbacks); removeCookie matches flag set. `httpOnly` blocked on Auth0 wiring (ADR-0003) and tracked as **TMX-3616-auth0**. CSRF tokens deferred until Auth0 lands a real session. |
+| TMX-3618 | File upload validation + size cap + magic-byte sniff | Frontend + Pipeline | M | 1 — **[Done]** (570c8b4) — `frontend/lib/fileValidation.ts` mirrors backend `app/services/file_validation.py`; 50 MB cap, .pdf/.docx/.txt whitelist, magic-byte sniff. Wired into DocumentUpload with inline error UX. 10 vitest cases. |
 | TMX-3900 | OpenTelemetry SDK wired across LangGraph nodes | Platform | M | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3900.md` |
 | TMX-3901 | LLM-call child spans with prompt_version/content_hash/token_usage attributes | Agent + Platform | S | 2 — **[Spawned by TMX-3900]** |
 | TMX-3902 | OTLP exporter config (Honeycomb/Jaeger/Tempo) in deployment manifests | Platform | S | 2 — **[Spawned by TMX-3900]** |
