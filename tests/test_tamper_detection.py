@@ -13,7 +13,30 @@ def audit_svc():
 def job_with_audit(audit_svc):
     """Create a job audit trail with several events."""
     import uuid
+    from app.models.models import TranslationJobQueue
+    from app.models.database import DEFAULT_ORG_ID
+
     job_id = str(uuid.uuid4())
+
+    # TMX-3011 added a FK from audit_records_queue.job_id to
+    # translation_jobs_queue.job_id. Create the parent row first so the
+    # audit_svc.create_audit_trail insert satisfies the constraint.
+    db = DatabaseService()
+    session = db.get_session()
+    try:
+        session.add(TranslationJobQueue(
+            job_id=job_id,
+            organization_id=DEFAULT_ORG_ID,
+            request_id=f"req_{job_id}",
+            source_language="en",
+            target_language="fr",
+            status="PROCESSING",
+            request_json={},
+        ))
+        session.commit()
+    finally:
+        session.close()
+
     audit_id = audit_svc.create_audit_trail(job_id)
 
     audit_svc.log_event(audit_id, "JOB_STARTED", {"doc_id": "test"})
