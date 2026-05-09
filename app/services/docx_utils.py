@@ -20,6 +20,7 @@ MOVE_FROM_NS = f"{{{W}}}moveFrom"  # <w:moveFrom>
 MOVE_TO_NS = f"{{{W}}}moveTo"      # <w:moveTo>
 AUTHOR_ATTR = f"{{{W}}}author"
 DATE_ATTR = f"{{{W}}}date"
+W_ID_ATTR = f"{{{W}}}id"  # TMX-3704-pairing: w:id correlates moveFrom/moveTo across blocks
 
 REVISION_TAGS = (INS_NS, DEL_NS, MOVE_FROM_NS, MOVE_TO_NS)
 

@@ -221,6 +221,68 @@ def test_collect_revisions_zero_counts_when_type_absent() -> None:
     assert rev["n_moves_to"] == 0
 
 
+def test_collect_revisions_captures_move_from_ids() -> None:
+    """TMX-3704-pairing: w:id on <w:moveFrom> is captured so a consumer can
+    pair it with the corresponding <w:moveTo> in another block."""
+    p = etree.Element(PNS)
+    mf1 = etree.SubElement(p, MOVE_FROM_NS)
+    mf1.set(AUTHOR_ATTR, "Mover")
+    mf1.set(DATE_ATTR, "2026-04-03T12:00:00Z")
+    mf1.set(f"{{{W}}}id", "3")
+    # A 2nd moveFrom with the SAME id (Word can split a single move into
+    # sibling marks) — must dedupe to one entry.
+    mf2 = etree.SubElement(p, MOVE_FROM_NS)
+    mf2.set(AUTHOR_ATTR, "Mover")
+    mf2.set(DATE_ATTR, "2026-04-03T12:00:00Z")
+    mf2.set(f"{{{W}}}id", "3")
+    # A 3rd with a different id — distinct event in the same block.
+    mf3 = etree.SubElement(p, MOVE_FROM_NS)
+    mf3.set(AUTHOR_ATTR, "Mover")
+    mf3.set(DATE_ATTR, "2026-04-03T12:00:00Z")
+    mf3.set(f"{{{W}}}id", "5")
+
+    rev = _collect_revisions(p)
+    assert rev is not None
+    assert rev["move_from_ids"] == ["3", "5"]
+    assert rev["move_to_ids"] == []
+    # Counts independent of dedup: 3 marks, 2 unique IDs.
+    assert rev["n_moves_from"] == 3
+
+
+def test_collect_revisions_captures_move_to_ids() -> None:
+    """TMX-3704-pairing: symmetric capture for <w:moveTo>."""
+    p = etree.Element(PNS)
+    mt = etree.SubElement(p, MOVE_TO_NS)
+    mt.set(AUTHOR_ATTR, "Mover")
+    mt.set(DATE_ATTR, "2026-04-03T12:00:00Z")
+    mt.set(f"{{{W}}}id", "3")
+    rev = _collect_revisions(p)
+    assert rev is not None
+    assert rev["move_from_ids"] == []
+    assert rev["move_to_ids"] == ["3"]
+
+
+def test_collect_revisions_skips_move_marks_without_id() -> None:
+    """TMX-3704-pairing: a malformed <w:moveFrom> without w:id must not
+    crash; it still counts toward n_moves_from but contributes no entry to
+    the IDs list."""
+    p = etree.Element(PNS)
+    mf_no_id = etree.SubElement(p, MOVE_FROM_NS)
+    mf_no_id.set(AUTHOR_ATTR, "Mover")
+    mf_no_id.set(DATE_ATTR, "2026-04-03T12:00:00Z")
+    # NO w:id set
+    mf_with_id = etree.SubElement(p, MOVE_FROM_NS)
+    mf_with_id.set(AUTHOR_ATTR, "Mover")
+    mf_with_id.set(DATE_ATTR, "2026-04-03T12:00:00Z")
+    mf_with_id.set(f"{{{W}}}id", "7")
+
+    rev = _collect_revisions(p)
+    assert rev is not None
+    assert rev["n_moves_from"] == 2  # both marks count
+    assert rev["move_from_ids"] == ["7"]  # but only the well-formed one is collected
+    assert rev["move_to_ids"] == []
+
+
 # ── End-to-end through DocxIngestionService ───────────────────────────
 
 
