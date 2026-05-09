@@ -144,7 +144,7 @@ test.describe("RevisionIndicator page-level integration (TMX-3702-e2e)", () => {
     // aria-label. Two of the three stubbed segments carry revisions
     // (single-author insertion + heavily-edited 20-mark fixture); the
     // no-revisions middle segment must NOT render the pill.
-    const notes = page.getByRole("note", { name: /tracked changes/i })
+    const notes = page.getByRole("note", { name: /tracked change/i })
     await expect(notes).toHaveCount(2)
 
     // Sanity: the first revision-bearing pill reads 'tracked' (insertions

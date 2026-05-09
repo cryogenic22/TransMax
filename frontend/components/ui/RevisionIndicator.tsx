@@ -33,6 +33,35 @@ function chooseHeadline(revisions: SegmentRevisions): { label: string; Icon: Ico
 }
 
 /**
+ * TMX-3702-a11y: build a descriptive aria-label that distinguishes
+ * direction (moved out vs moved in vs both) and surfaces magnitude
+ * (count of changes, count of authors). Visible text is deliberately
+ * terse — this is the screen-reader counterpart that's allowed to be
+ * a complete sentence.
+ */
+export function accessibleRevisionLabel(revisions: SegmentRevisions): string {
+    const { has_insertions, has_deletions, has_moves_from, has_moves_to, authors } = revisions
+    const total = totalRevisionCount(revisions)
+    const byClause =
+        authors.length === 0
+            ? ""
+            : authors.length === 1
+                ? ` by ${authors[0]}`
+                : ` by ${authors.length} authors`
+
+    if (has_insertions || has_deletions) {
+        if (total >= 2) return `${total} tracked changes${byClause}`
+        return `Tracked change${byClause}`
+    }
+    if (has_moves_from && has_moves_to) return `Text moved within this segment${byClause}`
+    if (has_moves_from) return `Text moved out of this segment${byClause}`
+    if (has_moves_to) return `Text moved into this segment${byClause}`
+    // Defensive — caller already returned null when no flags are set, but
+    // keep a sensible fallback so the SR user still gets context.
+    return `Segment carries tracked changes`
+}
+
+/**
  * RevisionIndicator — TMX-3702-v1 / TMX-3704-ui.
  *
  * Compact pill rendered next to a segment's status when its source
@@ -86,7 +115,7 @@ export function RevisionIndicator({
     return (
         <span
             role="note"
-            aria-label="Segment carries tracked changes"
+            aria-label={accessibleRevisionLabel(revisions)}
             className={cn(
                 "inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800",
                 className
