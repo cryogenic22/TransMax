@@ -126,17 +126,16 @@ def test_no_circular_import_between_database_and_translation():
     importlib.import_module("app.models.audit")
 
 
-def test_init_db_seeds_default_org(tmp_path, monkeypatch):
-    """init_db() must seed the system default-org row idempotently on a fresh SQLite db."""
-    db_path = tmp_path / "init_seed.db"
-    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path}")
-    # Force a fresh import of the database module so it picks up the new URL.
-    import importlib
-    import app.core.database as core_db
-    importlib.reload(core_db)
+def test_init_db_seeds_default_org(fresh_engine_for_db):
+    """init_db() must seed the system default-org row idempotently on a fresh SQLite db.
+
+    TMX-AUDIT-CLEANUP-ROUTES: uses the shared `fresh_engine_for_db` conftest
+    fixture which swaps engine in-place (no `importlib.reload`) so dependency
+    overrides in other tests don't break.
+    """
+    core_db = fresh_engine_for_db
     from app.models.database import DEFAULT_ORG_ID, Organization
 
-    core_db.init_db()
     core_db.init_db()  # second call must not raise — proves idempotency
 
     Session = sessionmaker(bind=core_db.engine)

@@ -14,19 +14,14 @@ SOFT_DELETE_COLUMNS = ("is_deleted", "deleted_at", "deleted_by")
 
 
 @pytest.fixture
-def fresh_db(tmp_path, monkeypatch):
+def fresh_db(fresh_engine_for_db):
     """Return (engine, session) for a fresh SQLite database with all tables created.
 
-    TMX-3012: enters `org_context(DEFAULT_ORG_ID)` for the duration so the
-    auto-filter doesn't refuse queries. Soft-delete behaviour is independent
-    of tenant scoping; this fixture isolates the soft-delete concern.
+    TMX-3012: enters `org_context(DEFAULT_ORG_ID)` for the duration.
+    TMX-AUDIT-CLEANUP-ROUTES: delegates to shared conftest fixture (in-place
+    engine swap, not `importlib.reload`).
     """
-    db_path = tmp_path / "tmx3015.db"
-    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path}")
-    import importlib
-    import app.core.database as core_db
-    importlib.reload(core_db)
-    core_db.init_db()
+    core_db = fresh_engine_for_db
     from app.core.tenant_context import org_context
     from app.models.database import DEFAULT_ORG_ID
     Session = sessionmaker(bind=core_db.engine)
