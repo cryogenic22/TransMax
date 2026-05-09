@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { CheckCircle2, AlertTriangle, Loader2, Package, Brain, Shield, Sparkles } from "lucide-react"
+import { useMemo } from "react"
+import { CheckCircle2, Loader2, Package, Brain, Shield, Sparkles } from "lucide-react"
 
 /**
  * TranslationWarehouse - Light-themed visualization connected to real backend progress
@@ -27,43 +27,30 @@ export default function TranslationWarehouse({
     isActive,
     currentPhase
 }: TranslationWarehouseProps) {
-    const [batches, setBatches] = useState<Batch[]>([])
-
-    // Create batches based on segment count
-    useEffect(() => {
-        if (!isActive || totalSegments === 0) return
-
+    // Batches are pure derived state — count and per-batch status are both
+    // functions of (totalSegments, translatedCount, isActive). Storing them
+    // in useState forced two cascading set-state-in-effect cycles per render
+    // (TMX-3614-lint). useMemo recomputes once per render with no extra cycle.
+    const batches = useMemo<Batch[]>(() => {
+        if (!isActive || totalSegments === 0) return []
         const BATCH_SIZE = 5
         const batchCount = Math.ceil(totalSegments / BATCH_SIZE)
-
-        const newBatches: Batch[] = Array.from({ length: batchCount }, (_, i) => ({
-            id: i,
-            segmentCount: Math.min(BATCH_SIZE, totalSegments - i * BATCH_SIZE),
-            status: "pending" as const
-        }))
-
-        setBatches(newBatches)
-    }, [isActive, totalSegments])
-
-    // Update batch statuses based on real progress
-    useEffect(() => {
-        if (!batches.length) return
-
-        const BATCH_SIZE = 5
         const completedBatches = Math.floor(translatedCount / BATCH_SIZE)
         const currentBatchProgress = translatedCount % BATCH_SIZE
-
-        setBatches(prev => prev.map((batch, idx) => {
+        return Array.from({ length: batchCount }, (_, idx) => {
+            const segmentCount = Math.min(BATCH_SIZE, totalSegments - idx * BATCH_SIZE)
+            let status: Batch["status"] = "pending"
             if (idx < completedBatches) {
-                return { ...batch, status: "complete" as const }
-            } else if (idx === completedBatches && currentBatchProgress > 0) {
-                return { ...batch, status: "processing" as const }
-            } else if (idx <= completedBatches + 3) {
-                return { ...batch, status: "processing" as const }
+                status = "complete"
+            } else if (
+                (idx === completedBatches && currentBatchProgress > 0) ||
+                idx <= completedBatches + 3
+            ) {
+                status = "processing"
             }
-            return { ...batch, status: "pending" as const }
-        }))
-    }, [translatedCount, batches.length])
+            return { id: idx, segmentCount, status }
+        })
+    }, [isActive, totalSegments, translatedCount])
 
     const progressPercent = totalSegments > 0
         ? Math.round((translatedCount / totalSegments) * 100)

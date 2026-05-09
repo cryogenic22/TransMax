@@ -398,7 +398,7 @@ function BackTranslationVerifier({ text, setText, sourceRef, setSourceRef, lang,
                         </div>
                         <h4 style={{ margin: '0 0 1rem 0', color: '#202124' }}>English Back-Translation:</h4>
                         <div style={{ fontSize: '1.1rem', marginBottom: '1.5rem', fontStyle: 'italic', color: '#3c4043' }}>
-                            "{result.back_translation}"
+                            &ldquo;{result.back_translation}&rdquo;
                         </div>
 
                         {result.drift_score !== undefined && result.drift_score !== null && (

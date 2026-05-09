@@ -40,10 +40,12 @@ const heroSlides = [
 export default function LandingPage() {
   const router = useRouter()
   const [currentSlide, setCurrentSlide] = useState(0)
-  const [isVisible, setIsVisible] = useState(false)
+  // Fade-in is now CSS-driven (animation-delay on the hero container) so we
+  // don't need a state-bound flip on mount — TMX-3614-lint kills the
+  // set-state-in-effect false-start that did nothing on second render.
+  const isVisible = true
 
   useEffect(() => {
-    setIsVisible(true)
     const interval = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % heroSlides.length)
     }, 5000)

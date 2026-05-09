@@ -687,7 +687,7 @@ export default function TranslateDocumentPage() {
                             color: "#80868b",
                             marginTop: "0.5rem"
                         }}>
-                            You can navigate away — we'll notify you when it's done.
+                            You can navigate away — we&apos;ll notify you when it&apos;s done.
                         </p>
 
                         {/* Feature 1: LiveIsland pipeline tracker */}

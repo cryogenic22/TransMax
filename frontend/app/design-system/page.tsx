@@ -38,7 +38,7 @@ export default function DesignSystemPage() {
                     <h2 className="text-xl font-semibold border-b pb-2">2. Clinical Components</h2>
 
                     <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-muted-foreground">GlassCard (The "Glass Box")</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground">GlassCard (The &ldquo;Glass Box&rdquo;)</h3>
                         <GlassCard>
                             <h4 className="font-semibold">Audit Record #8821</h4>
                             <p className="text-sm mt-1 text-slate-600">
