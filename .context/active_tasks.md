@@ -52,6 +52,7 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 | TMX-3616-auth0 | Server-issue cookies via Auth0 with httpOnly + add CSRF tokens | Frontend + Auth | M | 2 — **[Spawned by TMX-3616 partial close; blocked on TMX-3013 Auth0 wiring]** |
 | TMX-3704 | `<w:moveFrom>` / `<w:moveTo>` semantic handling | Pipeline | S | 2 — **[Spawned by TMX-3700]** |
 | TMX-3704-pairing | Capture `w:id` on move marks for cross-block correlation | Pipeline | XS | 2 — **[Done, pending commit + push]** — see `.context/loops/TMX-3704-pairing.md` |
+| TMX-3702-a11y | Dynamic aria-label on RevisionIndicator (direction + magnitude) | Frontend | XS | 2 — **[Done, pending commit + push]** — see `.context/loops/TMX-3702-a11y.md` |
 | TMX-3705 | File-type sniffing + size cap + AV scan trigger | Pipeline | M | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3705.md` |
 | TMX-3706 | Deeper DOCX vs XLSX vs PPTX disambiguation (peek inside ZIP for `[Content_Types].xml`) | Pipeline | S | 2 — **[Spawned by TMX-3705]** |
 | TMX-3707 | AV scanner integration (clamd / Cloud DLP) — wire `emit_av_scan_request` to actual scanner | Pipeline + Platform | M | 2 — **[Spawned by TMX-3705]** |

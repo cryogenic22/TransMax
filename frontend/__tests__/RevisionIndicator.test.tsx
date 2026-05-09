@@ -226,6 +226,91 @@ describe("<RevisionIndicator>", () => {
                 revisions={baseRevisions({ has_insertions: true, authors: ["A"], dates: ["2026-04-01T10:00:00Z"] })}
             />
         )
-        expect(screen.getByRole("note", { name: /tracked changes/i })).toBeInTheDocument()
+        // /tracked change/i matches both singular ("Tracked change by A")
+        // and plural ("5 tracked changes by …") accessible names — the
+        // dynamic label change in TMX-3702-a11y picks one based on count.
+        expect(screen.getByRole("note", { name: /tracked change/i })).toBeInTheDocument()
+    })
+
+    // ── TMX-3702-a11y: dynamic accessible-name carries direction + count ─
+
+    it("a11y: moveFrom-only fixture's accessible name says 'moved out of this segment'", () => {
+        render(
+            <RevisionIndicator
+                revisions={baseRevisions({
+                    has_moves: true,
+                    has_moves_from: true,
+                    has_moves_to: false,
+                    authors: ["Mover"],
+                    dates: ["2026-04-03T12:00:00Z"],
+                })}
+            />
+        )
+        // The accessible name (aria-label) must carry direction so screen
+        // readers don't collapse "moved out" / "moved in" / "tracked" into
+        // one generic phrase.
+        expect(
+            screen.getByRole("note", { name: /moved out of this segment/i })
+        ).toBeInTheDocument()
+        // And it must NOT say "tracked changes" — that would mislead SR
+        // users into thinking the segment has insertions/deletions.
+        expect(
+            screen.queryByRole("note", { name: /tracked changes/i })
+        ).not.toBeInTheDocument()
+    })
+
+    it("a11y: moveTo-only fixture's accessible name says 'moved into this segment'", () => {
+        render(
+            <RevisionIndicator
+                revisions={baseRevisions({
+                    has_moves: true,
+                    has_moves_from: false,
+                    has_moves_to: true,
+                    authors: ["Mover"],
+                    dates: ["2026-04-03T12:00:00Z"],
+                })}
+            />
+        )
+        expect(
+            screen.getByRole("note", { name: /moved into this segment/i })
+        ).toBeInTheDocument()
+    })
+
+    it("a11y: high-count fixture's accessible name surfaces magnitude", () => {
+        render(
+            <RevisionIndicator
+                revisions={baseRevisions({
+                    has_insertions: true,
+                    has_deletions: true,
+                    n_insertions: 12,
+                    n_deletions: 8,
+                    authors: ["Senior", "QC", "Reg"],
+                    dates: ["2026-04-01T10:00:00Z"],
+                })}
+            />
+        )
+        // 20 changes by 3 authors — the SR user should hear the count
+        // (otherwise they only get the binary "tracked" cue).
+        expect(
+            screen.getByRole("note", { name: /20 tracked changes by 3 authors/i })
+        ).toBeInTheDocument()
+    })
+
+    it("a11y: back-compat — no n_* fields → singular 'Tracked change' with no bogus count", () => {
+        render(
+            <RevisionIndicator
+                revisions={baseRevisions({
+                    has_insertions: true,
+                    authors: ["A"],
+                    dates: ["2026-04-01T10:00:00Z"],
+                })}
+            />
+        )
+        // Older payloads omit n_* — accessible name must NOT say
+        // "0 tracked changes" or "NaN changes". Singular "Tracked change".
+        const note = screen.getByRole("note", { name: /tracked change by A/i })
+        expect(note).toBeInTheDocument()
+        expect(note.getAttribute("aria-label")).not.toMatch(/\d+ tracked/i)
+        expect(note.getAttribute("aria-label")).not.toMatch(/NaN/i)
     })
 })
