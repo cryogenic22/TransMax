@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { LanguageSelector } from "@/components/ui/LanguageSelector"
 import { api } from "@/lib/api"
+import { getErrMessage } from "@/lib/utils"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -165,9 +166,9 @@ function RulesTab() {
             const status = statusFilter === "ALL" ? undefined : statusFilter
             const data = await api.knowledge.listRules(status)
             setRules(data)
-        } catch (e: any) {
+        } catch (e) {
             console.error("Failed to load rules:", e)
-            setConnectionError(e.message || "Failed to load rules")
+            setConnectionError(getErrMessage(e, "Failed to load rules"))
         } finally {
             setLoading(false)
         }
@@ -391,8 +392,8 @@ function RuleFormModal({ rule, onClose, onSaved }: { rule: Rule | null; onClose:
                 test_target: testTarget,
             })
             setTestResult(result)
-        } catch (e: any) {
-            setError(e.message)
+        } catch (e) {
+            setError(getErrMessage(e))
         } finally {
             setTesting(false)
         }
@@ -424,8 +425,8 @@ function RuleFormModal({ rule, onClose, onSaved }: { rule: Rule | null; onClose:
                 await api.knowledge.createRule(form)
             }
             onSaved()
-        } catch (e: any) {
-            setError(e.message)
+        } catch (e) {
+            setError(getErrMessage(e))
         } finally {
             setSaving(false)
         }
@@ -560,9 +561,9 @@ function GlossariesTab() {
         try {
             const data = await api.knowledge.listGlossaries()
             setGlossaries(data)
-        } catch (e: any) {
+        } catch (e) {
             console.error("Failed to load glossaries:", e)
-            setConnectionError(e.message || "Failed to load glossaries")
+            setConnectionError(getErrMessage(e, "Failed to load glossaries"))
         }
         finally { setLoading(false) }
     }
@@ -857,7 +858,7 @@ function GlossaryUploadModal({ onClose, onUploaded }: { onClose: () => void; onU
         try {
             await api.knowledge.uploadGlossary(file, glossaryId, version, srcLang, tgtLang)
             onUploaded()
-        } catch (e: any) { setError(e.message) }
+        } catch (e) { setError(getErrMessage(e)) }
         finally { setUploading(false) }
     }
 
@@ -943,7 +944,7 @@ function ImportExportTab() {
             const result = await api.knowledge.importRules(importFile)
             setImportResult(result)
             setImportFile(null)
-        } catch (e: any) { setImportError(e.message) }
+        } catch (e) { setImportError(getErrMessage(e)) }
         finally { setImporting(false) }
     }
 
@@ -959,7 +960,7 @@ function ImportExportTab() {
             a.click()
             document.body.removeChild(a)
             URL.revokeObjectURL(url)
-        } catch (e: any) { console.error("Export failed:", e) }
+        } catch (e) { console.error("Export failed:", e) }
         finally { setExporting(false) }
     }
 

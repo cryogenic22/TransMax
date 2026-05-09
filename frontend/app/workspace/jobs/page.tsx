@@ -8,6 +8,7 @@ import {
 import Link from "next/link"
 import { api, Document } from "@/lib/api"
 import { ConfidenceMeter } from "@/components/ui/ConfidenceMeter"
+import { getErrMessage } from "@/lib/utils"
 
 interface EnrichedJob {
     id: string
@@ -105,9 +106,9 @@ export default function JobsPage() {
             // Sort by most recent first
             enrichedJobs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
             setJobs(enrichedJobs)
-        } catch (err: any) {
+        } catch (err) {
             console.error("Failed to fetch jobs:", err)
-            setError(err.message || "Failed to load jobs")
+            setError(getErrMessage(err, "Failed to load jobs"))
             setJobs([])
         } finally {
             setLoading(false)

@@ -58,9 +58,10 @@ export function useTranslationNotifications() {
                         removeActiveJob(docId)
                         toast.error(`Translation failed: ${doc.name}`)
                     }
-                } catch (err: any) {
+                } catch (err) {
                     // If 404, document was deleted — stop tracking
-                    if (err?.message?.includes("404") || err?.message?.includes("not found")) {
+                    const msg = err instanceof Error ? err.message : ""
+                    if (msg.includes("404") || msg.includes("not found")) {
                         removeActiveJob(docId)
                     }
                     // Otherwise keep polling

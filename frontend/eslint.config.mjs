@@ -7,8 +7,12 @@ import nextTs from "eslint-config-next/typescript";
 //             back to `error` (real bugs fixed).
 //   Loop 25:  @typescript-eslint/no-unused-vars back to `error` (89 → 0).
 //             ^_ ignore-pattern enabled for intentional placeholders.
-//   Loop 26:  @typescript-eslint/no-explicit-any drives the residual 84 down.
-//             Currently still `warn` until the typing migration completes.
+//   Loop 26:  @typescript-eslint/no-explicit-any 84 → 65 (catch-block sweep
+//             via the new getErrMessage helper). Residual 65 lives in
+//             lib/api.ts (31, generic API surface) and a handful of
+//             component-prop / state interfaces. The full typing migration
+//             is TMX-3614-types-extended; this loop locked the win for
+//             every catch site so no NEW any can land in catches.
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
