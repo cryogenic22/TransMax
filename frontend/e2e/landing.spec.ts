@@ -40,6 +40,32 @@ test.describe("Landing page", () => {
     await expect(page).toHaveURL(/\/workspace\/upload$/)
   })
 
+  test("legacy /translate/:jobId 308-redirects to /workspace/jobs/:jobId?mode=translate", async ({ page }) => {
+    await page.route("**/api/**", route =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      })
+    )
+    const response = await page.goto("/translate/sample-job-123")
+    expect(response?.status()).toBeLessThan(400)
+    await expect(page).toHaveURL(/\/workspace\/jobs\/sample-job-123\?mode=translate$/)
+  })
+
+  test("legacy /review/:jobId 308-redirects to /workspace/jobs/:jobId?mode=review", async ({ page }) => {
+    await page.route("**/api/**", route =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      })
+    )
+    const response = await page.goto("/review/sample-job-456")
+    expect(response?.status()).toBeLessThan(400)
+    await expect(page).toHaveURL(/\/workspace\/jobs\/sample-job-456\?mode=review$/)
+  })
+
   test("legacy /design-system 308-redirects to /workspace/design-system", async ({ page }) => {
     // TMX-3604: legacy page deleted; canonical lives at /workspace/design-system.
     await page.route("**/api/**", route =>

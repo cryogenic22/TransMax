@@ -39,20 +39,20 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
 
-      // ── Ambiguous (307) — destination will tighten in follow-up tickets ──
-      // /translate/[jobId] and /review/[jobId]: no /workspace/jobs/[id] yet
-      // (TMX-3603 builds it). Land on the jobs list with focus + action hints
-      // so the user is one click from where they wanted to be.
+      // TMX-3603-jobs-id: /workspace/jobs/[id] now exists (Loop 27 fire 7).
+      // Tightened from 307 → 308; destination is canonical.
       {
         source: "/translate/:jobId",
-        destination: "/workspace/jobs?focus=:jobId&action=translate",
-        permanent: false,
+        destination: "/workspace/jobs/:jobId?mode=translate",
+        permanent: true,
       },
       {
         source: "/review/:jobId",
-        destination: "/workspace/jobs?focus=:jobId&action=review",
-        permanent: false,
+        destination: "/workspace/jobs/:jobId?mode=review",
+        permanent: true,
       },
+
+      // ── Ambiguous (307) — destination will tighten in follow-up tickets ──
       // /knowledge -> /workspace/tools per design v1; 307 because the IA may
       // split knowledge / glossary into separate workspace sections later.
       {
