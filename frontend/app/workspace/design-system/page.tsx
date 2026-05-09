@@ -50,6 +50,30 @@ const REVISION_FIXTURES: Array<{ caption: string; revisions: SegmentRevisions }>
       dates: ["2026-04-05T09:00:00Z"],
     },
   },
+  {
+    caption: "TMX-3704-ui: moveFrom-only — text was relocated AWAY from this segment.",
+    revisions: {
+      has_insertions: false,
+      has_deletions: false,
+      has_moves: true,
+      has_moves_from: true,
+      has_moves_to: false,
+      authors: ["Mover"],
+      dates: ["2026-04-06T09:00:00Z"],
+    },
+  },
+  {
+    caption: "TMX-3704-ui: moveTo-only — text arrived HERE from elsewhere in the doc.",
+    revisions: {
+      has_insertions: false,
+      has_deletions: false,
+      has_moves: true,
+      has_moves_from: false,
+      has_moves_to: true,
+      authors: ["Mover"],
+      dates: ["2026-04-06T09:00:00Z"],
+    },
+  },
 ]
 
 const ALL_STATES: LifecycleStatus[] = [
