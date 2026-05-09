@@ -5,9 +5,12 @@ import {
 } from "@/lib/fileValidation"
 
 function makeFile(name: string, content: Uint8Array | string, sizeOverride?: number): File {
+  // TypeScript 5.7 tightened BlobPart to require Uint8Array<ArrayBuffer>
+  // (not the generic ArrayBufferLike). Re-wrap into a fresh Uint8Array
+  // with an explicit ArrayBuffer to satisfy the constructor.
   const blob =
     content instanceof Uint8Array
-      ? new Blob([content])
+      ? new Blob([new Uint8Array(content).buffer])
       : new Blob([content], { type: "text/plain" })
   const file = new File([blob], name)
   if (sizeOverride !== undefined) {
