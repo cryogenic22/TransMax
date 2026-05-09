@@ -6,6 +6,9 @@ from app.services.db_service import DatabaseService
 from app.models.models import AuditRecord
 
 def test_tamper_evidence_lifecycle():
+    from app.core.tenant_context import org_context
+    from app.models.database import DEFAULT_ORG_ID
+
     service = DatabaseService()
 
     request_data = {
@@ -13,57 +16,59 @@ def test_tamper_evidence_lifecycle():
          "source_language": "en",
          "target_language": "fr"
     }
-    real_job_id = service.create_job(request_data)
-    real_audit_id = str(uuid.uuid4())
 
-    state = {
-        "final_decision": "APPROVED",
-        "quality_report": {"violations": []},
-        "versions": {"model": "v1", "prompts": "v1"},
-        "iteration_count": 0
-    }
+    # TMX-3012: tenant context required for every DB op below.
+    with org_context(DEFAULT_ORG_ID):
+        real_job_id = service.create_job(request_data)
+        real_audit_id = str(uuid.uuid4())
 
-    service.save_audit_log(real_job_id, state, real_audit_id)
+        state = {
+            "final_decision": "APPROVED",
+            "quality_report": {"violations": []},
+            "versions": {"model": "v1", "prompts": "v1"},
+            "iteration_count": 0
+        }
 
-    # 2. Verify Integrity (Should Pass)
-    result = service.verify_audit_integrity(real_audit_id)
-    assert result["hash_valid"] is True
-    assert result["index_integrity"] is True
+        service.save_audit_log(real_job_id, state, real_audit_id)
 
-    # 3. Simulate Tampering: JSON Payload Modification
-    db = service.get_session()
-    try:
-        record = db.query(AuditRecord).filter(AuditRecord.audit_id == real_audit_id).first()
+        # 2. Verify Integrity (Should Pass)
+        result = service.verify_audit_integrity(real_audit_id)
+        assert result["hash_valid"] is True
+        assert result["index_integrity"] is True
 
-        tampered_payload = dict(record.full_payload)
-        tampered_payload["final_decision"] = "REJECTED"
+        # 3. Simulate Tampering: JSON Payload Modification
+        db = service.get_session()
+        try:
+            record = db.query(AuditRecord).filter(AuditRecord.audit_id == real_audit_id).first()
 
-        record.full_payload = tampered_payload
-        db.commit()
-    finally:
-        db.close()
+            tampered_payload = dict(record.full_payload)
+            tampered_payload["final_decision"] = "REJECTED"
 
-    # Verify again -> Should FAIL hash check
-    result_tampered = service.verify_audit_integrity(real_audit_id)
-    assert result_tampered["hash_valid"] is False
+            record.full_payload = tampered_payload
+            db.commit()
+        finally:
+            db.close()
 
-    # 4. Simulate Hash Spoofing
-    db = service.get_session()
-    try:
-        record = db.query(AuditRecord).filter(AuditRecord.audit_id == real_audit_id).first()
+        # Verify again -> Should FAIL hash check
+        result_tampered = service.verify_audit_integrity(real_audit_id)
+        assert result_tampered["hash_valid"] is False
 
-        bad_json = json.dumps(record.full_payload, sort_keys=True)
-        new_sig = hashlib.sha256(bad_json.encode()).hexdigest()
-        record.hash_signature = new_sig
-        db.commit()
-    finally:
-        db.close()
+        # 4. Simulate Hash Spoofing
+        db = service.get_session()
+        try:
+            record = db.query(AuditRecord).filter(AuditRecord.audit_id == real_audit_id).first()
 
-    # Hash is valid now, but index integrity should fail
-    # (final_decision column is still "APPROVED" but payload says "REJECTED")
-    result_spoofed = service.verify_audit_integrity(real_audit_id)
-    assert result_spoofed["hash_valid"] is True
-    assert result_spoofed["index_integrity"] is False
+            bad_json = json.dumps(record.full_payload, sort_keys=True)
+            new_sig = hashlib.sha256(bad_json.encode()).hexdigest()
+            record.hash_signature = new_sig
+            db.commit()
+        finally:
+            db.close()
+
+        # Hash is valid now, but index integrity should fail
+        result_spoofed = service.verify_audit_integrity(real_audit_id)
+        assert result_spoofed["hash_valid"] is True
+        assert result_spoofed["index_integrity"] is False
 
 if __name__ == "__main__":
     try:

@@ -15,7 +15,11 @@ from app.models.models import QualityScorecard, AuditRecord, AuditLogEntry, Tran
 
 @pytest.fixture
 def db():
-    return DatabaseService()
+    """TMX-3012: enter tenant context for direct DB tests."""
+    from app.core.tenant_context import org_context
+    service = DatabaseService()
+    with org_context(DEFAULT_ORG_ID):
+        yield service
 
 @pytest.fixture
 def audit():

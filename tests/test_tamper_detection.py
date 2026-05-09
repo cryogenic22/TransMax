@@ -6,7 +6,11 @@ from app.services.db_service import DatabaseService
 
 @pytest.fixture
 def audit_svc():
-    return AuditService()
+    """TMX-3012: enter tenant context for direct DB tests."""
+    from app.core.tenant_context import org_context
+    from app.models.database import DEFAULT_ORG_ID
+    with org_context(DEFAULT_ORG_ID):
+        yield AuditService()
 
 
 @pytest.fixture

@@ -8,8 +8,17 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.agents.graph import app as graph_app, TransMaxState
-from app.models.database import Segment, DocumentStatus
+from app.models.database import Segment, DocumentStatus, DEFAULT_ORG_ID
 from app.models.models import TMSegment
+
+
+# TMX-3012: every test in this module touches DB-bound services that issue
+# tenant-scoped queries. Auto-apply the tenant context for every test.
+@pytest.fixture(autouse=True)
+def _set_tenant_context():
+    from app.core.tenant_context import org_context
+    with org_context(DEFAULT_ORG_ID):
+        yield
 
 # --- Mocks ---
 class MockQuery:
