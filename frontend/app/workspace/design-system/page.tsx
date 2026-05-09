@@ -6,6 +6,14 @@ import {
   StatusLifecycle,
   type LifecycleStatus,
 } from "@/components/ui/StatusLifecycle"
+import {
+  AgentLanes,
+  type AgentActivity,
+} from "@/components/ui/AgentLanes"
+import {
+  ActivityFeed,
+  type ActivityEvent,
+} from "@/components/ui/ActivityFeed"
 
 const ALL_STATES: LifecycleStatus[] = [
   "pending",
@@ -14,6 +22,53 @@ const ALL_STATES: LifecycleStatus[] = [
   "reviewed",
   "approved",
   "blocked",
+]
+
+// Fixture data — TMX-3603-wire replaces with live OTel + audit feed.
+const DEMO_ACTIVITIES: AgentActivity[] = [
+  { id: "a1", agent: "translator", label: "Translate batch 1", startedAt: "2026-05-09T17:23:00Z", durationMs: 4800,  status: "complete"    },
+  { id: "a2", agent: "translator", label: "Translate batch 2", startedAt: "2026-05-09T17:23:05Z", durationMs: 5100,  status: "complete"    },
+  { id: "a3", agent: "reviewer",   label: "Quality gates",     startedAt: "2026-05-09T17:23:10Z", durationMs: 1200,  status: "in_progress" },
+  { id: "a4", agent: "fixer",      label: "Awaiting trigger",  startedAt: "2026-05-09T17:23:11Z",                    status: "in_progress" },
+  { id: "a5", agent: "auditor",    label: "Chain seal",        startedAt: "2026-05-09T17:23:12Z", durationMs: 320,   status: "complete"    },
+]
+
+const DEMO_FEED: ActivityEvent[] = [
+  {
+    id: "f1",
+    actor: { type: "user", id: "carol", name: "Carol (QC Reviewer)" },
+    action: "approved",
+    target: "Cardivex SmPC v2.1 — EN→DE",
+    occurredAt: "2026-05-09T17:00:00Z",
+  },
+  {
+    id: "f2",
+    actor: { type: "agent", id: "translator", name: "Translator agent" },
+    action: "translated",
+    target: "segment 47 of Mounjaro PIL — EN→ES",
+    occurredAt: "2026-05-09T17:55:30Z",
+  },
+  {
+    id: "f3",
+    actor: { type: "agent", id: "reviewer", name: "Reviewer agent" },
+    action: "flagged FREQUENCY_MISMATCH on",
+    target: "Atorlip PIL §4.4 EN→FR",
+    occurredAt: "2026-05-09T17:42:00Z",
+  },
+  {
+    id: "f4",
+    actor: { type: "system", id: "drift-detector", name: "Drift detector" },
+    action: "noted upstream change in",
+    target: "EDQM glossary term “adverse event”",
+    occurredAt: "2026-05-08T17:00:00Z",
+  },
+  {
+    id: "f5",
+    actor: { type: "agent", id: "auditor", name: "Auditor agent" },
+    action: "sealed",
+    target: "Cardivex SmPC v2.1 audit chain (anchor a3f9e2bc…)",
+    occurredAt: "2026-05-09T17:00:30Z",
+  },
 ]
 
 export default function WorkspaceDesignSystemPage() {
@@ -121,6 +176,39 @@ export default function WorkspaceDesignSystemPage() {
           <StatusLifecycle status="blocked" label="Critical defect" />
           <StatusLifecycle status="translating" label="LLM in flight" />
         </div>
+      </section>
+
+      {/* AgentLanes — multi-agent swim-lane (TMX-3603). */}
+      <section className="space-y-3" aria-labelledby="agentlanes-heading">
+        <h2 id="agentlanes-heading" className="text-lg font-semibold">
+          Agent Lanes
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Live multi-agent execution view. One lane per agent (translator,
+          reviewer, fixer, auditor) coloured by the agent identity tokens
+          from TMX-3601. Activities are chips with start time, duration, and
+          status. Used at the top of any in-flight job page so a reviewer
+          immediately sees four entities at work — the platform&apos;s
+          agentic posture made visible.
+        </p>
+        <AgentLanes activities={DEMO_ACTIVITIES} />
+        <p className="text-xs text-muted-foreground">Empty state:</p>
+        <AgentLanes activities={[]} />
+      </section>
+
+      {/* ActivityFeed — chronological audit-style stream (TMX-3603). */}
+      <section className="space-y-3" aria-labelledby="feed-heading">
+        <h2 id="feed-heading" className="text-lg font-semibold">
+          Activity Feed
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Chronological event stream — replaces zero-stat-cards on the
+          dashboard (rescape Direction 2). For an auditable platform the
+          right hero is the audit log, not &ldquo;Pending: 0 / Active: 0
+          / Approved: 0&rdquo;. Avatars colour-code by actor type:
+          violet=agent, blue=user, emerald=system.
+        </p>
+        <ActivityFeed items={DEMO_FEED} />
       </section>
 
       {/* Composition — show the three patterns together as they would be
