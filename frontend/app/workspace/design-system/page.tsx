@@ -74,6 +74,25 @@ const REVISION_FIXTURES: Array<{ caption: string; revisions: SegmentRevisions }>
       dates: ["2026-04-06T09:00:00Z"],
     },
   },
+  {
+    caption: "TMX-3702-counts: heavily-edited segment — 20 changes triggers the count display for triage.",
+    revisions: {
+      has_insertions: true,
+      has_deletions: true,
+      has_moves: false,
+      n_insertions: 12,
+      n_deletions: 8,
+      n_moves_from: 0,
+      n_moves_to: 0,
+      authors: ["Senior Author", "QC Lead", "Regulatory"],
+      dates: [
+        "2026-04-01T10:00:00Z",
+        "2026-04-03T14:00:00Z",
+        "2026-04-05T11:00:00Z",
+        "2026-04-08T16:30:00Z",
+      ],
+    },
+  },
 ]
 
 const ALL_STATES: LifecycleStatus[] = [
