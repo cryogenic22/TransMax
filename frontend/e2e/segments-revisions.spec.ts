@@ -66,6 +66,36 @@ const STUB_SEGMENTS = [
     created_at: "2026-05-09T20:00:00Z",
     updated_at: "2026-05-09T20:00:00Z",
   },
+  {
+    id: "seg-heavily-edited",
+    document_id: STUB_DOC_ID,
+    order_index: 3,
+    source_text: "Multi-revision segment used to verify the count threshold.",
+    translated_text: "Stark bearbeitetes Segment.",
+    confidence_score: 0.85,
+    status: "translated",
+    gate_results: {},
+    validation_score: null,
+    reverse_translation: null,
+    element_meta: {
+      // TMX-3702-counts: total 20 marks should trigger '20 changes' display.
+      revisions: {
+        has_insertions: true,
+        has_deletions: true,
+        has_moves: false,
+        has_moves_from: false,
+        has_moves_to: false,
+        n_insertions: 12,
+        n_deletions: 8,
+        n_moves_from: 0,
+        n_moves_to: 0,
+        authors: ["Senior Author", "QC Lead"],
+        dates: ["2026-04-01T10:00:00Z", "2026-04-08T16:30:00Z"],
+      },
+    },
+    created_at: "2026-05-09T20:00:00Z",
+    updated_at: "2026-05-09T20:00:00Z",
+  },
 ]
 
 async function stubBackend(route: Route) {
@@ -111,14 +141,33 @@ test.describe("RevisionIndicator page-level integration (TMX-3702-e2e)", () => {
     await page.waitForLoadState("networkidle")
 
     // The pill is identified by role='note' with the segment-tracked-changes
-    // aria-label. With one revision-bearing segment in the stub, exactly
-    // one such note must be present.
+    // aria-label. Two of the three stubbed segments carry revisions
+    // (single-author insertion + heavily-edited 20-mark fixture); the
+    // no-revisions middle segment must NOT render the pill.
     const notes = page.getByRole("note", { name: /tracked changes/i })
-    await expect(notes).toHaveCount(1)
+    await expect(notes).toHaveCount(2)
 
-    // Sanity: the visible label should read 'tracked' (insertions, no
-    // pure-move directional variant).
+    // Sanity: the first revision-bearing pill reads 'tracked' (insertions
+    // path, no pure-move directional variant) and names the author.
     await expect(notes.first()).toContainText(/tracked/)
     await expect(notes.first()).toContainText(/Dr\. Reviewer/)
+  })
+
+  test("shows '20 changes' count on the heavily-edited segment (TMX-3702-counts)", async ({
+    page,
+  }) => {
+    await page.route("**/api/**", stubBackend)
+    await page.goto(`/workspace/jobs/${STUB_DOC_ID}?mode=review`)
+    await page.waitForLoadState("networkidle")
+
+    // The 12 insertions + 8 deletions fixture should trigger the count
+    // segment in the pill. Single-edit pill above this one must NOT show
+    // a count.
+    await expect(page.getByText(/20 changes/)).toBeVisible()
+
+    // Verify the threshold: the single-author single-insertion fixture
+    // should NOT carry a 'changes' count (count = 1 < threshold of 2).
+    const allCounts = page.getByText(/\d+ changes/)
+    await expect(allCounts).toHaveCount(1)
   })
 })
