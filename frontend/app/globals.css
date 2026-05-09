@@ -130,6 +130,82 @@
     --input: 220 13% 91%;
     --ring: 217 89% 61%;
     --radius: 1rem;
+
+    /* ============================================
+       TMX-3601 — TransMax-specific design tokens
+       ============================================
+       AI Moment, Provenance Chip, Status Lifecycle, Agent identity.
+       Foundation for Loops 18 (patterns) and 19 (agentic-forward).
+    */
+
+    /* AI Moment — signature gradient + sparkle accent */
+    --ai-gradient-from: #8b5cf6;          /* violet-500 */
+    --ai-gradient-to:   #06b6d4;          /* cyan-500 */
+    --ai-tint:          rgba(139, 92, 246, 0.08);
+    --ai-border:        rgba(139, 92, 246, 0.25);
+    --ai-spark:         #a78bfa;          /* violet-400, used for sparkle icon */
+
+    /* Provenance Chip — small chip near every content block */
+    --audit-chip-bg:     #f5f3ff;          /* violet-50 */
+    --audit-chip-fg:     #5b21b6;          /* violet-800 */
+    --audit-chip-border: #ddd6fe;          /* violet-200 */
+    --audit-hash-fg:     #6b7280;          /* slate-500, monospace hash colour */
+
+    /* Status Lifecycle — segment + job lifecycle hues
+       (scannable at a glance; pair with iconography in Loop 18) */
+    --status-pending-bg:     #f3f4f6;     /* neutral */
+    --status-pending-fg:     #4b5563;
+    --status-translating-bg: #ede9fe;     /* in-progress AI work */
+    --status-translating-fg: #6d28d9;
+    --status-translated-bg:  #dbeafe;     /* AI output, awaiting human */
+    --status-translated-fg:  #1d4ed8;
+    --status-reviewed-bg:    #ccfbf1;     /* human seen, undecided */
+    --status-reviewed-fg:    #115e59;
+    --status-approved-bg:    #dcfce7;     /* signed off */
+    --status-approved-fg:    #166534;
+    --status-blocked-bg:     #fee2e2;     /* critical defect */
+    --status-blocked-fg:     #991b1b;
+
+    /* Agent identity — used by AgentLanes (Loop 19) and activity feed avatars */
+    --agent-translator: #8b5cf6;          /* violet, pairs with AI gradient */
+    --agent-reviewer:   #2563eb;          /* blue, deterministic gates */
+    --agent-fixer:      #d97706;          /* amber, corrective work */
+    --agent-auditor:    #059669;          /* emerald, compliance */
+  }
+
+  .dark {
+    /* Dark-mode redefinitions for the TMX tokens. The :root block above is
+       authoritative for light; this block is the equivalent for dark.
+       Loop 17.5 will wire the toggle (currently no toggle in the UI; tokens
+       are ready when it lands). */
+    --ai-gradient-from: #a78bfa;
+    --ai-gradient-to:   #22d3ee;
+    --ai-tint:          rgba(167, 139, 250, 0.12);
+    --ai-border:        rgba(167, 139, 250, 0.30);
+    --ai-spark:         #c4b5fd;
+
+    --audit-chip-bg:     rgba(167, 139, 250, 0.10);
+    --audit-chip-fg:     #c4b5fd;
+    --audit-chip-border: rgba(167, 139, 250, 0.25);
+    --audit-hash-fg:     #9ca3af;
+
+    --status-pending-bg:     #1f2937;
+    --status-pending-fg:     #d1d5db;
+    --status-translating-bg: rgba(139, 92, 246, 0.20);
+    --status-translating-fg: #c4b5fd;
+    --status-translated-bg:  rgba(37, 99, 235, 0.20);
+    --status-translated-fg:  #93c5fd;
+    --status-reviewed-bg:    rgba(20, 184, 166, 0.20);
+    --status-reviewed-fg:    #5eead4;
+    --status-approved-bg:    rgba(5, 150, 105, 0.20);
+    --status-approved-fg:    #6ee7b7;
+    --status-blocked-bg:     rgba(220, 38, 38, 0.20);
+    --status-blocked-fg:     #fca5a5;
+
+    --agent-translator: #a78bfa;
+    --agent-reviewer:   #60a5fa;
+    --agent-fixer:      #fbbf24;
+    --agent-auditor:    #34d399;
   }
 }
 
