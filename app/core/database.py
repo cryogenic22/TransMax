@@ -3,10 +3,12 @@ Database connection and session management.
 """
 import logging
 import os
+from contextlib import contextmanager
+from typing import Optional
+
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
@@ -42,14 +44,27 @@ def get_db() -> Session:
 
 
 @contextmanager
-def get_db_session():
+def get_db_session(tenant_id: Optional[str] = None):
     """
     Context manager for database sessions outside of FastAPI.
+
+    TMX-3012: when `tenant_id` is provided, the org-context ContextVar is set
+    for the duration of the with-block. Every SELECT against a tenant-scoped
+    table is auto-filtered to that tenant; every INSERT auto-injects the
+    tenant id. Without `tenant_id`, queries against tenant-scoped tables
+    raise `TenantContextMissing` (A3 — no silent cross-tenant leak).
     """
+    from app.core.tenant_context import org_context
+
     db = SessionLocal()
     try:
-        yield db
-        db.commit()
+        if tenant_id is not None:
+            with org_context(tenant_id):
+                yield db
+                db.commit()
+        else:
+            yield db
+            db.commit()
     except Exception:
         db.rollback()
         raise
@@ -92,6 +107,10 @@ def init_db():
     import app.models.audit_v2  # noqa: F401  (TMX-3100)
     import app.models.translation  # noqa: F401
     import app.models.models  # noqa: F401
+    # TMX-3012: importing this module registers the auto-inject + auto-filter
+    # SQLAlchemy event listeners. Must be imported AFTER the models (which
+    # mix in TenantScopedMixin); the listeners then fire on those classes.
+    import app.models.tenant_scoped  # noqa: F401
     from app.models.database import Base
 
     failed = []

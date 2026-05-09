@@ -24,9 +24,13 @@ def fresh_db(tmp_path, monkeypatch):
     import app.core.database as core_db
     importlib.reload(core_db)
     core_db.init_db()
+    # TMX-3012: enter org_context for the test so the auto-filter allows queries.
+    from app.core.tenant_context import org_context
+    from app.models.database import DEFAULT_ORG_ID
     Session = sessionmaker(bind=core_db.engine)
     session = Session()
-    yield core_db.engine, session
+    with org_context(DEFAULT_ORG_ID):
+        yield core_db.engine, session
     session.close()
 
 

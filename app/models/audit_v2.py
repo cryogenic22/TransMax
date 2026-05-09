@@ -40,9 +40,10 @@ from sqlalchemy import (
 
 from app.models.database import Base
 from app.models.types import GUID
+from app.models.tenant_scoped import TenantScopedMixin
 
 
-class AuditEventV2(Base):
+class AuditEventV2(TenantScopedMixin, Base):
     """
     A single chained audit event. Append-only.
 
@@ -102,7 +103,7 @@ class AuditEventV2(Base):
         )
 
 
-class AuditAnchor(Base):
+class AuditAnchor(TenantScopedMixin, Base):
     """
     Daily Merkle-root anchor per organization.
 

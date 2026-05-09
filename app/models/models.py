@@ -7,8 +7,9 @@ import uuid
 from app.models.database import Base
 from app.models.types import GUID
 from app.models.soft_delete import SoftDeleteMixin
+from app.models.tenant_scoped import TenantScopedMixin
 
-class TranslationRule(SoftDeleteMixin, Base):
+class TranslationRule(TenantScopedMixin, SoftDeleteMixin, Base):
     """
     TMX-045: Knowledge System Rule (Black Book v2).
     Represents a learned translation rule with enterprise domain scoping.
@@ -45,7 +46,7 @@ class TranslationRule(SoftDeleteMixin, Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-class TranslationJobQueue(SoftDeleteMixin, Base):
+class TranslationJobQueue(TenantScopedMixin, SoftDeleteMixin, Base):
     __tablename__ = "translation_jobs_queue"
 
     job_id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
@@ -72,7 +73,7 @@ class TranslationJobQueue(SoftDeleteMixin, Base):
     config_snapshot = relationship("JobConfigSnapshot", back_populates="job", uselist=False)
     scorecard = relationship("QualityScorecard", back_populates="job", uselist=False)
 
-class JobConfigSnapshot(SoftDeleteMixin, Base):
+class JobConfigSnapshot(TenantScopedMixin, SoftDeleteMixin, Base):
     """
     TMX-010: Configuration Snapshot.
     Freezes the exact state of the world (prompts, profiles, parameters) for a job.
@@ -94,7 +95,7 @@ class JobConfigSnapshot(SoftDeleteMixin, Base):
     
     job = relationship("TranslationJobQueue", back_populates="config_snapshot")
 
-class AuditLogEntry(SoftDeleteMixin, Base):
+class AuditLogEntry(TenantScopedMixin, SoftDeleteMixin, Base):
     """
     TMX-021: Tamper-Evident Event Log.
     Each entry is cryptographically linked to the previous one (Blockchain-style).
@@ -118,7 +119,7 @@ class AuditLogEntry(SoftDeleteMixin, Base):
     
     audit_trail = relationship("app.models.models.AuditRecord", back_populates="log_entries")
 
-class QualityScorecard(SoftDeleteMixin, Base):
+class QualityScorecard(TenantScopedMixin, SoftDeleteMixin, Base):
     """
     TMX-030: Quality Scorecard.
     Persists pass/fail counts and drift scores per job.
@@ -145,7 +146,7 @@ class QualityScorecard(SoftDeleteMixin, Base):
     job = relationship("TranslationJobQueue", back_populates="scorecard")
     entries = relationship("ScorecardEntry", back_populates="scorecard")
 
-class ScorecardEntry(SoftDeleteMixin, Base):
+class ScorecardEntry(TenantScopedMixin, SoftDeleteMixin, Base):
     """
     Granular defect entry linked to the scorecard.
     """
@@ -164,7 +165,7 @@ class ScorecardEntry(SoftDeleteMixin, Base):
     
     scorecard = relationship("QualityScorecard", back_populates="entries")
 
-class AuditRecord(SoftDeleteMixin, Base):
+class AuditRecord(TenantScopedMixin, SoftDeleteMixin, Base):
     """
     The 'Head' of the Audit Trail.
     Now acts as the summary container.
@@ -203,7 +204,7 @@ class AuditRecord(SoftDeleteMixin, Base):
     job = relationship("TranslationJobQueue", back_populates="audit_record", foreign_keys=[job_id])
     log_entries = relationship("AuditLogEntry", back_populates="audit_trail", order_by="AuditLogEntry.sequence_index")
 
-class Glossary(SoftDeleteMixin, Base):
+class Glossary(TenantScopedMixin, SoftDeleteMixin, Base):
     __tablename__ = "glossaries"
 
     glossary_id = Column(String, primary_key=True, index=True) # e.g., 'global_pharma_v2'
@@ -217,7 +218,7 @@ class Glossary(SoftDeleteMixin, Base):
     
     terms = relationship("GlossaryTerm", back_populates="glossary")
 
-class GlossaryTerm(SoftDeleteMixin, Base):
+class GlossaryTerm(TenantScopedMixin, SoftDeleteMixin, Base):
     __tablename__ = "glossary_terms"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -246,7 +247,7 @@ class GlossaryTerm(SoftDeleteMixin, Base):
         primaryjoin="and_(GlossaryTerm.glossary_id==Glossary.glossary_id, GlossaryTerm.glossary_version==Glossary.version)",
         back_populates="terms")
 
-class TMSegment(SoftDeleteMixin, Base):
+class TMSegment(TenantScopedMixin, SoftDeleteMixin, Base):
     __tablename__ = "tm_segments"
 
     # TM Identity
@@ -272,7 +273,7 @@ class TMSegment(SoftDeleteMixin, Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     meta_json = Column(JSON, nullable=True)
 
-class DeadLetterQueue(SoftDeleteMixin, Base):
+class DeadLetterQueue(TenantScopedMixin, SoftDeleteMixin, Base):
     """
     TMX-OPS-04: Dead-Letter Queue (DLQ).
     Stores failed jobs/segments for forensic analysis.
