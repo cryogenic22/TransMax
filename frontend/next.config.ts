@@ -12,7 +12,90 @@ import type { NextConfig } from "next";
 //
 // See .context/loops/TMX-3600.md and docs/ia_migration.md for the full rationale.
 
+// TMX-3615: security headers applied to every response. CSP is the load-
+// bearing one — it's the platform's defence-in-depth against XSS, click-
+// jacking, and data exfiltration to a third-party origin.
+//
+// `connect-src` includes the backend API base so fetch / WebSocket calls
+// to it aren't blocked. Pulled from NEXT_PUBLIC_API_URL at build time so
+// staging / Railway / prod each get the right origin baked in.
+//
+// `script-src 'self' 'unsafe-inline'` is wider than ideal but is what
+// Next.js currently needs for its inline runtime bootstrapping. A future
+// ticket can move to nonce-based CSP once we have a hosting layer that
+// supports per-request nonce injection (TMX-3615-nonce).
+const API_ORIGIN = (() => {
+  const raw = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001"
+  try {
+    return new URL(raw).origin
+  } catch {
+    return raw
+  }
+})()
+
+const CSP_DIRECTIVES = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "object-src 'none'",
+  // Next.js inline bootstrap + framer-motion need 'unsafe-inline'. Fonts
+  // come from googleapis (fonts.googleapis.com / fonts.gstatic.com).
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob:",
+  `connect-src 'self' ${API_ORIGIN}`,
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "upgrade-insecure-requests",
+].join("; ")
+
+const SECURITY_HEADERS = [
+  // Content-Security-Policy — the big one.
+  { key: "Content-Security-Policy", value: CSP_DIRECTIVES },
+  // HSTS — force HTTPS for 1 year, include subdomains, preload-eligible.
+  // Only meaningful when served over HTTPS (Railway / prod); harmless on
+  // localhost.
+  { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains; preload" },
+  // Clickjacking — frame-ancestors in CSP is the modern equivalent, but
+  // we set X-Frame-Options too for older browsers.
+  { key: "X-Frame-Options", value: "DENY" },
+  // MIME-type sniffing.
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  // Referrer policy: send only the origin on cross-origin nav.
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // Disable browser features we don't use. Add to this list when we
+  // intentionally adopt a feature (e.g. future microphone/clipboard
+  // integrations).
+  {
+    key: "Permissions-Policy",
+    value: [
+      "camera=()",
+      "microphone=()",
+      "geolocation=()",
+      "payment=()",
+      "usb=()",
+      "magnetometer=()",
+      "accelerometer=()",
+      "gyroscope=()",
+      "fullscreen=(self)",
+    ].join(", "),
+  },
+]
+
 const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      {
+        // Apply to every route, including the redirects above (the headers
+        // ride along on the 308 / 307 responses too).
+        source: "/:path*",
+        headers: SECURITY_HEADERS,
+      },
+    ]
+  },
+
   async redirects() {
     return [
       // ── Unambiguous one-to-one (308) ──────────────────────────────────

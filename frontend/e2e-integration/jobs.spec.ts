@@ -53,3 +53,39 @@ test.describe("Jobs detail (live integration)", () => {
     expect(consoleErrors).toEqual([])
   })
 })
+
+test.describe("Security headers (TMX-3615)", () => {
+  test("frontend serves CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy on /", async ({
+    request,
+  }) => {
+    const res = await request.get("/", { maxRedirects: 0 })
+    const headers = res.headers()
+    // CSP
+    expect(headers["content-security-policy"]).toBeTruthy()
+    expect(headers["content-security-policy"]).toContain("default-src 'self'")
+    expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'")
+    // HSTS
+    expect(headers["strict-transport-security"]).toBe("max-age=31536000; includeSubDomains; preload")
+    // Clickjacking
+    expect(headers["x-frame-options"]).toBe("DENY")
+    // MIME sniff
+    expect(headers["x-content-type-options"]).toBe("nosniff")
+    // Referrer
+    expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin")
+    // Permissions
+    expect(headers["permissions-policy"]).toContain("camera=()")
+    expect(headers["permissions-policy"]).toContain("geolocation=()")
+  })
+
+  test("security headers ride to the redirect destination", async ({ request }) => {
+    // /dashboard 308-redirects to /workspace; following the chain, the
+    // final response (the canonical /workspace page) must still carry the
+    // headers. Next.js's headers() config applies at the destination, not
+    // the 308 itself, so this is the user-facing contract.
+    const res = await request.get("/dashboard")
+    expect(res.status()).toBe(200)
+    expect(res.headers()["content-security-policy"]).toBeTruthy()
+    expect(res.headers()["strict-transport-security"]).toBeTruthy()
+    expect(res.headers()["x-frame-options"]).toBe("DENY")
+  })
+})
