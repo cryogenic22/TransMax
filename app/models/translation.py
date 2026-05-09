@@ -8,6 +8,7 @@ from pgvector.sqlalchemy import Vector
 
 from app.models.database import Base
 from app.models.types import GUID
+from app.models.soft_delete import SoftDeleteMixin
 
 
 class TranslationStatus(str, enum.Enum):
@@ -27,7 +28,7 @@ class TranslationProvider(str, enum.Enum):
     AZURE = "azure"
 
 
-class TranslationJob(Base):
+class TranslationJob(SoftDeleteMixin, Base):
     __tablename__ = "translation_jobs"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -82,7 +83,7 @@ class TranslationJob(Base):
     quality_reports = relationship("QualityReport", back_populates="job", cascade="all, delete-orphan")
 
 
-class ChunkTranslation(Base):
+class ChunkTranslation(SoftDeleteMixin, Base):
     __tablename__ = "chunk_translations"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -125,7 +126,7 @@ class ChunkTranslation(Base):
     job = relationship("TranslationJob", back_populates="chunk_translations")
 
 
-class QualityReport(Base):
+class QualityReport(SoftDeleteMixin, Base):
     __tablename__ = "quality_reports"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -159,7 +160,7 @@ class QualityReport(Base):
     job = relationship("TranslationJob", back_populates="quality_reports")
 
 
-class TranslationGlossary(Base):
+class TranslationGlossary(SoftDeleteMixin, Base):
     __tablename__ = "translation_glossaries"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -184,7 +185,7 @@ class TranslationGlossary(Base):
     created_by = Column(String)
 
 
-class TranslationMemory(Base):
+class TranslationMemory(SoftDeleteMixin, Base):
     __tablename__ = "translation_memory"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
