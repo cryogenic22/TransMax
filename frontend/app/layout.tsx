@@ -5,8 +5,15 @@ import { AuthProvider } from "@/lib/auth";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: "TransMax - Pharmaceutical Translation Platform",
-  description: "AI-powered pharmaceutical translation with built-in quality assurance. Accurate translations for PIL, SPC, labels, and regulatory documents.",
+  title: "TransMax — Auditable AI translation for regulated pharma",
+  description:
+    "Multi-agent translation with cryptographic audit, deterministic quality gates, and signed evidence bundles. Built for PIL, SmPC, IFU, and the rest of the regulator-facing label.",
+  icons: {
+    icon: [
+      { url: "/transmax-mark.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "32x32" },
+    ],
+  },
 };
 
 export default function RootLayout({

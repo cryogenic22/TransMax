@@ -56,6 +56,44 @@ const config: Config = {
                 },
                 "medical-green": "hsl(var(--medical-green))",
                 "alert-red": "hsl(var(--alert-red))",
+                // TMX-3601 design tokens — AI Moment, Provenance, Status Lifecycle, Agents.
+                ai: {
+                    from: "var(--ai-gradient-from)",
+                    to: "var(--ai-gradient-to)",
+                    tint: "var(--ai-tint)",
+                    border: "var(--ai-border)",
+                    spark: "var(--ai-spark)",
+                },
+                audit: {
+                    chip: "var(--audit-chip-bg)",
+                    "chip-fg": "var(--audit-chip-fg)",
+                    "chip-border": "var(--audit-chip-border)",
+                    hash: "var(--audit-hash-fg)",
+                },
+                status: {
+                    "pending-bg": "var(--status-pending-bg)",
+                    "pending-fg": "var(--status-pending-fg)",
+                    "translating-bg": "var(--status-translating-bg)",
+                    "translating-fg": "var(--status-translating-fg)",
+                    "translated-bg": "var(--status-translated-bg)",
+                    "translated-fg": "var(--status-translated-fg)",
+                    "reviewed-bg": "var(--status-reviewed-bg)",
+                    "reviewed-fg": "var(--status-reviewed-fg)",
+                    "approved-bg": "var(--status-approved-bg)",
+                    "approved-fg": "var(--status-approved-fg)",
+                    "blocked-bg": "var(--status-blocked-bg)",
+                    "blocked-fg": "var(--status-blocked-fg)",
+                },
+                agent: {
+                    translator: "var(--agent-translator)",
+                    reviewer: "var(--agent-reviewer)",
+                    fixer: "var(--agent-fixer)",
+                    auditor: "var(--agent-auditor)",
+                },
+            },
+            backgroundImage: {
+                "ai-gradient":
+                    "linear-gradient(135deg, var(--ai-gradient-from) 0%, var(--ai-gradient-to) 100%)",
             },
             borderRadius: {
                 lg: "var(--radius)",
