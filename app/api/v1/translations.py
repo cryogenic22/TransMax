@@ -52,8 +52,10 @@ async def create_translation_job(
     
     # 3. Handle Content
     if request.text_content:
-        # Naive segmentation shim
-        segments = [s.strip() for s in request.text_content.split('.') if s.strip()]
+        # TMX-3800: abbreviation-aware segmenter replaces the naive .split('.')
+        from app.services.segmenter import get_segmenter
+        segmenter = get_segmenter(request.source_language or "en")
+        segments = segmenter.segment(request.text_content)
         for idx, text in enumerate(segments):
             seg = Segment(
                 # TMX-3012 will replace with session-context injection.
