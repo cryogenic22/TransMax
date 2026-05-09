@@ -21,13 +21,9 @@ from sqlalchemy.orm import sessionmaker
 
 
 @pytest.fixture
-def fresh_db(tmp_path, monkeypatch):
-    db_path = tmp_path / "tmx3012.db"
-    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path}")
-    import importlib
-    import app.core.database as core_db
-    importlib.reload(core_db)
-    core_db.init_db()
+def fresh_db(fresh_engine_for_db):
+    """TMX-AUDIT-CLEANUP-ROUTES: delegates to shared conftest fixture."""
+    core_db = fresh_engine_for_db
     Session = sessionmaker(bind=core_db.engine)
     yield core_db, Session
 
