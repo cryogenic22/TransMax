@@ -8,7 +8,7 @@ import uuid
 import logging
 from datetime import datetime, timezone
 
-from app.models.database import engine, SessionLocal, Base, Document, DocumentStatus, Segment, DEFAULT_ORG_ID
+from app.models.database import engine, SessionLocal, Base, Document, DocumentStatus, Segment
 from app.models.models import TranslationJobQueue, AuditRecord, Glossary, GlossaryTerm, TMSegment, QualityScorecard
 from app.core.constants import SubstitutionType
 from app.core.config import settings
@@ -51,18 +51,22 @@ class DatabaseService:
         db = self.get_session()
         try:
             job_id = str(uuid.uuid4())
-            job = TranslationJobQueue(
+            # TMX-3012c: organization_id auto-injected from the tenant context.
+            # If a legacy caller passes `organization_id` in request_data, the
+            # mixin's caller-provided-value precedence still honours it.
+            job_kwargs: Dict[str, Any] = dict(
                 job_id=job_id,
-                # TMX-3012 will replace this with session-context org injection.
-                organization_id=request_data.get("organization_id", DEFAULT_ORG_ID),
                 request_id=request_data.get("request_id"),
                 source_language=request_data.get("source_language"),
                 target_language=request_data.get("target_language"),
                 domain=request_data.get("domain", "general"),
                 audience=request_data.get("audience", "general"),
                 request_json=request_data,
-                status="PENDING"
+                status="PENDING",
             )
+            if "organization_id" in request_data:
+                job_kwargs["organization_id"] = request_data["organization_id"]
+            job = TranslationJobQueue(**job_kwargs)
             db.add(job)
             db.commit()
             return job_id
@@ -318,11 +322,10 @@ class DatabaseService:
         """Creates a new glossary version."""
         db = self.get_session()
         try:
+            # TMX-3012c: organization_id auto-injected from the tenant context.
             glossary = Glossary(
                 glossary_id=glossary_id,
                 version=version,
-                # TMX-3012 will replace with session-context injection.
-                organization_id=DEFAULT_ORG_ID,
                 is_active=True,
                 meta_json=meta or {}
             )
@@ -344,8 +347,6 @@ class DatabaseService:
             term_id = term_data.get("term_id") or str(uuid.uuid4())
             
             term = GlossaryTerm(
-                # TMX-3012 will replace with session-context injection.
-                organization_id=DEFAULT_ORG_ID,
                 glossary_id=glossary_id,
                 glossary_version=version,
                 term_id=term_id,
@@ -391,8 +392,6 @@ class DatabaseService:
             tm_segment = TMSegment(
                 tm_id=tm_id,
                 segment_hash=segment_hash,
-                # TMX-3012 will replace with session-context injection.
-                organization_id=DEFAULT_ORG_ID,
                 source_content_hash=content_hash,
                 source_text=normalized_source,
                 target_text=target,
@@ -457,12 +456,13 @@ class DatabaseService:
             import hashlib
             hash_sig = hashlib.sha256(full_payload_json.encode()).hexdigest()
             
+            # TMX-3012c: organization_id auto-injected from tenant context.
+            # A3 forbids silent fallbacks — if no context is set when this
+            # path runs (e.g. the background pipeline forgot org propagation),
+            # the mixin will raise TenantContextMissing rather than write to
+            # a default tenant.
             audit = AuditRecord(
                 audit_id=audit_id,
-                # TMX-3012 will replace with session-context injection. Even on
-                # audit records (A3-sensitive), the transitional default is
-                # explicit — see worksheet TMX-3011 stage 6.
-                organization_id=DEFAULT_ORG_ID,
                 job_id=job_id,
                 final_decision=state.get("final_decision", "UNKNOWN"),
                 scores_json=state.get("quality_report", {}),
@@ -716,8 +716,6 @@ class DatabaseService:
         try:
             # Create Log
             log = ChangeLog(
-                # TMX-3012 will replace with session-context injection.
-                organization_id=DEFAULT_ORG_ID,
                 segment_id=segment_id,
                 original_text=original,
                 new_text=new,
@@ -762,8 +760,6 @@ class DatabaseService:
             # 2. Create Scorecard
             scorecard = QualityScorecard(
                 scorecard_id=str(uuid.uuid4()),
-                # TMX-3012 will replace with session-context injection.
-                organization_id=DEFAULT_ORG_ID,
                 job_id=job_id,
                 critical_defect_count=critical_count,
                 major_defect_count=major_count,
@@ -778,8 +774,6 @@ class DatabaseService:
             for d in defects:
                 entry = ScorecardEntry(
                     entry_id=str(uuid.uuid4()),
-                    # TMX-3012 will replace with session-context injection.
-                    organization_id=DEFAULT_ORG_ID,
                     scorecard_id=scorecard.scorecard_id,
                     segment_id=d.get('segment_id'),
                     category=d.get('category', 'UNKNOWN'),

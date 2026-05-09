@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.core.database import get_db
-from app.models.database import Document, Segment, DeletionRecord, DocumentStatus, SegmentStatus, DEFAULT_ORG_ID
+from app.models.database import Document, Segment, DeletionRecord, DocumentStatus, SegmentStatus
 from app.api.schemas import (
     DocumentUpdate, DocumentResponse, DocumentListResponse,
     TranslationJobRequest, TranslationJobResponse
@@ -119,11 +119,10 @@ async def create_document(
 
     total_words = sum(len(b["text"].split()) for b in blocks)
     
-    # Create document record
+    # Create document record. TMX-3012c: organization_id auto-injected from
+    # request-scoped tenant context (TenantContextMiddleware → mixin listener).
     doc = Document(
         id=doc_id,
-        # TMX-3012 will replace with session-context injection.
-        organization_id=DEFAULT_ORG_ID,
         name=name or file.filename,
         source_language=source_language,
         target_language=target_language,
@@ -144,8 +143,6 @@ async def create_document(
             continue
             
         segment = Segment(
-            # TMX-3012 will replace with session-context injection.
-            organization_id=DEFAULT_ORG_ID,
             document_id=doc_id,
             order_index=idx + 1,
             source_text=clean_text,
@@ -300,10 +297,9 @@ async def delete_document(
     # Count segments before deletion
     segment_count = db.query(func.count(Segment.id)).filter(Segment.document_id == doc_id).scalar() or 0
 
-    # Create deletion audit record with full metadata snapshot
+    # Create deletion audit record with full metadata snapshot.
+    # TMX-3012c: organization_id auto-injected from request-scoped context.
     deletion_record = DeletionRecord(
-        # TMX-3012 will replace with session-context injection.
-        organization_id=DEFAULT_ORG_ID,
         document_id=doc.id,
         document_name=doc.name,
         file_type=doc.file_type,
@@ -421,13 +417,19 @@ async def translate_document(
     doc.updated_at = datetime.now(timezone.utc)
     db.commit()
 
-    # Queue background job - runs the full LLM + quality gates pipeline
+    # Queue background job - runs the full LLM + quality gates pipeline.
+    # TMX-3012c: capture tenant context now, before the response unwinds the
+    # request scope; the runner re-enters `org_context(org_id)` so DB writes
+    # inside the pipeline are correctly tenanted.
     from app.agents.runner import run_pipeline_background
+    from app.core.tenant_context import current_org_id
+    org_id = current_org_id()
     background_tasks.add_task(
-        run_pipeline_background, 
-        doc_id, 
+        run_pipeline_background,
+        doc_id,
         request.target_language,
-        request.segment_ids  # Pass optional segment IDs filter
+        request.segment_ids,  # Pass optional segment IDs filter
+        org_id=org_id,
     )
     
     segment_info = f" ({len(request.segment_ids)} selected segments)" if request.segment_ids else " (all segments)"
