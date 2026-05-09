@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react"
 import { BookOpen, ArrowRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
+import { getErrMessage } from "@/lib/utils"
 
 export function AssetsView() {
     const router = useRouter()
@@ -10,46 +11,69 @@ export function AssetsView() {
     const [pendingCount, setPendingCount] = useState<number | null>(null)
     const [glossaryCount, setGlossaryCount] = useState<number | null>(null)
     const [loading, setLoading] = useState(true)
+    // TMX-3604-assets-err: A3 — empty-vs-failure must be visually distinct
+    // for a regulator auditing rule coverage. `null` count = "didn't load",
+    // `0` = "loaded, no rows yet". Pre-fix .catch(() => []) collapsed
+    // both into "0", indistinguishable to the reviewer.
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
         const fetchCounts = async () => {
-            try {
-                const [allRules, pendingRules, glossaries] = await Promise.all([
-                    api.knowledge.listRules().catch(() => []),
-                    api.knowledge.listRules("PENDING_APPROVAL").catch(() => []),
-                    api.knowledge.listGlossaries().catch(() => []),
-                ])
-                setRuleCount(allRules.length)
-                setPendingCount(pendingRules.length)
-                setGlossaryCount(glossaries.length)
-            } catch (e) {
-                console.error("Failed to fetch asset counts:", e)
-            } finally {
-                setLoading(false)
+            const [r, p, g] = await Promise.allSettled([
+                api.knowledge.listRules(),
+                api.knowledge.listRules("PENDING_APPROVAL"),
+                api.knowledge.listGlossaries(),
+            ])
+            if (r.status === "fulfilled") setRuleCount(r.value.length)
+            if (p.status === "fulfilled") setPendingCount(p.value.length)
+            if (g.status === "fulfilled") setGlossaryCount(g.value.length)
+            const firstErr = [r, p, g].find(x => x.status === "rejected") as
+                | PromiseRejectedResult
+                | undefined
+            if (firstErr) {
+                setError(getErrMessage(firstErr.reason, "Failed to load assets"))
             }
+            setLoading(false)
         }
         fetchCounts()
     }, [])
 
+    // Pivot card display so a failed fetch shows "—" not "0".
+    const display = (n: number | null) =>
+        loading ? "..." : n == null ? "—" : String(n)
+
     return (
         <div className="space-y-6">
+            {/* TMX-3604-assets-err: real server error visible above the
+                cards so a 0/0/0 failure state is never mistaken for a
+                legitimate empty Black Book. */}
+            {error ? (
+                <div
+                    role="status"
+                    aria-label="Assets failed to load"
+                    className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
+                >
+                    <strong>Couldn&apos;t load assets.</strong> {error}
+                </div>
+            ) : null}
+
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <SummaryCard
                     title="Translation Rules"
-                    value={loading ? "..." : String(ruleCount ?? 0)}
+                    value={display(ruleCount)}
                     subtitle="Active in Black Book"
                     color="blue"
                 />
                 <SummaryCard
                     title="Pending Review"
-                    value={loading ? "..." : String(pendingCount ?? 0)}
+                    value={display(pendingCount)}
                     subtitle="Awaiting approval"
                     color="amber"
                 />
                 <SummaryCard
                     title="Glossaries"
-                    value={loading ? "..." : String(glossaryCount ?? 0)}
+                    value={display(glossaryCount)}
                     subtitle="Loaded glossary packs"
                     color="indigo"
                 />
