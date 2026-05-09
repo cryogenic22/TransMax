@@ -5,12 +5,15 @@
 **Sprint**: <n>
 **Started**: YYYY-MM-DD
 **Closed**: —
+**Reversibility**: `two-way` <!-- or `one-way` (schema migrations, public-API shape changes, destructive ops) → human approval before stage 4 -->
+**Pre-mortem**: <1 line — "if this fails in production, the failure mode is …">
+**Blast radius**: <1-2 lines — which files / surfaces / pods / users this touches>
 
 ---
 
 ## 1. Task
 
-<One-paragraph restatement of the ticket. What's the change? What's the blast radius? What addenda (A1-A10) are at play?>
+<One-paragraph restatement of the ticket. What's the change? What addenda (A1-A10) are at play?>
 
 ## 2. Spec — acceptance criteria
 
