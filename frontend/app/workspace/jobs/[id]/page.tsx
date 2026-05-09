@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/StatusLifecycle"
 import { ProvenanceChip } from "@/components/ui/ProvenanceChip"
 import { AgentLanes, type AgentActivity } from "@/components/ui/AgentLanes"
+import { RevisionIndicator } from "@/components/ui/RevisionIndicator"
 import { useAgentActivityByJob } from "@/hooks/useActivity"
 import { getErrMessage } from "@/lib/utils"
 
@@ -231,7 +232,14 @@ function ReviewView({ segments }: { segments: Segment[] }) {
                 <li key={seg.id} className="rounded-lg border bg-card p-4 text-sm">
                     <div className="flex items-center justify-between gap-2 mb-2">
                         <span className="text-xs text-slate-500 font-mono">#{seg.order_index}</span>
-                        <StatusLifecycle status={mapSegmentStatus(seg.status)} />
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {/* TMX-3702-v1: surface DOCX tracked-changes when present.
+                                Captured by TMX-3700; persisted in Segment.element_meta. */}
+                            {seg.element_meta?.revisions ? (
+                                <RevisionIndicator revisions={seg.element_meta.revisions} />
+                            ) : null}
+                            <StatusLifecycle status={mapSegmentStatus(seg.status)} />
+                        </div>
                     </div>
                     <p className="text-slate-600 mb-1"><span className="text-xs uppercase tracking-wide text-slate-400">Source · </span>{seg.source_text}</p>
                     {seg.translated_text ? (

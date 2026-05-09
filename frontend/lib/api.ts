@@ -25,6 +25,35 @@ export interface Document {
     updated_at: string
 }
 
+/**
+ * DOCX tracked-change metadata captured at ingestion time (TMX-3700)
+ * and surfaced to the reviewer surface (TMX-3702-v1). Authors and
+ * dates are deduped + ordered by first occurrence in the source doc.
+ */
+export interface SegmentRevisions {
+    has_insertions: boolean
+    has_deletions: boolean
+    has_moves: boolean
+    authors: string[]
+    dates: string[]
+}
+
+/**
+ * Element-type-specific facts captured at ingestion time. Keys vary
+ * by source format; `revisions` is populated for DOCX-sourced blocks
+ * with tracked changes. `section_idx` / `variant` are populated for
+ * headers / footers from python-docx sections.
+ */
+export interface SegmentElementMeta {
+    revisions?: SegmentRevisions | null
+    section_idx?: number
+    variant?: string
+    nested?: boolean
+    footnote_id?: string | null
+    endnote_id?: string | null
+    [key: string]: unknown
+}
+
 export interface Segment {
     id: string
     document_id: string
@@ -47,6 +76,8 @@ export interface Segment {
             suggestion?: string
         }>
     }
+    /** TMX-3702: ingestion-time metadata (DOCX revisions, section_idx, etc.). */
+    element_meta?: SegmentElementMeta | null
     created_at: string
     updated_at: string
 }
