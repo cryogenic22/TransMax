@@ -47,7 +47,10 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 | TMX-3706 | Deeper DOCX vs XLSX vs PPTX disambiguation (peek inside ZIP for `[Content_Types].xml`) | Pipeline | S | 2 — **[Spawned by TMX-3705]** |
 | TMX-3707 | AV scanner integration (clamd / Cloud DLP) — wire `emit_av_scan_request` to actual scanner | Pipeline + Platform | M | 2 — **[Spawned by TMX-3705]** |
 | TMX-3708 | Wire `validate_and_save_upload` into endpoints.py + knowledge.py upload routes | Pipeline | XS | 2 — **[Spawned by TMX-3705]** |
-| TMX-3800 | Sentence segmenter service skeleton + interface | Pipeline | M | 1 |
+| TMX-3800 | Sentence segmenter service skeleton + interface | Pipeline | M | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3800.md` |
+| TMX-3801 | NLTK / spaCy / pragmatic-segmenter backend integration | Pipeline | M | 2 — **[Spawned by TMX-3800]** |
+| TMX-3802 | Language-specific segmenters for ZH/JA/KO (CJK boundary rules differ) | Pipeline | M | 2 — **[Spawned by TMX-3800]** |
+| TMX-3803 | Stable segment IDs (storage-layer; A5 follow-up) | Pipeline + Auth | L | 2 — **[Spawned by TMX-3800]** |
 | TMX-3200 | Prompt registry directory layout + loader | Agent | M | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3200-3201.md` |
 | TMX-3201 | Migrate `prompts.py` constants to v1.0.0 YAML files | Agent | M | 1 — **[Done, pending commit + push]** — bundled with TMX-3200 in same loop |
 | TMX-3204 | Wire `lang_instruction` into graph.py + batch_translator.py | Agent | XS | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3204.md` |
