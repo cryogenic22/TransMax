@@ -51,7 +51,7 @@ export default function TopNavigation() {
         { href: "/workspace/upload", label: "Translate", icon: Upload },
         { href: "/workspace/jobs", label: "Jobs", icon: Briefcase, badge: processingCount },
         { href: "/workspace/control", label: "Control Tower", icon: LayoutDashboard },
-        { href: "/knowledge", label: "Knowledge", icon: BookOpen },
+        { href: "/workspace/tools", label: "Knowledge", icon: BookOpen },
     ]
 
     return (
