@@ -85,13 +85,19 @@ def test_organization_id_fk_present_on_every_domain_table(fresh_db):
 
 
 def test_inserting_without_org_id_raises(fresh_db):
-    """A row inserted without organization_id must fail the NOT NULL constraint."""
+    """A row inserted without organization_id raises (no context + no explicit value).
+
+    TMX-3012 changed the failure mode from `IntegrityError` (NOT NULL) to
+    `TenantContextMissing` (raised by the auto-inject listener BEFORE the SQL
+    fires). Either is a valid "rejected" outcome per AC-6 of TMX-3011.
+    """
     engine, session = fresh_db
+    from app.core.tenant_context import TenantContextMissing
     from app.models.database import Document
 
     bad = Document(name="orphan", source_language="en")
     session.add(bad)
-    with pytest.raises(IntegrityError):
+    with pytest.raises((IntegrityError, TenantContextMissing)):
         session.commit()
     session.rollback()
 
@@ -122,14 +128,17 @@ def test_inserting_with_unknown_org_id_raises_fk_error(fresh_db):
 def test_inserting_with_default_org_id_succeeds(fresh_db):
     """Happy path: passing the seeded default-org id allows the insert."""
     engine, session = fresh_db
+    from app.core.tenant_context import org_context
     from app.models.database import Document, DEFAULT_ORG_ID
 
     doc = Document(name="ok", source_language="en", organization_id=DEFAULT_ORG_ID)
     session.add(doc)
     session.commit()
 
-    fetched = session.query(Document).filter_by(name="ok").one()
-    assert fetched.organization_id == DEFAULT_ORG_ID
+    # TMX-3012: SELECTs against tenant-scoped tables require a context.
+    with org_context(DEFAULT_ORG_ID):
+        fetched = session.query(Document).filter_by(name="ok").one()
+        assert fetched.organization_id == DEFAULT_ORG_ID
 
 
 def test_language_packs_excluded_from_tenant_scoping(fresh_db):

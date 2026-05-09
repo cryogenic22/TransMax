@@ -23,6 +23,7 @@ from sqlalchemy.orm import relationship, declarative_base
 
 from app.models.types import GUID
 from app.models.soft_delete import SoftDeleteMixin
+from app.models.tenant_scoped import TenantScopedMixin
 
 Base = declarative_base()
 
@@ -86,7 +87,7 @@ class Organization(SoftDeleteMixin, Base):
         return f"<Organization(id={self.id}, slug='{self.slug}', kind={self.org_kind})>"
 
 
-class Document(SoftDeleteMixin, Base):
+class Document(TenantScopedMixin, SoftDeleteMixin, Base):
     """
     Represents an uploaded document for translation.
     """
@@ -132,7 +133,7 @@ class Document(SoftDeleteMixin, Base):
         return f"<Document(id={self.id}, name='{self.name}', status={self.status})>"
 
 
-class Segment(SoftDeleteMixin, Base):
+class Segment(TenantScopedMixin, SoftDeleteMixin, Base):
     """
     Represents a single translatable segment within a document.
     """
@@ -178,7 +179,7 @@ class Segment(SoftDeleteMixin, Base):
         return f"<Segment(id={self.id}, doc={self.document_id}, order={self.order_index}, status={self.status})>"
 
 
-class ChangeLog(SoftDeleteMixin, Base):
+class ChangeLog(TenantScopedMixin, SoftDeleteMixin, Base):
     """
     Audit trail for segment edits. Captures original text, new text, and reason.
     """
@@ -207,7 +208,7 @@ class ChangeLog(SoftDeleteMixin, Base):
         return f"<ChangeLog(id={self.id}, segment={self.segment_id}, created={self.created_at})>"
 
 
-class DeletionRecord(SoftDeleteMixin, Base):
+class DeletionRecord(TenantScopedMixin, SoftDeleteMixin, Base):
     """
     Permanent audit record created before a document is deleted.
     Captures a snapshot of the document metadata for forensic purposes.

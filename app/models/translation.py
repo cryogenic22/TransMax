@@ -9,6 +9,7 @@ from pgvector.sqlalchemy import Vector
 from app.models.database import Base
 from app.models.types import GUID
 from app.models.soft_delete import SoftDeleteMixin
+from app.models.tenant_scoped import TenantScopedMixin
 
 
 class TranslationStatus(str, enum.Enum):
@@ -28,7 +29,7 @@ class TranslationProvider(str, enum.Enum):
     AZURE = "azure"
 
 
-class TranslationJob(SoftDeleteMixin, Base):
+class TranslationJob(TenantScopedMixin, SoftDeleteMixin, Base):
     __tablename__ = "translation_jobs"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -83,7 +84,7 @@ class TranslationJob(SoftDeleteMixin, Base):
     quality_reports = relationship("QualityReport", back_populates="job", cascade="all, delete-orphan")
 
 
-class ChunkTranslation(SoftDeleteMixin, Base):
+class ChunkTranslation(TenantScopedMixin, SoftDeleteMixin, Base):
     __tablename__ = "chunk_translations"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -126,7 +127,7 @@ class ChunkTranslation(SoftDeleteMixin, Base):
     job = relationship("TranslationJob", back_populates="chunk_translations")
 
 
-class QualityReport(SoftDeleteMixin, Base):
+class QualityReport(TenantScopedMixin, SoftDeleteMixin, Base):
     __tablename__ = "quality_reports"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -160,7 +161,7 @@ class QualityReport(SoftDeleteMixin, Base):
     job = relationship("TranslationJob", back_populates="quality_reports")
 
 
-class TranslationGlossary(SoftDeleteMixin, Base):
+class TranslationGlossary(TenantScopedMixin, SoftDeleteMixin, Base):
     __tablename__ = "translation_glossaries"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -185,7 +186,7 @@ class TranslationGlossary(SoftDeleteMixin, Base):
     created_by = Column(String)
 
 
-class TranslationMemory(SoftDeleteMixin, Base):
+class TranslationMemory(TenantScopedMixin, SoftDeleteMixin, Base):
     __tablename__ = "translation_memory"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

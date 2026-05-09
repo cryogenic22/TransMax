@@ -15,27 +15,44 @@ SOFT_DELETE_COLUMNS = ("is_deleted", "deleted_at", "deleted_by")
 
 @pytest.fixture
 def fresh_db(tmp_path, monkeypatch):
-    """Return (engine, session) for a fresh SQLite database with all tables created."""
+    """Return (engine, session) for a fresh SQLite database with all tables created.
+
+    TMX-3012: enters `org_context(DEFAULT_ORG_ID)` for the duration so the
+    auto-filter doesn't refuse queries. Soft-delete behaviour is independent
+    of tenant scoping; this fixture isolates the soft-delete concern.
+    """
     db_path = tmp_path / "tmx3015.db"
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{db_path}")
     import importlib
     import app.core.database as core_db
     importlib.reload(core_db)
     core_db.init_db()
+    from app.core.tenant_context import org_context
+    from app.models.database import DEFAULT_ORG_ID
     Session = sessionmaker(bind=core_db.engine)
     session = Session()
-    yield core_db.engine, session
+    with org_context(DEFAULT_ORG_ID):
+        yield core_db.engine, session
     session.close()
 
 
 def test_every_tenant_scoped_table_has_soft_delete_columns(fresh_db):
     """All 22 tenant-scoped tables + organizations carry the three soft-delete columns.
 
-    `language_packs` is intentionally excluded (system-level).
+    Excluded:
+      - `language_packs` (system-level, not tenant-scoped)
+      - `audit_events_v2`, `audit_anchors` (TMX-3100 — append-only by A1/A9;
+        intentional non-application of SoftDeleteMixin)
+      - `alembic_version` (alembic's own bookkeeping)
     """
     engine, _ = fresh_db
     ins = inspect(engine)
-    excluded = {"language_packs", "alembic_version"}
+    excluded = {
+        "language_packs",
+        "audit_events_v2",
+        "audit_anchors",
+        "alembic_version",
+    }
 
     for table in ins.get_table_names():
         if table in excluded:
