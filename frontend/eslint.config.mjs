@@ -2,17 +2,17 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
-// TMX-3614 baseline: the legacy frontend tree carries 185 lint findings
-// across these rule classes. The follow-up cleanup loop (TMX-3614-lint)
-// drives them to zero. Until then they are demoted to warnings so CI can
-// still gate against *new* ones via --max-warnings.
+// TMX-3614-lint baseline drift:
+//   Loop 16 fixed the three real-bug rule classes (re-promoted to `error`):
+//     - react-hooks/immutability      — auth.tsx hoist-before-declare resolved
+//     - react-hooks/set-state-in-effect — TranslationWarehouse + landing fade-in resolved
+//     - react/no-unescaped-entities   — 7 cosmetic cases escaped
+//   Demoted rules (still under cleanup):
+//     - @typescript-eslint/no-unused-vars  — 89 occurrences; sweep is TMX-3614-cleanup
+//     - @typescript-eslint/no-explicit-any — 82 occurrences; typing migration is TMX-3614-types
 //
-// Priority for TMX-3614-lint, hardest first:
-//   1. react-hooks/immutability      — auth.tsx hoist-before-declare; real bug
-//   2. react-hooks/set-state-in-effect — DocumentSegmentSelector + DashboardView; cascading renders
-//   3. react/no-unescaped-entities   — design-system + DashboardView + JobsView; cosmetic
-//   4. @typescript-eslint/no-unused-vars  — 89 occurrences; tree-shake or delete
-//   5. @typescript-eslint/no-explicit-any — 82 occurrences; type the API client surface
+// `--max-warnings 172` pins the new baseline. New code cannot add warnings.
+// As the two follow-ups land, the cap drops in lockstep.
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -20,9 +20,6 @@ const eslintConfig = defineConfig([
     rules: {
       "@typescript-eslint/no-unused-vars": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
-      "react/no-unescaped-entities": "warn",
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/immutability": "warn",
     },
   },
   // Override default ignores of eslint-config-next.

@@ -17,7 +17,7 @@ export default function TrustCenterPage() {
                     Trust Center
                 </h1>
                 <p className="text-gray-500 mt-2">
-                    Manage the AI's knowledge, enforce compliance, and verify privacy settings.
+                    Manage the AI&apos;s knowledge, enforce compliance, and verify privacy settings.
                 </p>
             </div>
 

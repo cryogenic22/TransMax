@@ -62,6 +62,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // Auth-mode fallbacks declared BEFORE the bootstrap effect so the rule
+  // react-hooks/immutability can statically verify they are bound when the
+  // effect's then-callback runs. (Hoisting works at runtime, but the lint
+  // rule reads source order.)
+  const autoLoginNoAuth = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "admin@transmax.local", password: "" }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setToken(data.access_token)
+        setUser(data.user as AuthUser)
+        setCookie("transmax_token", data.access_token)
+      }
+      // If the login call fails (non-2xx), do nothing — no auto-admin fallback.
+    } catch {
+      // Network error — do nothing. User stays unauthenticated.
+    }
+    setLoading(false)
+  }
+
+  const validateToken = async (t: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${t}` },
+      })
+      if (res.ok) {
+        const userData = await res.json()
+        setToken(t)
+        setUser(userData as AuthUser)
+      } else {
+        removeCookie("transmax_token")
+      }
+    } catch {
+      removeCookie("transmax_token")
+    }
+    setLoading(false)
+  }
+
   // Fetch auth config on mount.
   // TMX-3005 (review F-C01, F-M01): the previous version of this hook
   // injected a hardcoded admin user when the backend was unreachable, and
@@ -102,44 +144,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false)
       })
   }, [])
-
-  const autoLoginNoAuth = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "admin@transmax.local", password: "" }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setToken(data.access_token)
-        setUser(data.user as AuthUser)
-        setCookie("transmax_token", data.access_token)
-      }
-      // If the login call fails (non-2xx), do nothing — no auto-admin fallback.
-    } catch {
-      // Network error — do nothing. User stays unauthenticated.
-    }
-    setLoading(false)
-  }
-
-  const validateToken = async (t: string) => {
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${t}` },
-      })
-      if (res.ok) {
-        const userData = await res.json()
-        setToken(t)
-        setUser(userData as AuthUser)
-      } else {
-        removeCookie("transmax_token")
-      }
-    } catch {
-      removeCookie("transmax_token")
-    }
-    setLoading(false)
-  }
 
   const login = async (email: string, password: string) => {
     const res = await fetch(`${API_BASE}/api/auth/login`, {
