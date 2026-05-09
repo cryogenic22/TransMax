@@ -10,7 +10,6 @@ import re
 import uuid
 
 from app.services.db_service import get_db_service
-from app.models.database import DEFAULT_ORG_ID
 from app.models.models import TranslationRule, Glossary, GlossaryTerm
 from app.auth.providers import AuthenticatedIdentity
 from app.auth.dependencies import get_current_user, require_permission
@@ -215,8 +214,6 @@ async def create_rule(
                 raise HTTPException(status_code=400, detail=f"Invalid regex pattern: {e}")
 
         new_rule = TranslationRule(
-            # TMX-3012 will replace with session-context injection.
-            organization_id=DEFAULT_ORG_ID,
             source_pattern=rule.source_pattern,
             target_correction=rule.target_correction,
             context_tag=rule.context_tag,
@@ -404,8 +401,6 @@ async def import_rules(
                     re.compile(source_pattern)
 
                 new_rule = TranslationRule(
-                    # TMX-3012 will replace with session-context injection.
-                    organization_id=DEFAULT_ORG_ID,
                     source_pattern=source_pattern,
                     target_correction=target_correction,
                     context_tag=row.get("context_tag", "general"),
@@ -597,8 +592,6 @@ async def upload_glossary(
             existing.meta_json = {"source_language": source_language, "target_language": target_language}
         else:
             glossary = Glossary(
-                # TMX-3012 will replace with session-context injection.
-                organization_id=DEFAULT_ORG_ID,
                 glossary_id=glossary_id,
                 version=version,
                 is_active=True,
@@ -615,8 +608,6 @@ async def upload_glossary(
                     continue
 
                 term = GlossaryTerm(
-                    # TMX-3012 will replace with session-context injection.
-                    organization_id=DEFAULT_ORG_ID,
                     glossary_id=glossary_id,
                     glossary_version=version,
                     term_id=row.get("term_id", str(uuid.uuid4())),
@@ -786,8 +777,6 @@ async def add_glossary_term(
             raise HTTPException(status_code=404, detail="Glossary not found")
 
         term = GlossaryTerm(
-            # TMX-3012 will replace with session-context injection.
-            organization_id=DEFAULT_ORG_ID,
             glossary_id=glossary_id,
             glossary_version=version,
             term_id=str(uuid.uuid4()),
@@ -935,8 +924,6 @@ async def submit_feedback(feedback: FeedbackRequest, user: AuthenticatedIdentity
     try:
         if feedback.rating == "negative" and feedback.corrected_text:
             new_rule = TranslationRule(
-                # TMX-3012 will replace with session-context injection.
-                organization_id=DEFAULT_ORG_ID,
                 source_pattern=feedback.source_text,
                 target_correction=feedback.corrected_text,
                 context_tag="feedback_loop",

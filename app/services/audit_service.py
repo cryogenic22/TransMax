@@ -8,7 +8,6 @@ from typing import Dict, Any, List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
-from app.models.database import DEFAULT_ORG_ID
 from app.models.models import AuditRecord, AuditLogEntry, JobConfigSnapshot
 from app.services.db_service import DatabaseService
 
@@ -32,10 +31,11 @@ class AuditService:
         session = self.db_service.get_session()
         try:
             audit_id = str(uuid.uuid4())
+            # TMX-3012c: organization_id auto-injected from tenant context.
+            # A3 — audit writes are regulated; the mixin raises if no context
+            # is set, never silently writes to a default tenant.
             record = AuditRecord(
                 audit_id=audit_id,
-                # TMX-3012 will replace with session-context injection (A3-sensitive on audit).
-                organization_id=DEFAULT_ORG_ID,
                 job_id=job_id,
                 created_at=datetime.now(timezone.utc)
             )
@@ -83,8 +83,6 @@ class AuditService:
             entry_id = str(uuid.uuid4())
             new_entry = AuditLogEntry(
                 entry_id=entry_id,
-                # TMX-3012 will replace with session-context injection.
-                organization_id=DEFAULT_ORG_ID,
                 audit_id=audit_id,
                 sequence_index=sequence_index,
                 event_type=event_type,
@@ -127,8 +125,6 @@ class AuditService:
             snapshot_id = str(uuid.uuid4())
             snapshot = JobConfigSnapshot(
                 snapshot_id=snapshot_id,
-                # TMX-3012 will replace with session-context injection.
-                organization_id=DEFAULT_ORG_ID,
                 job_id=job_id,
                 config_json=config_json,
                 config_hash=config_hash,

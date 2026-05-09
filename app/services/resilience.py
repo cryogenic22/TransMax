@@ -144,10 +144,11 @@ class ResilienceService:
         db = get_db_service()
         session = db.get_session()
         try:
-            from app.models.database import DEFAULT_ORG_ID
+            # TMX-3012c: organization_id auto-injected from tenant context.
+            # The pipeline runner enters org_context before invoking the
+            # graph; if move_to_dlq is ever called outside that context, the
+            # mixin raises TenantContextMissing — A3-correct.
             dlq_entry = DeadLetterQueue(
-                # TMX-3012 will replace with session-context injection.
-                organization_id=DEFAULT_ORG_ID,
                 job_id=job_id,
                 error_code=error_code,
                 error_trace=error_trace,
