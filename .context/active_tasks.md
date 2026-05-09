@@ -111,6 +111,25 @@ Closed 2026-05-07. Word-bounded `_find_missing_numbers` helper added to `BaseLan
 
 ---
 
+## Verification audit follow-ups (filed 2026-05-09 from 4-agent verify-audit)
+
+The 4-agent loop verification ran on 2026-05-09 over `HEAD~30..HEAD`. Reports archived under `docs/audit-extracts/loop-{quality-review,pytest-report,vitest-report,spec-compliance}-2026-05-09.md`. Summary: **3 GREEN + 1 YELLOW (test-runner)**. Loop discipline holding; no PAUSE warranted. Eight follow-ups filed:
+
+| Ticket | Title | Source | Owner | Sprint |
+|---|---|---|---|---|
+| TMX-3012c | Complete service-layer DEFAULT_ORG_ID sweep (44 literals across 13 files) — finish what TMX-3012b (partial) started | Quality-audit Concern #1 | Auth | 2 |
+| TMX-3412 | Split `quality_gate.py` (717L) into per-defect-class modules (numeric, frequency, unit, negation) — TMX-3411 already extracted frequency data; this completes the per-class split | Quality-audit Concern #2 | Quality | 2 |
+| TMX-3017a | Complete C-06 unwind for the 7 init_db-only tables (`audit_records`, `chunk_translations`, `quality_reports`, `translation_glossaries`, `translation_jobs`, `translation_memory`, `users`) before TMX-3017 rationalisation — defensive FK skip in `audit_events_v2` migration is the visible symptom | Quality-audit Concern #3 | Auth + Platform | 2 |
+| TMX-3618 | Add Playwright visual-snapshot test for `/workspace/design-system` page — covers TMX-3601 design-token regressions | Quality-audit Concern #4 | Frontend | 2 |
+| TMX-LOOP-HYGIENE | Backfill worksheets for `9d3c4e7` (CI init_db) and `97b2935` (FK test fix) — sub-ticket fixes spawned by TMX-3011's blast; one-line worksheets with `Stage 5: N/A` per loop README | Quality-audit Concern #5 | pod-A | 2 |
+| TMX-AUDIT-CLEANUP-DASH | Dashboard activity feed empty — 4 tests fail: `test_dashboard_activity_feed.py` (3) + `test_dashboard_api.py::test_dashboard_activity_returns_list`. Likely needs the activity-feed service backend wired to the v3 schema | Pytest-audit | Platform | 2 |
+| TMX-AUDIT-CLEANUP-DOCX | DOCX round-trip: ingestion not prefixing translatable text with `TR:` — 4 tests fail in `test_docx_roundtrip.py` (paragraph-table order, header, footer, ingestion-export order). In-flight from TMX-3700 | Pytest-audit | Pipeline | 2 |
+| TMX-AUDIT-CLEANUP-ROUTES | Unmounted endpoints — `/api/v1/translations/<id>/reverse-translate` (2 tests) and tamper-detection `/verify` (1 test) return 404 instead of 200/400. Route registration deferred — needs to be wired into `app/main.py` or the relevant router | Pytest-audit | Platform | 2 |
+
+**Foundation suites stayed green** — every new TMX-3010 / 3011 / 3012 / 3015 / 3100 regression test passed (43/43); ratchet 17/17. The yellow is well-known pre-existing technical debt and in-flight work, not loop-introduced regressions.
+
+---
+
 ## Recently completed
 
 - Phase 0 / pre-v3 work (the legacy backlog: Tickets 10-23) — all done before 2026-05-01; superseded by the v3.0 epic structure.
