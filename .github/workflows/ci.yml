@@ -39,6 +39,17 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+    - name: Initialise database schema
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/transmax
+        APP_ENV: test
+      run: |
+        # Run init_db() to create every table from the model schema and seed
+        # the default-org row. The C-06 mega-migration only creates 7 of the
+        # 22 tenant-scoped tables; init_db()'s create_all picks up the rest
+        # until TMX-3017 lands the per-table semantic revisions.
+        python -c "from app.core.database import init_db; init_db()"
+
     - name: Run Tests
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/transmax
