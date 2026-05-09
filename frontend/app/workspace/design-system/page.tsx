@@ -14,6 +14,7 @@ import {
   ActivityFeed,
   type ActivityEvent,
 } from "@/components/ui/ActivityFeed"
+import { DefectTrace } from "@/components/ui/DefectTrace"
 
 const ALL_STATES: LifecycleStatus[] = [
   "pending",
@@ -209,6 +210,52 @@ export default function WorkspaceDesignSystemPage() {
           violet=agent, blue=user, emerald=system.
         </p>
         <ActivityFeed items={DEMO_FEED} />
+      </section>
+
+      {/* DefectTrace — rich expandable defect card (TMX-3603-reasoning). */}
+      <section className="space-y-3" aria-labelledby="defect-trace-heading">
+        <h2 id="defect-trace-heading" className="text-lg font-semibold">
+          Defect Trace
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          The rich, expandable counterpart to the compact{" "}
+          <code>DefectChip</code>. Surfaces the <em>why</em> behind a
+          defect: which deterministic gate fired, what rule matched, the
+          suggested fix, and the multi-agent reasoning trace. A2 (quality
+          at gates) made legible to a reviewer.
+        </p>
+
+        <DefectTrace
+          defect={{
+            id: "demo-1",
+            type: "frequency_mismatch",
+            severity: "critical",
+            message:
+              "Source says 'twice daily' but target rendered as 'once daily'.",
+            suggestion: "Replace 'una vez al día' with 'dos veces al día'.",
+            gate: "FrequencyGate",
+            rule: "FREQ_BID_ES",
+          }}
+          reasoning={[
+            { step: "Translator agent", status: "pass", details: "Initial pass via Claude Sonnet 4.6.", timestamp: "2026-05-09T17:23Z" },
+            { step: "Frequency gate",   status: "fail", details: "Expected 'dos veces al día' or equivalent BID frequency; target uses UID form.", timestamp: "2026-05-09T17:24Z" },
+            { step: "Fixer agent",      status: "warn", details: "Suggested correction; awaiting reviewer approval.", timestamp: "2026-05-09T17:25Z" },
+          ]}
+          defaultOpen
+        />
+
+        <DefectTrace
+          defect={{
+            id: "demo-2",
+            type: "term_drift",
+            severity: "major",
+            message:
+              "EDQM term 'serious adverse event' rendered as 'serious side-effect'.",
+            suggestion: "Use the EDQM Standard Term: 'reacción adversa grave'.",
+            gate: "GlossaryGate",
+            rule: "EDQM_SAE_ES",
+          }}
+        />
       </section>
 
       {/* Composition — show the three patterns together as they would be
