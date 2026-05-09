@@ -22,9 +22,12 @@ class BaseLanguagePack(ABC):
         digit_translate: Optional[Dict[str, str]] = None,
     ) -> List[str]:
         # Critical safety: substring `in` is unsafe (e.g. '10' is contained in
-        # '100', silently passing 10 mg -> 100 mg dose tampering). Use word-
-        # bounded regex on every candidate form. See TMX-3408 / TMX-3410.
-        nums = re.findall(r'\b\d+(?:[\.,]\d+)?\b', source_text)
+        # '100', silently passing 10 mg -> 100 mg dose tampering). Use a
+        # digit-only boundary instead of `\b` — `\b` fails when digits sit
+        # next to CJK ideographs (`用500毫`) or to letters (`10mg`) because
+        # both sides are `\w` in Python 3 Unicode regex. See TMX-3408 /
+        # TMX-3410 / TMX-3410-fix.
+        nums = re.findall(r'\d+(?:[.,]\d+)?', source_text)
         missing: List[str] = []
         for num in nums:
             forms = {num}
@@ -37,7 +40,7 @@ class BaseLanguagePack(ABC):
                 trans_table = str.maketrans(digit_translate)
                 forms.add(num.translate(trans_table))
             found = any(
-                re.search(rf'\b{re.escape(form)}\b', target_text)
+                re.search(rf'(?<!\d){re.escape(form)}(?!\d)', target_text)
                 for form in forms
             )
             if not found:
