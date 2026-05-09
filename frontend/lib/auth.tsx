@@ -36,6 +36,17 @@ interface AuthContextValue {
 }
 
 // --- Cookie helpers (no dependency needed) ---
+//
+// TMX-3616 partial: hardens the JS-set cookies as much as possible.
+// Full hardening (httpOnly + server-issued cookies) is blocked on
+// Auth0 wiring (ADR-0003). Until then, this client-side path adds:
+//   - Secure flag whenever the page is served over HTTPS (non-localhost)
+//   - SameSite=Lax (Strict would break OAuth callback flows; Lax is
+//     the standard recommendation for auth tokens)
+//   - path=/ scope (unchanged)
+// `httpOnly` cannot be set from JS by definition; that flag arrives
+// when Auth0 is wired and the backend issues Set-Cookie headers
+// (TMX-3616-auth0).
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null
@@ -43,13 +54,41 @@ function getCookie(name: string): string | null {
   return match ? decodeURIComponent(match[2]) : null
 }
 
+function isSecureContext(): boolean {
+  if (typeof window === "undefined") return false
+  // window.isSecureContext is true on https://* AND on localhost (per
+  // the spec) so the dev server still works without Secure.
+  return window.isSecureContext === true && window.location.protocol === "https:"
+}
+
 function setCookie(name: string, value: string, days: number = 7) {
+  if (typeof document === "undefined") return
   const expires = new Date(Date.now() + days * 864e5).toUTCString()
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`
+  const flags = [
+    `${name}=${encodeURIComponent(value)}`,
+    `expires=${expires}`,
+    "path=/",
+    "SameSite=Lax",
+    isSecureContext() ? "Secure" : null,
+  ]
+    .filter(Boolean)
+    .join("; ")
+  document.cookie = flags
 }
 
 function removeCookie(name: string) {
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`
+  if (typeof document === "undefined") return
+  // Match the original cookie's flags so the browser actually clears it.
+  const flags = [
+    `${name}=`,
+    "expires=Thu, 01 Jan 1970 00:00:00 GMT",
+    "path=/",
+    "SameSite=Lax",
+    isSecureContext() ? "Secure" : null,
+  ]
+    .filter(Boolean)
+    .join("; ")
+  document.cookie = flags
 }
 
 // --- Context ---
