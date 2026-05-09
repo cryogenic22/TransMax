@@ -22,6 +22,7 @@ from app.services.json_parser import RobustParser
 from app.services.quality_gate import QualityGateService
 from app.services.db_service import DatabaseService
 from app.agents.prompts import PromptRegistry
+from app.services.language_packs.factory import LanguagePackFactory
 from app.models.database import SegmentStatus
 from app.core.constants import SubstitutionType
 
@@ -294,6 +295,12 @@ class BatchTranslator:
     ) -> list:
         """Builds LLM prompt messages."""
         prompt = PromptRegistry.load("translator")
+        # TMX-3204: resolve target-language pack instruction (mirrors translation_engine.py)
+        try:
+            pack = LanguagePackFactory.get_pack(target_language)
+            lang_instruction = pack.prompt_instruction
+        except Exception:
+            lang_instruction = ""
         user_content = prompt.user.replace(
             "{{target_language}}", target_language
         ).replace(
@@ -303,7 +310,7 @@ class BatchTranslator:
         ).replace(
             "{{risk_level}}", "high"
         ).replace(
-            "{{language_instruction}}", ""
+            "{{language_instruction}}", lang_instruction
         ).replace(
             "{{constraint_pack_json}}", json.dumps(constraint_pack)
         ).replace(

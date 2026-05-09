@@ -9,6 +9,7 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI
 
 from app.agents.prompts import PromptRegistry
+from app.services.language_packs.factory import LanguagePackFactory
 from app.services.quality_gate import QualityGateService
 from app.services.db_service import DatabaseService
 from app.services.audit_service import AuditService
@@ -275,6 +276,12 @@ def _prepare_translation_payload(to_translate: List[Dict[str, Any]], all_segment
 def _build_translation_prompt(state: TransMaxState, input_segments: List[Dict[str, Any]]) -> list[Any]:
     """Constructs the LLM prompt messages."""
     prompt = PromptRegistry.load("translator")
+    # TMX-3204: resolve target-language pack instruction (mirrors translation_engine.py)
+    try:
+        pack = LanguagePackFactory.get_pack(state['target_language'])
+        lang_instruction = pack.prompt_instruction
+    except Exception:
+        lang_instruction = ""
     user_content = prompt.user.replace(
         "{{target_language}}", state['target_language']
     ).replace(
@@ -284,7 +291,7 @@ def _build_translation_prompt(state: TransMaxState, input_segments: List[Dict[st
     ).replace(
         "{{risk_level}}", "high"
     ).replace(
-        "{{language_instruction}}", ""
+        "{{language_instruction}}", lang_instruction
     ).replace(
         "{{constraint_pack_json}}", json.dumps(state['constraint_pack'])
     ).replace(
