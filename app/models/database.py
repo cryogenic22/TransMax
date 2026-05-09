@@ -22,6 +22,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, declarative_base
 
 from app.models.types import GUID
+from app.models.soft_delete import SoftDeleteMixin
 
 Base = declarative_base()
 
@@ -51,7 +52,7 @@ class SegmentStatus(str, Enum):
 
 # --- Models ---
 
-class Organization(Base):
+class Organization(SoftDeleteMixin, Base):
     """
     Tenant root. Every domain row hangs off an organization (TMX-3011 wires
     the FK on each table). The seeded `system` org with id DEFAULT_ORG_ID
@@ -85,7 +86,7 @@ class Organization(Base):
         return f"<Organization(id={self.id}, slug='{self.slug}', kind={self.org_kind})>"
 
 
-class Document(Base):
+class Document(SoftDeleteMixin, Base):
     """
     Represents an uploaded document for translation.
     """
@@ -131,7 +132,7 @@ class Document(Base):
         return f"<Document(id={self.id}, name='{self.name}', status={self.status})>"
 
 
-class Segment(Base):
+class Segment(SoftDeleteMixin, Base):
     """
     Represents a single translatable segment within a document.
     """
@@ -177,7 +178,7 @@ class Segment(Base):
         return f"<Segment(id={self.id}, doc={self.document_id}, order={self.order_index}, status={self.status})>"
 
 
-class ChangeLog(Base):
+class ChangeLog(SoftDeleteMixin, Base):
     """
     Audit trail for segment edits. Captures original text, new text, and reason.
     """
@@ -206,7 +207,7 @@ class ChangeLog(Base):
         return f"<ChangeLog(id={self.id}, segment={self.segment_id}, created={self.created_at})>"
 
 
-class DeletionRecord(Base):
+class DeletionRecord(SoftDeleteMixin, Base):
     """
     Permanent audit record created before a document is deleted.
     Captures a snapshot of the document metadata for forensic purposes.

@@ -6,8 +6,9 @@ from datetime import datetime, timezone
 
 from app.models.database import Base
 from app.models.types import GUID
+from app.models.soft_delete import SoftDeleteMixin
 
-class AuditRecord(Base):
+class AuditRecord(SoftDeleteMixin, Base):
     __tablename__ = "audit_records"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

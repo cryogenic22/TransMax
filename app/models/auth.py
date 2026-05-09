@@ -10,9 +10,10 @@ from sqlalchemy import Column, String, Boolean, DateTime, ForeignKey
 
 from app.models.database import Base
 from app.models.types import GUID
+from app.models.soft_delete import SoftDeleteMixin
 
 
-class User(Base):
+class User(SoftDeleteMixin, Base):
     __tablename__ = "users"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))

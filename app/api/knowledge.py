@@ -523,7 +523,9 @@ async def delete_rule(
         rule = session.query(TranslationRule).filter(TranslationRule.rule_id == rule_id).first()
         if not rule:
             raise HTTPException(status_code=404, detail="Rule not found")
-        session.delete(rule)
+        # TMX-3015: A9 — soft-delete only. Hard-delete is refused by the
+        # SoftDeleteMixin event listener.
+        rule.soft_delete(actor_id=user.user_id)
         session.commit()
         return {"status": "deleted", "rule_id": rule_id}
     finally:
@@ -581,11 +583,17 @@ async def upload_glossary(
         ).first()
 
         if existing:
-            # Delete old terms to prevent duplicate accumulation
+            # TMX-3015: soft-delete prior terms via bulk UPDATE so the new
+            # upload doesn't accumulate duplicates while preserving forensic
+            # history. The auto-filter excludes them from subsequent reads.
+            now_utc = datetime.now(timezone.utc)
             session.query(GlossaryTerm).filter(
                 GlossaryTerm.glossary_id == glossary_id,
                 GlossaryTerm.glossary_version == version,
-            ).delete()
+            ).update(
+                {"is_deleted": True, "deleted_at": now_utc, "deleted_by": user.user_id},
+                synchronize_session=False,
+            )
             existing.meta_json = {"source_language": source_language, "target_language": target_language}
         else:
             glossary = Glossary(
@@ -738,12 +746,16 @@ async def delete_glossary(
         if not glossary:
             raise HTTPException(status_code=404, detail="Glossary not found")
 
-        # Delete terms explicitly (SQLite may not enforce FK CASCADE)
+        # TMX-3015: soft-delete terms + glossary; A9 — hard-delete refused.
+        now_utc = datetime.now(timezone.utc)
         session.query(GlossaryTerm).filter(
             GlossaryTerm.glossary_id == glossary_id,
             GlossaryTerm.glossary_version == version,
-        ).delete()
-        session.delete(glossary)
+        ).update(
+            {"is_deleted": True, "deleted_at": now_utc, "deleted_by": user.user_id},
+            synchronize_session=False,
+        )
+        glossary.soft_delete(actor_id=user.user_id)
         session.commit()
         return {"status": "deleted", "glossary_id": glossary_id, "version": version}
     except HTTPException:
@@ -862,7 +874,8 @@ async def delete_glossary_term(
         if not term:
             raise HTTPException(status_code=404, detail="Term not found")
 
-        session.delete(term)
+        # TMX-3015: A9 — soft-delete only.
+        term.soft_delete(actor_id=user.user_id)
         session.commit()
         return {"status": "deleted", "term_id": term_id}
     except HTTPException:
