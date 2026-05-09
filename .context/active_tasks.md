@@ -40,7 +40,7 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 | TMX-3011 | Add `organization_id` to all domain tables | Auth | M | 1 — **[Done]** bf58ae4 — see `.context/loops/TMX-3011.md` |
 | TMX-3012 | Tenant-scoped session factory | Auth | M | 1 |
 | TMX-3013 | Auth0 / Keycloak integration; OIDC + SAML; MFA enforced | Auth | L | 1-2 |
-| TMX-3015 | Soft-delete columns + filter logic | Auth | M | 1 |
+| TMX-3015 | Soft-delete columns + filter logic | Auth | M | 1 — **[Done]** 349838a (local; awaiting push) — see `.context/loops/TMX-3015.md` |
 | TMX-3100 | `audit_events_v2` schema + migration | Audit | M | 1 |
 | TMX-3700 | DOCX ingestion v2 with tracked-changes preservation | Pipeline | L | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3700.md` |
 | TMX-3701 | Round-trip DOCX export with revision-mark preservation (export side) | Pipeline | M | 2 — **[Spawned by TMX-3700]** |
