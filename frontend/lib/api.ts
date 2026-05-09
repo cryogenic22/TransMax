@@ -76,7 +76,7 @@ export interface JobResult {
     quality_scorecard: {
         status: string
         pass_rate: number
-        violations: any[]
+        violations: unknown[]
     }
     metrics: {
         total_segments: number
@@ -89,9 +89,9 @@ export interface AuditBundle {
     job_id: string
     document_id: string
     status: string
-    scorecard: any
-    validation_summary: any
-    audit_trail: any[]
+    scorecard: unknown
+    validation_summary: unknown
+    audit_trail: unknown[]
     versions: {
         model: string
         prompts: string
@@ -118,7 +118,7 @@ export interface DeletionRecord {
     deleted_by: string | null
     reason: string | null
     deleted_at: string
-    metadata_snapshot: Record<string, any> | null
+    metadata_snapshot: Record<string, unknown> | null
 }
 
 export interface AuditLog {
@@ -136,6 +136,100 @@ export interface TranslateResult {
     job_id?: string
     decision: string
     translated_text?: string
+}
+
+// ─── Knowledge / glossary / tools response shapes ─────────────────────
+// (TMX-3614-types-api). Keeping these in api.ts as the single source of
+// truth so callers import the type with the data.
+
+export interface Rule {
+    rule_id: string
+    source_pattern: string
+    target_correction: string
+    context_tag?: string
+    confidence_score?: number
+    status: string
+    source_language?: string
+    target_language?: string
+    domain?: string
+    is_regex?: boolean
+    is_strict?: boolean
+    priority?: number
+    description?: string
+    fire_count?: number
+    false_positive_count?: number
+    created_by?: string
+    created_at?: string
+}
+
+export interface Glossary {
+    glossary_id: string
+    version: string
+    is_active: boolean
+    meta_json?: { source_language?: string; target_language?: string } | null
+    term_count?: number
+    created_at?: string
+}
+
+export interface GlossaryTerm {
+    term_id: string
+    source_text: string
+    target_text: string
+    is_forbidden?: boolean
+    allowed_variants?: string[]
+}
+
+export interface RuleAnalytics {
+    rule_id: string
+    source_pattern: string
+    fire_count: number
+    false_positive_count: number
+    effectiveness: number
+}
+
+export interface RuleTestResult {
+    would_fire?: boolean
+    suggested_action?: string
+    source_matches?: unknown[]
+    target_has_correction?: boolean
+}
+
+export interface SegmentChangelogEntry {
+    timestamp: string
+    actor?: string
+    reason?: string
+    before?: string
+    after?: string
+}
+
+export interface ApiAck {
+    status?: string
+    message?: string
+    [extra: string]: unknown
+}
+
+export interface ToolAuditReport {
+    status: string
+    max_severity: string
+    violations: Array<{ category: string; severity: string; message: string }>
+}
+
+export interface ToolBackTranslationResult {
+    back_translation: string
+    drift_score?: number | null
+}
+
+export interface ToolMatrixResult {
+    results: Record<string, string>
+}
+
+export interface ToolUniversalResult {
+    translated_text?: string
+    confidence?: number
+    score_band?: string
+    score_breakdown?: unknown
+    recommendations?: string[]
+    segments?: Array<{ source: string; target: string }>
 }
 
 // === Auth token helper ===
@@ -172,9 +266,9 @@ class ApiClient {
                 headers,
                 signal: controller.signal,
             });
-        } catch (err: any) {
+        } catch (err) {
             clearTimeout(timeoutId);
-            if (err.name === "AbortError") {
+            if (err instanceof Error && err.name === "AbortError") {
                 throw new Error("Request timed out. Is the backend server running?");
             }
             throw new Error("Unable to connect to the server. Please ensure the backend is running on " + API_BASE);
@@ -202,7 +296,7 @@ class ApiClient {
         /**
          * List translation rules from Black Book
          */
-        listRules: async (status?: string): Promise<any[]> => {
+        listRules: async (status?: string): Promise<Rule[]> => {
             let url = `/api/knowledge/rules`;
             if (status) url += `?status=${status}`;
             return this.request(url);
@@ -211,7 +305,7 @@ class ApiClient {
         /**
          * Update rule status (Approve/Reject)
          */
-        updateRule: async (ruleId: string, status: string): Promise<any> => {
+        updateRule: async (ruleId: string, status: string): Promise<ApiAck> => {
             return this.request(`/api/knowledge/rules/${ruleId}`, {
                 method: 'PATCH',
                 body: JSON.stringify({ status })
@@ -221,7 +315,7 @@ class ApiClient {
         /**
          * List active glossaries
          */
-        listGlossaries: async (): Promise<any[]> => {
+        listGlossaries: async (): Promise<Glossary[]> => {
             return this.request(`/api/knowledge/glossaries`);
         },
 
@@ -240,7 +334,7 @@ class ApiClient {
             is_strict?: boolean,
             priority?: number,
             description?: string,
-        }): Promise<any> => {
+        }): Promise<Rule> => {
             return this.request(`/api/knowledge/rules`, {
                 method: 'POST',
                 body: JSON.stringify(data)
@@ -250,7 +344,7 @@ class ApiClient {
         /**
          * DELETE /api/knowledge/rules/{ruleId}
          */
-        deleteRule: async (ruleId: string): Promise<any> => {
+        deleteRule: async (ruleId: string): Promise<ApiAck> => {
             return this.request(`/api/knowledge/rules/${ruleId}`, {
                 method: 'DELETE'
             });
@@ -265,7 +359,7 @@ class ApiClient {
             is_regex: boolean,
             test_source: string,
             test_target: string,
-        }): Promise<any> => {
+        }): Promise<RuleTestResult> => {
             return this.request(`/api/knowledge/rules/test`, {
                 method: 'POST',
                 body: JSON.stringify(data)
@@ -318,7 +412,7 @@ class ApiClient {
         /**
          * GET /api/knowledge/rules/analytics
          */
-        getAnalytics: async (domain?: string, minFires?: number): Promise<any[]> => {
+        getAnalytics: async (domain?: string, minFires?: number): Promise<RuleAnalytics[]> => {
             let url = `/api/knowledge/rules/analytics`;
             const params: string[] = [];
             if (domain) params.push(`domain=${domain}`);
@@ -330,7 +424,7 @@ class ApiClient {
         /**
          * POST /api/knowledge/glossaries/upload
          */
-        uploadGlossary: async (file: File, glossaryId: string, version: string, srcLang: string = 'en', tgtLang: string = 'fr'): Promise<any> => {
+        uploadGlossary: async (file: File, glossaryId: string, version: string, srcLang: string = 'en', tgtLang: string = 'fr'): Promise<ApiAck & { term_count?: number; imported?: number }> => {
             const formData = new FormData();
             formData.append('file', file);
 
@@ -354,14 +448,14 @@ class ApiClient {
         /**
          * GET /api/knowledge/glossaries/{id}/{version}/terms
          */
-        getGlossaryTerms: async (glossaryId: string, version: string): Promise<any[]> => {
+        getGlossaryTerms: async (glossaryId: string, version: string): Promise<GlossaryTerm[]> => {
             return this.request(`/api/knowledge/glossaries/${encodeURIComponent(glossaryId)}/${encodeURIComponent(version)}/terms`);
         },
 
         /**
          * PATCH /api/knowledge/glossaries/{id}/{version} - Toggle active, update meta
          */
-        updateGlossary: async (glossaryId: string, version: string, data: { is_active?: boolean; meta_json?: any }): Promise<any> => {
+        updateGlossary: async (glossaryId: string, version: string, data: { is_active?: boolean; meta_json?: Record<string, unknown> }): Promise<ApiAck> => {
             return this.request(`/api/knowledge/glossaries/${encodeURIComponent(glossaryId)}/${encodeURIComponent(version)}`, {
                 method: 'PATCH',
                 body: JSON.stringify(data)
@@ -371,7 +465,7 @@ class ApiClient {
         /**
          * DELETE /api/knowledge/glossaries/{id}/{version}
          */
-        deleteGlossary: async (glossaryId: string, version: string): Promise<any> => {
+        deleteGlossary: async (glossaryId: string, version: string): Promise<ApiAck> => {
             return this.request(`/api/knowledge/glossaries/${encodeURIComponent(glossaryId)}/${encodeURIComponent(version)}`, {
                 method: 'DELETE'
             });
@@ -380,7 +474,7 @@ class ApiClient {
         /**
          * POST /api/knowledge/glossaries/{id}/{version}/terms - Add single term
          */
-        addTerm: async (glossaryId: string, version: string, term: { source_text: string; target_text: string; is_forbidden?: boolean }): Promise<any> => {
+        addTerm: async (glossaryId: string, version: string, term: { source_text: string; target_text: string; is_forbidden?: boolean }): Promise<GlossaryTerm> => {
             return this.request(`/api/knowledge/glossaries/${encodeURIComponent(glossaryId)}/${encodeURIComponent(version)}/terms`, {
                 method: 'POST',
                 body: JSON.stringify(term)
@@ -390,7 +484,7 @@ class ApiClient {
         /**
          * PATCH /api/knowledge/glossaries/{id}/{version}/terms/{termId}
          */
-        updateTerm: async (glossaryId: string, version: string, termId: string, data: { target_text?: string; is_forbidden?: boolean }): Promise<any> => {
+        updateTerm: async (glossaryId: string, version: string, termId: string, data: { target_text?: string; is_forbidden?: boolean }): Promise<GlossaryTerm> => {
             return this.request(`/api/knowledge/glossaries/${encodeURIComponent(glossaryId)}/${encodeURIComponent(version)}/terms/${encodeURIComponent(termId)}`, {
                 method: 'PATCH',
                 body: JSON.stringify(data)
@@ -400,7 +494,7 @@ class ApiClient {
         /**
          * DELETE /api/knowledge/glossaries/{id}/{version}/terms/{termId}
          */
-        deleteTerm: async (glossaryId: string, version: string, termId: string): Promise<any> => {
+        deleteTerm: async (glossaryId: string, version: string, termId: string): Promise<ApiAck> => {
             return this.request(`/api/knowledge/glossaries/${encodeURIComponent(glossaryId)}/${encodeURIComponent(version)}/terms/${encodeURIComponent(termId)}`, {
                 method: 'DELETE'
             });
@@ -424,7 +518,7 @@ class ApiClient {
         /**
          * POST /api/knowledge/rules/{ruleId}/report-false-positive
          */
-        reportFalsePositive: async (ruleId: string): Promise<any> => {
+        reportFalsePositive: async (ruleId: string): Promise<ApiAck> => {
             return this.request(`/api/knowledge/rules/${ruleId}/report-false-positive`, {
                 method: 'POST'
             });
@@ -440,7 +534,7 @@ class ApiClient {
             rating: 'positive' | 'negative',
             comment?: string,
             target_language: string
-        }): Promise<any> => {
+        }): Promise<ApiAck> => {
             return this.request(`/api/knowledge/feedback`, {
                 method: 'POST',
                 body: JSON.stringify(data)
@@ -614,7 +708,7 @@ class ApiClient {
         /**
          * GET /api/segments/{segment_id}/changelog - Get segment edit history
          */
-        getChangelog: async (id: string): Promise<any[]> => {
+        getChangelog: async (id: string): Promise<SegmentChangelogEntry[]> => {
             return this.request(`/api/segments/${id}/changelog`);
         },
     };
@@ -684,14 +778,14 @@ class ApiClient {
         /**
          * GET /api/v1/audit/{audit_id} - Get audit record
          */
-        get: async (auditId: string): Promise<any> => {
+        get: async (auditId: string): Promise<Record<string, unknown>> => {
             return this.request(`/api/v1/audit/${auditId}`);
         },
 
         /**
          * GET /api/documents/{doc_id}/audit - Get document audit trail
          */
-        getDocumentAudit: async (docId: string): Promise<any[]> => {
+        getDocumentAudit: async (docId: string): Promise<Record<string, unknown>[]> => {
             return this.request(`/api/documents/${docId}/audit`);
         },
 
@@ -731,7 +825,7 @@ class ApiClient {
         /**
          * GET /api/v1/translate/{job_id} - Poll translation status
          */
-        getStatus: async (jobId: string): Promise<any> => {
+        getStatus: async (jobId: string): Promise<{ status?: string; translated_text?: string; [extra: string]: unknown }> => {
             return this.request(`/api/v1/translate/${jobId}`);
         },
 
@@ -768,7 +862,7 @@ class ApiClient {
         /**
          * POST /api/tools/audit
          */
-        audit: async (sourceText: string, translatedText: string, targetLang: string): Promise<any> => {
+        audit: async (sourceText: string, translatedText: string, targetLang: string): Promise<ToolAuditReport> => {
             return this.request(`/api/tools/audit`, {
                 method: 'POST',
                 body: JSON.stringify({ source_text: sourceText, translated_text: translatedText, target_language: targetLang })
@@ -778,7 +872,7 @@ class ApiClient {
         /**
          * POST /api/tools/back-translate
          */
-        backTranslate: async (translatedText: string, targetLang: string, sourceText?: string): Promise<any> => {
+        backTranslate: async (translatedText: string, targetLang: string, sourceText?: string): Promise<ToolBackTranslationResult> => {
             const endpoint = sourceText ? '/api/tools/back-translate/with-source' : '/api/tools/back-translate';
             const body = sourceText
                 ? { source_text: sourceText, translated_text: translatedText, target_language: targetLang }
@@ -793,7 +887,7 @@ class ApiClient {
         /**
          * POST /api/tools/translate/universal
          */
-        universal: async (text: string, sourceLang: string, targetLang: string): Promise<any> => {
+        universal: async (text: string, sourceLang: string, targetLang: string): Promise<ToolUniversalResult> => {
             return this.request(`/api/tools/translate/universal`, {
                 method: 'POST',
                 body: JSON.stringify({ text, source_language: sourceLang, target_language: targetLang })
@@ -803,7 +897,7 @@ class ApiClient {
         /**
          * POST /api/tools/matrix
          */
-        matrix: async (text: string, languages: string[]): Promise<any> => {
+        matrix: async (text: string, languages: string[]): Promise<ToolMatrixResult> => {
             return this.request(`/api/tools/matrix`, {
                 method: 'POST',
                 body: JSON.stringify({ text, languages })

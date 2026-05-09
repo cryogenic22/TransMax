@@ -11,55 +11,15 @@ import {
 import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { LanguageSelector } from "@/components/ui/LanguageSelector"
-import { api } from "@/lib/api"
+import { api, type Rule, type Glossary, type GlossaryTerm, type RuleAnalytics } from "@/lib/api"
 import { getErrMessage } from "@/lib/utils"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface Rule {
-    rule_id: string
-    source_pattern: string
-    target_correction: string
-    context_tag: string
-    confidence_score: number
-    status: string
-    source_language?: string
-    target_language?: string
-    domain?: string
-    is_regex: boolean
-    is_strict: boolean
-    priority: number
-    description?: string
-    fire_count: number
-    false_positive_count: number
-    created_by?: string
-    created_at: string
-}
-
-interface Glossary {
-    glossary_id: string
-    version: string
-    is_active: boolean
-    meta_json?: { source_language?: string; target_language?: string } | null
-    term_count?: number
-    created_at: string
-}
-
-interface GlossaryTerm {
-    term_id: string
-    source_text: string
-    target_text: string
-    is_forbidden: boolean
-    allowed_variants: string[]
-}
-
-interface AnalyticsEntry {
-    rule_id: string
-    source_pattern: string
-    fire_count: number
-    false_positive_count: number
-    effectiveness: number
-}
+// TMX-3614-types-api: Rule / Glossary / GlossaryTerm / RuleAnalytics now
+// imported from lib/api.ts (single source of truth). The local AnalyticsEntry
+// alias exists only for legacy field-name compatibility.
+type AnalyticsEntry = RuleAnalytics
 
 type TabKey = "rules" | "glossaries" | "import-export"
 type StatusFilter = "ALL" | "ACTIVE" | "PENDING_APPROVAL" | "REJECTED"
@@ -299,8 +259,8 @@ function RulesTab() {
                                         </td>
                                         <td className="px-4 py-3 text-center">{rule.is_strict ? <Check className="w-4 h-4 text-green-600 mx-auto" /> : <span className="text-slate-300">—</span>}</td>
                                         <td className="px-4 py-3">
-                                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${rule.confidence_score >= 0.9 ? "bg-green-100 text-green-700" : rule.confidence_score >= 0.7 ? "bg-yellow-100 text-yellow-700" : "bg-slate-100 text-slate-600"}`}>
-                                                {(rule.confidence_score * 100).toFixed(0)}%
+                                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${(rule.confidence_score ?? 0) >= 0.9 ? "bg-green-100 text-green-700" : (rule.confidence_score ?? 0) >= 0.7 ? "bg-yellow-100 text-yellow-700" : "bg-slate-100 text-slate-600"}`}>
+                                                {((rule.confidence_score ?? 0) * 100).toFixed(0)}%
                                             </span>
                                         </td>
                                         <td className="px-4 py-3">
@@ -648,7 +608,7 @@ function GlossariesTab() {
     const startEditTerm = (t: GlossaryTerm) => {
         setEditingTermId(t.term_id)
         setEditTargetText(t.target_text)
-        setEditIsForbidden(t.is_forbidden)
+        setEditIsForbidden(t.is_forbidden ?? false)
     }
 
     const saveEditTerm = async (gid: string, version: string, termId: string) => {
@@ -752,7 +712,7 @@ function GlossariesTab() {
                                     </div>
                                     <div className="font-bold text-lg text-slate-900 mb-1">{g.glossary_id}</div>
                                     <div className="text-xs text-slate-500 font-mono">
-                                        ver {g.version} &bull; {g.term_count ?? "?"} terms &bull; Created {new Date(g.created_at).toLocaleDateString()}
+                                        ver {g.version} &bull; {g.term_count ?? "?"} terms{g.created_at ? ` • Created ${new Date(g.created_at).toLocaleDateString()}` : ""}
                                     </div>
                                     {g.meta_json?.source_language && (
                                         <div className="text-xs text-slate-400 mt-1">{g.meta_json.source_language} &rarr; {g.meta_json.target_language}</div>
