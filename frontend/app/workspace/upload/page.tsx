@@ -33,7 +33,7 @@ export default function TranslateDocumentPage() {
     const [translatedCount, setTranslatedCount] = useState(0)
     const [totalSegments, setTotalSegments] = useState(0)
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-    const [glossaries, setGlossaries] = useState<Array<{ glossary_id: string; version: string; is_active: boolean; meta_json?: any }>>([])
+    const [glossaries, setGlossaries] = useState<Array<{ glossary_id: string; version: string; is_active: boolean; meta_json?: { source_language?: string; target_language?: string } | null }>>([])
     const [selectedGlossary, setSelectedGlossary] = useState("")
 
     // Feature 1: Pipeline step tracking
@@ -42,7 +42,17 @@ export default function TranslateDocumentPage() {
     const [batchInfo, setBatchInfo] = useState("")
 
     // Feature 4: Pre-translation estimate
-    const [estimate, setEstimate] = useState<any>(null)
+    const [estimate, setEstimate] = useState<{
+        total_llm_calls?: number
+        estimated_total_tokens?: number
+        estimated_cost_usd?: number
+        estimated_seconds?: number
+        model?: string
+        tokens?: number
+        cost_usd?: number
+        segment_count?: number
+        word_count?: number
+    } | null>(null)
     const [showEstimateDialog, setShowEstimateDialog] = useState(false)
 
     // Cleanup polling on unmount
@@ -55,7 +65,7 @@ export default function TranslateDocumentPage() {
     // Fetch active glossaries for the selector
     useEffect(() => {
         api.knowledge.listGlossaries().then(data => {
-            setGlossaries(data.filter((g: any) => g.is_active))
+            setGlossaries((data as Array<{ glossary_id: string; version: string; is_active: boolean; meta_json?: { source_language?: string; target_language?: string } | null }>).filter(g => g.is_active))
         }).catch(() => {})
     }, [])
 

@@ -9,6 +9,28 @@ import { ConfidenceMeter } from '@/components/ui/ConfidenceMeter'
 import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import { getAllLanguages, getLanguageName } from '@/lib/languages'
 
+// ─── Tool API response shapes (TMX-3614-types-extended) ───────────────────
+// Frozen to the backend contract at app/api/tools.py. If the backend shape
+// drifts the type-check fails before runtime drift can land.
+
+interface Violation {
+    category: string
+    severity: string
+    message: string
+}
+interface AuditReport {
+    status: string
+    max_severity: string
+    violations: Violation[]
+}
+interface BackTranslationResult {
+    back_translation: string
+    drift_score?: number | null
+}
+interface MatrixResult {
+    results: Record<string, string>
+}
+
 export default function ToolsPage() {
     const [activeTab, setActiveTab] = useState<'audit' | 'backtrans' | 'matrix'>('audit')
 
@@ -16,20 +38,20 @@ export default function ToolsPage() {
     const [auditSource, setAuditSource] = useState('')
     const [auditTrans, setAuditTrans] = useState('')
     const [auditTgtLang, setAuditTgtLang] = useState('fr')
-    const [auditReport, setAuditReport] = useState<any>(null)
+    const [auditReport, setAuditReport] = useState<AuditReport | null>(null)
     const [auditLoading, setAuditLoading] = useState(false)
 
     // Back-Translation State
     const [backTransText, setBackTransText] = useState('')
     const [backSourceRef, setBackSourceRef] = useState('')
     const [backLang, setBackLang] = useState('auto')
-    const [backResult, setBackResult] = useState<any>(null)
+    const [backResult, setBackResult] = useState<BackTranslationResult | null>(null)
     const [backLoading, setBackLoading] = useState(false)
 
     // Matrix State
     const [matrixText, setMatrixText] = useState('')
     const [matrixLangs, setMatrixLangs] = useState<string[]>(['fr', 'de', 'es', 'it', 'ja'])
-    const [matrixResult, setMatrixResult] = useState<any>(null)
+    const [matrixResult, setMatrixResult] = useState<MatrixResult | null>(null)
     const [matrixLoading, setMatrixLoading] = useState(false)
 
 
@@ -110,7 +132,13 @@ export default function ToolsPage() {
 
 // --- Components ---
 
-function TabButton({ active, onClick, icon, label }: any) {
+interface TabButtonProps {
+    active: boolean
+    onClick: () => void
+    icon: React.ReactNode
+    label: string
+}
+function TabButton({ active, onClick, icon, label }: TabButtonProps) {
     return (
         <button
             onClick={onClick}
@@ -229,12 +257,24 @@ export function FeedbackControls({ source, target, targetLang }: { source: strin
     )
 }
 
-function QualityAuditor({ source, setSource, trans, setTrans, tgtLang, setTgtLang, report, setReport, loading, setLoading }: any) {
+interface QualityAuditorProps {
+    source: string
+    setSource: (v: string) => void
+    trans: string
+    setTrans: (v: string) => void
+    tgtLang: string
+    setTgtLang: (v: string) => void
+    report: AuditReport | null
+    setReport: (v: AuditReport | null) => void
+    loading: boolean
+    setLoading: (v: boolean) => void
+}
+function QualityAuditor({ source, setSource, trans, setTrans, tgtLang, setTgtLang, report, setReport, loading, setLoading }: QualityAuditorProps) {
     const handleAudit = async () => {
         setLoading(true)
         try {
             const res = await api.tools.audit(source, trans, tgtLang)
-            setReport(res)
+            setReport(res as AuditReport)
         } catch (e) {
             console.error(e)
         } finally {
@@ -315,7 +355,7 @@ function QualityAuditor({ source, setSource, trans, setTrans, tgtLang, setTgtLan
                                 <CheckCircle2 size={16} /> No defects found.
                             </div>
                         ) : (
-                            report.violations.map((v: any, i: number) => (
+                            report.violations.map((v, i) => (
                                 <div key={i} style={{
                                     padding: '12px',
                                     background: 'white',
@@ -338,7 +378,19 @@ function QualityAuditor({ source, setSource, trans, setTrans, tgtLang, setTgtLan
     )
 }
 
-function BackTranslationVerifier({ text, setText, sourceRef, setSourceRef, lang, setLang, result, setResult, loading, setLoading }: any) {
+interface BackTranslationVerifierProps {
+    text: string
+    setText: (v: string) => void
+    sourceRef: string
+    setSourceRef: (v: string) => void
+    lang: string
+    setLang: (v: string) => void
+    result: BackTranslationResult | null
+    setResult: (v: BackTranslationResult | null) => void
+    loading: boolean
+    setLoading: (v: boolean) => void
+}
+function BackTranslationVerifier({ text, setText, sourceRef, setSourceRef, lang, setLang, result, setResult, loading, setLoading }: BackTranslationVerifierProps) {
     const handleRun = async () => {
         setLoading(true)
         try {
@@ -417,21 +469,31 @@ function BackTranslationVerifier({ text, setText, sourceRef, setSourceRef, lang,
     )
 }
 
-function TranslationMatrix({ text, setText, langs, setLangs, result, setResult, loading, setLoading }: any) {
+interface TranslationMatrixProps {
+    text: string
+    setText: (v: string) => void
+    langs: string[]
+    setLangs: (v: string[]) => void
+    result: MatrixResult | null
+    setResult: (v: MatrixResult | null) => void
+    loading: boolean
+    setLoading: (v: boolean) => void
+}
+function TranslationMatrix({ text, setText, langs, setLangs, result, setResult, loading, setLoading }: TranslationMatrixProps) {
     // Configurable 5 languages for matrix
 
     const handleRun = async () => {
         setLoading(true)
         try {
             const res = await api.tools.matrix(text, langs)
-            setResult(res)
+            setResult(res as MatrixResult)
         } catch (e) { console.error(e) }
         finally { setLoading(false) }
     }
 
     const toggleLang = (code: string) => {
         if (langs.includes(code)) {
-            setLangs(langs.filter((l: string) => l !== code))
+            setLangs(langs.filter(l => l !== code))
         } else {
             if (langs.length < 5) {
                 setLangs([...langs, code])

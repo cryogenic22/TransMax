@@ -23,7 +23,7 @@ interface SegmentItem {
     translated_text: string | null
     confidence_score: number | null
     status: "pending" | "translated" | "edited" | "approved"
-    gate_results: { units_ok?: boolean; negation_ok?: boolean; pii_redacted?: boolean; violations?: any[] } | null
+    gate_results: { units_ok?: boolean; negation_ok?: boolean; pii_redacted?: boolean; violations?: Array<{ category?: string; severity?: string; message?: string }> } | null
 }
 
 interface DocumentMeta {

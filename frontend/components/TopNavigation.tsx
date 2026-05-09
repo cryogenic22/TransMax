@@ -26,7 +26,7 @@ export default function TopNavigation() {
         const checkJobs = async () => {
             try {
                 const docs = await api.documents.list()
-                const processing = docs.items.filter((d: any) => d.status === 'processing').length
+                const processing = docs.items.filter(d => d.status === 'processing').length
                 setProcessingCount(processing)
                 backoff = 10000 // Reset on success
             } catch {

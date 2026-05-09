@@ -71,7 +71,13 @@ export default function TrustCenterPage() {
 }
 
 function BlackBookView() {
-    const [rules, setRules] = useState<any[]>([])
+    const [rules, setRules] = useState<Array<{
+        rule_id: string
+        source_pattern: string
+        target_correction: string
+        status: string
+        confidence_score?: number
+    }>>([])
     const [loading, setLoading] = useState(true)
 
     const fetchRules = async () => {
@@ -136,14 +142,14 @@ function BlackBookView() {
                                         <td className="p-4 font-mono text-sm text-blue-700">{rule.target_correction}</td>
                                         <td className="p-4">
                                             <span
-                                                className={`px-2 py-1 rounded-full text-xs font-medium ${rule.confidence_score > 0.9
+                                                className={`px-2 py-1 rounded-full text-xs font-medium ${(rule.confidence_score ?? 0) > 0.9
                                                         ? "bg-green-100 text-green-700"
-                                                        : rule.confidence_score > 0.7
+                                                        : (rule.confidence_score ?? 0) > 0.7
                                                             ? "bg-yellow-100 text-yellow-700"
                                                             : "bg-gray-100 text-gray-600"
                                                     }`}
                                             >
-                                                {(rule.confidence_score * 100).toFixed(0)}%
+                                                {((rule.confidence_score ?? 0) * 100).toFixed(0)}%
                                             </span>
                                         </td>
                                         <td className="p-4">
