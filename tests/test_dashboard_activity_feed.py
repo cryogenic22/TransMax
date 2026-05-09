@@ -221,6 +221,41 @@ def test_activity_feed_resolves_audit_to_doc_name(seeded_audit_with_doc):
     )
 
 
+def test_agent_activity_by_job_resolves_to_chain(seeded_audit_with_doc):
+    """job_id → audit_id resolution returns the matching agent activities."""
+    # The fixture seeds AuditRecord with a deterministic job_id; we re-read
+    # it inside the same tenant context as the seed so the TMX-3012
+    # session middleware doesn't trip a TenantContextMissing.
+    from app.core.tenant_context import org_context
+    session = SessionLocal()
+    try:
+        with org_context(DEFAULT_ORG_ID):
+            rec = session.query(AuditRecord).filter(
+                AuditRecord.audit_id == seeded_audit_with_doc["audit_id"]
+            ).first()
+        assert rec is not None
+        job_id = rec.job_id
+    finally:
+        session.close()
+    res = client.get(f"/api/dashboard/agent-activity-by-job/{job_id}")
+    assert res.status_code == 200
+    body = res.json()
+    assert "activities" in body
+    assert "audit_id" in body
+    assert body["audit_id"] == seeded_audit_with_doc["audit_id"]
+    canonical = {"translator", "reviewer", "fixer", "auditor"}
+    for a in body["activities"]:
+        assert a["agent"] in canonical
+
+
+def test_agent_activity_by_job_unknown_returns_empty():
+    res = client.get(f"/api/dashboard/agent-activity-by-job/{uuid.uuid4()}")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["activities"] == []
+    assert body["audit_id"] is None
+
+
 def test_activity_feed_falls_back_to_short_audit_id_when_no_doc(seeded_audit):
     """seeded_audit has NO Document — feed should fall back to 'audit <8-char>'."""
     res = client.get("/api/dashboard/activity-feed?limit=50")

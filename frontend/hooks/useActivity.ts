@@ -67,6 +67,62 @@ export function useActivityFeed(
 }
 
 /**
+ * useAgentActivityByJob — polls /api/dashboard/agent-activity-by-job/{jobId}
+ * and returns activities shaped for `<AgentLanes>`. The endpoint resolves
+ * job_id → audit_id internally, so this is the right hook for any
+ * job-id-shaped surface (e.g. /workspace/jobs/[id]). TMX-3603-jobs-id.
+ */
+export function useAgentActivityByJob(
+  jobId: string | null,
+  pollMs = DEFAULT_POLL_MS
+): AsyncState<AgentActivity[]> {
+  const [state, setState] = useState<AsyncState<AgentActivity[]>>({
+    data: null,
+    loading: !!jobId,
+    error: null,
+  })
+
+  useEffect(() => {
+    if (!jobId) {
+      setState({ data: [], loading: false, error: null })
+      return
+    }
+    let cancelled = false
+    const fetchOnce = async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/dashboard/agent-activity-by-job/${encodeURIComponent(jobId)}`,
+          { credentials: "include" }
+        )
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const body = await res.json()
+        if (cancelled) return
+        setState({
+          data: (body.activities ?? []) as AgentActivity[],
+          loading: false,
+          error: null,
+        })
+      } catch (err) {
+        if (cancelled) return
+        setState({
+          data: null,
+          loading: false,
+          error: err instanceof Error ? err : new Error(String(err)),
+        })
+      }
+    }
+    fetchOnce()
+    const handle = setInterval(fetchOnce, pollMs)
+    return () => {
+      cancelled = true
+      clearInterval(handle)
+    }
+  }, [jobId, pollMs])
+
+  return state
+}
+
+/**
  * useAgentActivity — polls /api/dashboard/agent-activity/{auditId} and
  * returns activities shaped for the `<AgentLanes>` component
  * (TMX-3603-wire). Returns empty array (not null) when audit_id is null
