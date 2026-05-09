@@ -42,7 +42,11 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 | TMX-3013 | Auth0 / Keycloak integration; OIDC + SAML; MFA enforced | Auth | L | 1-2 |
 | TMX-3015 | Soft-delete columns + filter logic | Auth | M | 1 |
 | TMX-3100 | `audit_events_v2` schema + migration | Audit | M | 1 |
-| TMX-3700 | DOCX ingestion v2 with tracked-changes preservation | Pipeline | L | 1-2 |
+| TMX-3700 | DOCX ingestion v2 with tracked-changes preservation | Pipeline | L | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3700.md` |
+| TMX-3701 | Round-trip DOCX export with revision-mark preservation (export side) | Pipeline | M | 2 — **[Spawned by TMX-3700]** |
+| TMX-3702 | Reviewer-frontend UX for accept/reject revisions | Frontend | M | 2 — **[Spawned by TMX-3700; blocked on TMX-3606]** |
+| TMX-3703 | Differential rendering (current vs. proposed) | Frontend | M | 2 — **[Spawned by TMX-3700; blocked on TMX-3606]** |
+| TMX-3704 | `<w:moveFrom>` / `<w:moveTo>` semantic handling | Pipeline | S | 2 — **[Spawned by TMX-3700]** |
 | TMX-3705 | File-type sniffing + size cap + AV scan trigger | Pipeline | M | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3705.md` |
 | TMX-3706 | Deeper DOCX vs XLSX vs PPTX disambiguation (peek inside ZIP for `[Content_Types].xml`) | Pipeline | S | 2 — **[Spawned by TMX-3705]** |
 | TMX-3707 | AV scanner integration (clamd / Cloud DLP) — wire `emit_av_scan_request` to actual scanner | Pipeline + Platform | M | 2 — **[Spawned by TMX-3705]** |
