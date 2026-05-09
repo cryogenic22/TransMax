@@ -31,6 +31,13 @@ const nextConfig: NextConfig = {
         destination: "/workspace",
         permanent: true,
       },
+      // TMX-3604: legacy /design-system page deleted; canonical lives
+      // under /workspace/design-system (TMX-3602-patterns demo page).
+      {
+        source: "/design-system",
+        destination: "/workspace/design-system",
+        permanent: true,
+      },
 
       // ── Ambiguous (307) — destination will tighten in follow-up tickets ──
       // /translate/[jobId] and /review/[jobId]: no /workspace/jobs/[id] yet
