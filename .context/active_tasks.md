@@ -56,7 +56,9 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 | TMX-3615 | CSP / HSTS / X-Frame-Options / Permissions-Policy via next.config.ts | Frontend | S | 1 |
 | TMX-3616 | Cookie hardening — httpOnly Secure SameSite=Strict + CSRF tokens | Frontend + Auth | M | 1 |
 | TMX-3618 | File upload validation + size cap + AV trigger | Frontend + Pipeline | M | 1 |
-| TMX-3900 | OpenTelemetry SDK wired across LangGraph nodes | Platform | M | 1 |
+| TMX-3900 | OpenTelemetry SDK wired across LangGraph nodes | Platform | M | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3900.md` |
+| TMX-3901 | LLM-call child spans with prompt_version/content_hash/token_usage attributes | Agent + Platform | S | 2 — **[Spawned by TMX-3900]** |
+| TMX-3902 | OTLP exporter config (Honeycomb/Jaeger/Tempo) in deployment manifests | Platform | S | 2 — **[Spawned by TMX-3900]** |
 
 ---
 
