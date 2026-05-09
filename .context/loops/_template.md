@@ -9,6 +9,16 @@
 **Pre-mortem**: <1 line — "if this fails in production, the failure mode is …">
 **Blast radius**: <1-2 lines — which files / surfaces / pods / users this touches>
 
+**Loop-driven-dev gates** (per `~/.claude/skills/loop-driven-dev`):
+- [ ] **G1 Anti-bloat (between stage 2 and 3)** — net-new code path passes the 5-test rubric:
+  (a) is the code path needed at all (vs. extending an existing one)?
+  (b) does it have <5 callers? (>5 callers may need its own module)
+  (c) bundle / binary impact <5%?
+  (d) reuses existing patterns / utilities / components?
+  (e) ships with a test that fails without the change?
+- [ ] **G2 Reproduce-the-failure (bug tickets only, before stage 4)** — failure reproduces in code as a red test BEFORE the fix lands. Skip for greenfield work.
+- [ ] **G3 Completion (between stage 7 and 8)** — explicit check: does the user-visible failure (or the AC) actually resolve, not just "tests pass"? Tests-only does NOT auto-complete a bug ticket.
+
 ---
 
 ## 1. Task

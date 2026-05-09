@@ -80,6 +80,12 @@ class SegmentResponse(BaseModel):
     # Quality scoring fields from Reflexion
     validation_score: Optional[float] = None  # Semantic drift score from back-translation (0-100)
     reverse_translation: Optional[str] = None  # Back-translation text
+    # Ingestion-time metadata (TMX-3702): element_type-specific facts.
+    # For DOCX-sourced blocks this includes a `revisions` key shaped
+    # { has_insertions, has_deletions, has_moves, authors, dates }
+    # captured by TMX-3700. Frontend narrows the dict shape; the schema
+    # stays opaque so future ingestion-time fields can land additively.
+    element_meta: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: datetime
 

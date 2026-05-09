@@ -34,6 +34,7 @@ def segment_to_response(seg: Segment) -> SegmentResponse:
         confidence_score=seg.confidence_score,
         status=seg.status,
         gate_results=seg.gate_results,
+        element_meta=seg.element_meta,  # TMX-3702 — surfaces DOCX revision metadata
         created_at=seg.created_at,
         updated_at=seg.updated_at
     )
