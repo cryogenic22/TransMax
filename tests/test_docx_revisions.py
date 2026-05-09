@@ -172,6 +172,55 @@ def test_collect_revisions_distinguishes_move_from_and_move_to() -> None:
     assert rev_both["has_moves"] is True
 
 
+def test_collect_revisions_counts_per_type() -> None:
+    """TMX-3702-counts: per-type integer counts so reviewers can triage by
+    magnitude (1 edit vs 47 edits)."""
+    p = etree.Element(PNS)
+    # 3 insertions
+    for i in range(3):
+        ins = etree.SubElement(p, INS_NS)
+        ins.set(AUTHOR_ATTR, f"A{i}")
+        ins.set(DATE_ATTR, "2026-04-01T10:00:00Z")
+    # 2 deletions
+    for i in range(2):
+        delete = etree.SubElement(p, DEL_NS)
+        delete.set(AUTHOR_ATTR, "B")
+        delete.set(DATE_ATTR, "2026-04-02T10:00:00Z")
+    # 1 moveFrom, 1 moveTo
+    mf = etree.SubElement(p, MOVE_FROM_NS)
+    mf.set(AUTHOR_ATTR, "C")
+    mf.set(DATE_ATTR, "2026-04-03T10:00:00Z")
+    mt = etree.SubElement(p, MOVE_TO_NS)
+    mt.set(AUTHOR_ATTR, "D")
+    mt.set(DATE_ATTR, "2026-04-04T10:00:00Z")
+
+    rev = _collect_revisions(p)
+    assert rev is not None
+    assert rev["n_insertions"] == 3
+    assert rev["n_deletions"] == 2
+    assert rev["n_moves_from"] == 1
+    assert rev["n_moves_to"] == 1
+    # Booleans must agree with counts
+    assert rev["has_insertions"] is True
+    assert rev["has_deletions"] is True
+    assert rev["has_moves_from"] is True
+    assert rev["has_moves_to"] is True
+
+
+def test_collect_revisions_zero_counts_when_type_absent() -> None:
+    """A block with only insertions has n_deletions == 0 (not undefined)."""
+    p = etree.Element(PNS)
+    ins = etree.SubElement(p, INS_NS)
+    ins.set(AUTHOR_ATTR, "A")
+    ins.set(DATE_ATTR, "2026-04-01T10:00:00Z")
+    rev = _collect_revisions(p)
+    assert rev is not None
+    assert rev["n_insertions"] == 1
+    assert rev["n_deletions"] == 0
+    assert rev["n_moves_from"] == 0
+    assert rev["n_moves_to"] == 0
+
+
 # ── End-to-end through DocxIngestionService ───────────────────────────
 
 

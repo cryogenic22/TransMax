@@ -39,8 +39,19 @@ export interface SegmentRevisions {
     has_moves_from?: boolean
     /** TMX-3704: text arrived HERE from elsewhere. */
     has_moves_to?: boolean
+    /** TMX-3702-counts: per-type revision-mark counts. Optional — older
+     * payloads without the n_* keys still type-check. */
+    n_insertions?: number
+    n_deletions?: number
+    n_moves_from?: number
+    n_moves_to?: number
     authors: string[]
     dates: string[]
+}
+
+/** TMX-3702-counts: total mark count across all types, with safe defaults. */
+export function totalRevisionCount(r: SegmentRevisions): number {
+    return (r.n_insertions ?? 0) + (r.n_deletions ?? 0) + (r.n_moves_from ?? 0) + (r.n_moves_to ?? 0)
 }
 
 /**
