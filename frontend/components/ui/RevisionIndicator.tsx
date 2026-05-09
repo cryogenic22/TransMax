@@ -3,7 +3,7 @@
 import * as React from "react"
 import { ScrollText, ArrowLeft, ArrowRight, ArrowLeftRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { SegmentRevisions } from "@/lib/api"
+import { totalRevisionCount, type SegmentRevisions } from "@/lib/api"
 import { formatRelativeTime } from "@/components/ui/ActivityFeed"
 
 export interface RevisionIndicatorProps
@@ -95,7 +95,13 @@ export function RevisionIndicator({
             {...rest}
         >
             <Icon size={11} className="shrink-0" aria-hidden />
-            <span>{label} · {authorLabel}</span>
+            <span>{label}</span>
+            {/* TMX-3702-counts: surface count when total ≥ 2 — single-edit
+                pills stay clean since "1 change" is redundant with "tracked". */}
+            {totalRevisionCount(revisions) >= 2 ? (
+                <span className="opacity-70">· {totalRevisionCount(revisions)} changes</span>
+            ) : null}
+            <span>· {authorLabel}</span>
             {latestDate ? (
                 <time dateTime={latestDate} className="opacity-70">
                     · {formatRelativeTime(latestDate)}

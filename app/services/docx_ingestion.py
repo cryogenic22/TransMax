@@ -30,6 +30,10 @@ def _collect_revisions(element) -> Optional[dict]:
             "has_moves_from":  bool,  # text was relocated AWAY from here
             "has_moves_to":    bool,  # text arrived HERE from elsewhere
             "has_moves":       bool,  # has_moves_from OR has_moves_to (back-compat)
+            "n_insertions":    int,   # count of <w:ins> marks (TMX-3702-counts)
+            "n_deletions":     int,   # count of <w:del>
+            "n_moves_from":    int,   # count of <w:moveFrom>
+            "n_moves_to":      int,   # count of <w:moveTo>
             "authors":         list[str],
             "dates":           list[str],
         }
@@ -40,14 +44,16 @@ def _collect_revisions(element) -> Optional[dict]:
     occurrence in the document tree.
 
     TMX-3704 split `has_moves` into directional `has_moves_from` /
-    `has_moves_to` so a reviewer can distinguish "text left here" vs
-    "text arrived here". `has_moves` is retained as the OR of both for
-    backward compatibility with TMX-3702-v1's <RevisionIndicator>.
+    `has_moves_to`. `has_moves` is retained as the OR of both for
+    backward compatibility.
+
+    TMX-3702-counts adds per-type integer counts so reviewers can triage
+    by magnitude. Booleans are derived from counts.
     """
-    has_ins = False
-    has_del = False
-    has_move_from = False
-    has_move_to = False
+    n_ins = 0
+    n_del = 0
+    n_move_from = 0
+    n_move_to = 0
     authors: List[str] = []
     dates: List[str] = []
     seen_authors = set()
@@ -56,13 +62,13 @@ def _collect_revisions(element) -> Optional[dict]:
     for descendant in element.iter():
         tag = descendant.tag
         if tag == INS_NS:
-            has_ins = True
+            n_ins += 1
         elif tag == DEL_NS:
-            has_del = True
+            n_del += 1
         elif tag == MOVE_FROM_NS:
-            has_move_from = True
+            n_move_from += 1
         elif tag == MOVE_TO_NS:
-            has_move_to = True
+            n_move_to += 1
         else:
             continue
         author = descendant.get(AUTHOR_ATTR)
@@ -74,6 +80,10 @@ def _collect_revisions(element) -> Optional[dict]:
             dates.append(date)
             seen_dates.add(date)
 
+    has_ins = n_ins > 0
+    has_del = n_del > 0
+    has_move_from = n_move_from > 0
+    has_move_to = n_move_to > 0
     has_move_any = has_move_from or has_move_to
     if not (has_ins or has_del or has_move_any):
         return None
@@ -83,6 +93,10 @@ def _collect_revisions(element) -> Optional[dict]:
         "has_moves_from": has_move_from,
         "has_moves_to": has_move_to,
         "has_moves": has_move_any,
+        "n_insertions": n_ins,
+        "n_deletions": n_del,
+        "n_moves_from": n_move_from,
+        "n_moves_to": n_move_to,
         "authors": authors,
         "dates": dates,
     }

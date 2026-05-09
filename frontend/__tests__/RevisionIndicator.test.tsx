@@ -170,6 +170,56 @@ describe("<RevisionIndicator>", () => {
         expect(title).not.toContain("moves to")
     })
 
+    // ── TMX-3702-counts: per-type revision count display ─────────────
+
+    it("shows '· N changes' when total count is at least 2", () => {
+        render(
+            <RevisionIndicator
+                revisions={baseRevisions({
+                    has_insertions: true,
+                    has_deletions: true,
+                    n_insertions: 3,
+                    n_deletions: 2,
+                    authors: ["Dr. Reviewer"],
+                    dates: ["2026-04-01T10:00:00Z"],
+                })}
+            />
+        )
+        // 3 + 2 = 5 changes; reviewer-facing language is "changes" not "marks"
+        expect(screen.getByText(/5 changes/)).toBeInTheDocument()
+    })
+
+    it("hides the changes count when total is exactly 1 (avoids cluttering single-edit pills)", () => {
+        render(
+            <RevisionIndicator
+                revisions={baseRevisions({
+                    has_insertions: true,
+                    n_insertions: 1,
+                    n_deletions: 0,
+                    n_moves_from: 0,
+                    n_moves_to: 0,
+                    authors: ["A"],
+                    dates: ["2026-04-01T10:00:00Z"],
+                })}
+            />
+        )
+        expect(screen.queryByText(/changes/)).not.toBeInTheDocument()
+    })
+
+    it("hides the changes count when count fields are absent (back-compat with older payload)", () => {
+        // Older backend payloads don't include n_* keys at all.
+        render(
+            <RevisionIndicator
+                revisions={baseRevisions({
+                    has_insertions: true,
+                    authors: ["A"],
+                    dates: ["2026-04-01T10:00:00Z"],
+                })}
+            />
+        )
+        expect(screen.queryByText(/changes/)).not.toBeInTheDocument()
+    })
+
     it("uses the role='note' aria semantics", () => {
         render(
             <RevisionIndicator
