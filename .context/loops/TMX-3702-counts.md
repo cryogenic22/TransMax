@@ -1,6 +1,6 @@
 # TMX-3702-counts — per-type revision counts (backend + UI)
 
-**State**: `[Done]` pending push
+**State**: `[Done]` — shipped 9f379a6 (design-system fixture + e2e count assertion). Builds on 6f6fb0a (counts wire shape + UI threshold).
 **Owner**: Document Pipeline + Reviewer Frontend pods (Antigravity / Pod B)
 **Sprint**: 2
 **Started**: 2026-05-09
@@ -108,7 +108,8 @@ One iteration: the api.ts Edit didn't apply on the first attempt (the function I
 - [x] Backend pytest: 758/758 (was 756, +2).
 - [x] Frontend vitest: 85/85 (was 82, +3).
 - [x] Lint / typecheck / build all green.
-- [ ] Commit + push (next).
+- [x] Commit shipped (6f6fb0a counts; 9f379a6 demo + e2e assertion).
+- [ ] Push to remote (deferred to next push window — local-only by design).
 
 ---
 
@@ -117,3 +118,4 @@ One iteration: the api.ts Edit didn't apply on the first attempt (the function I
 | When (UTC) | From | To | Note |
 |---|---|---|---|
 | 2026-05-09T22:00Z | — | `[Spec]` | Loop opened — TMX-3702-counts |
+| 2026-05-09T23:55Z | `[Code]` | `[Done]` | Demo fixture + 2nd e2e (count threshold) shipped 9f379a6; both Playwright tests GREEN. |
