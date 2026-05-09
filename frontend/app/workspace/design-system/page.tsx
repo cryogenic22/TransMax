@@ -15,6 +15,42 @@ import {
   type ActivityEvent,
 } from "@/components/ui/ActivityFeed"
 import { DefectTrace } from "@/components/ui/DefectTrace"
+import { RevisionIndicator } from "@/components/ui/RevisionIndicator"
+import type { SegmentRevisions } from "@/lib/api"
+
+// TMX-3702-demo: fixtures for the RevisionIndicator showcase.
+const REVISION_FIXTURES: Array<{ caption: string; revisions: SegmentRevisions }> = [
+  {
+    caption: "Single-author insertion (the most common pharma case — author tweaks dosing).",
+    revisions: {
+      has_insertions: true,
+      has_deletions: false,
+      has_moves: false,
+      authors: ["Dr. Reviewer"],
+      dates: ["2026-04-01T10:00:00Z"],
+    },
+  },
+  {
+    caption: "Multi-author with both insertions and deletions; latest date wins for the headline.",
+    revisions: {
+      has_insertions: true,
+      has_deletions: true,
+      has_moves: false,
+      authors: ["Auditor", "QC Lead"],
+      dates: ["2026-04-02T11:00:00Z", "2026-04-08T16:30:00Z"],
+    },
+  },
+  {
+    caption: "Move-only (w:moveFrom / w:moveTo) with anonymous authoring — indicator still shows.",
+    revisions: {
+      has_insertions: false,
+      has_deletions: false,
+      has_moves: true,
+      authors: [],
+      dates: ["2026-04-05T09:00:00Z"],
+    },
+  },
+]
 
 const ALL_STATES: LifecycleStatus[] = [
   "pending",
@@ -256,6 +292,33 @@ export default function WorkspaceDesignSystemPage() {
             rule: "EDQM_SAE_ES",
           }}
         />
+      </section>
+
+      {/* RevisionIndicator — DOCX tracked-changes pill (TMX-3702-v1). */}
+      <section className="space-y-3" aria-labelledby="revision-indicator-heading">
+        <h2 id="revision-indicator-heading" className="text-lg font-semibold">
+          Revision Indicator
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Surfaces DOCX tracked-change provenance on segment rows whose source
+          carried <code>&lt;w:ins&gt;</code> / <code>&lt;w:del&gt;</code> /{" "}
+          <code>&lt;w:moveFrom&gt;</code> / <code>&lt;w:moveTo&gt;</code>{" "}
+          marks. Captured at ingestion (TMX-3700) and persisted in{" "}
+          <code>Segment.element_meta.revisions</code>. Hover the pill for the
+          full author + date list. A1 audit-by-default, made visible to the
+          reviewer.
+        </p>
+        <ul className="space-y-3">
+          {REVISION_FIXTURES.map(({ caption, revisions }, idx) => (
+            <li
+              key={idx}
+              className="rounded-lg border bg-card p-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <p className="text-xs text-muted-foreground sm:max-w-md">{caption}</p>
+              <RevisionIndicator revisions={revisions} />
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* Composition — show the three patterns together as they would be
