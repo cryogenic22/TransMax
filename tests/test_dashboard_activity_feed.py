@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.core.database import SessionLocal
-from app.models.database import DEFAULT_ORG_ID
+from app.models.database import DEFAULT_ORG_ID, Document
 from app.models.models import AuditRecord, AuditLogEntry
 
 
@@ -139,3 +139,95 @@ def test_agent_activity_unknown_audit_returns_empty():
     res = client.get(f"/api/dashboard/agent-activity/{uuid.uuid4()}")
     assert res.status_code == 200
     assert res.json()["activities"] == []
+
+
+# ── target resolution: audit_id → document name (TMX-3603-wire-deeper) ──
+
+
+@pytest.fixture
+def seeded_audit_with_doc():
+    """Seed: 1 Document + 1 AuditRecord + JOB_STARTED entry referencing it."""
+    audit_id = str(uuid.uuid4())
+    job_id = str(uuid.uuid4())
+    doc_id = f"doc-test-{uuid.uuid4()}"
+    now = datetime.now(timezone.utc)
+    session = SessionLocal()
+    try:
+        doc = Document(
+            id=doc_id,
+            organization_id=DEFAULT_ORG_ID,
+            name="Cardivex SmPC v2.1",
+            file_type="docx",
+            status="translated",
+            source_language="en",
+            target_language="de",
+            created_at=now,
+            updated_at=now,
+        )
+        rec = AuditRecord(
+            audit_id=audit_id,
+            organization_id=DEFAULT_ORG_ID,
+            job_id=job_id,
+            created_at=now,
+        )
+        session.add_all([doc, rec])
+        session.flush()
+        session.add(AuditLogEntry(
+            entry_id=str(uuid.uuid4()),
+            organization_id=DEFAULT_ORG_ID,
+            audit_id=audit_id,
+            sequence_index=0,
+            event_type="JOB_STARTED",
+            payload={"doc_id": doc_id, "timestamp": now.isoformat()},
+            entry_hash="hash-0",
+            timestamp=now,
+        ))
+        session.add(AuditLogEntry(
+            entry_id=str(uuid.uuid4()),
+            organization_id=DEFAULT_ORG_ID,
+            audit_id=audit_id,
+            sequence_index=1,
+            event_type="TRANSLATION_GENERATED",
+            payload={},
+            entry_hash="hash-1",
+            timestamp=now + timedelta(seconds=1),
+        ))
+        session.commit()
+        yield {"audit_id": audit_id, "doc_id": doc_id, "doc_name": "Cardivex SmPC v2.1"}
+    finally:
+        session.query(AuditLogEntry).filter(AuditLogEntry.audit_id == audit_id).delete()
+        session.query(AuditRecord).filter(AuditRecord.audit_id == audit_id).delete()
+        session.query(Document).filter(Document.id == doc_id).delete()
+        session.commit()
+        session.close()
+
+
+def test_activity_feed_resolves_audit_to_doc_name(seeded_audit_with_doc):
+    """The TRANSLATION_GENERATED entry should have target = doc name, not 'audit <8>'."""
+    res = client.get("/api/dashboard/activity-feed?limit=50")
+    items = res.json()["items"]
+    translator_events = [
+        i for i in items
+        if i["actor"]["id"] == "translator"
+    ]
+    # The seeded TRANSLATION_GENERATED event should now name the doc.
+    matching = [
+        e for e in translator_events
+        if e["target"] == seeded_audit_with_doc["doc_name"]
+    ]
+    assert matching, (
+        f"expected target='{seeded_audit_with_doc['doc_name']}' on translator event; "
+        f"got: {[e['target'] for e in translator_events]!r}"
+    )
+
+
+def test_activity_feed_falls_back_to_short_audit_id_when_no_doc(seeded_audit):
+    """seeded_audit has NO Document — feed should fall back to 'audit <8-char>'."""
+    res = client.get("/api/dashboard/activity-feed?limit=50")
+    items = res.json()["items"]
+    short_id = seeded_audit["audit_id"][:8]
+    matching = [i for i in items if i["target"] == f"audit {short_id}"]
+    assert matching, (
+        f"expected target='audit {short_id}' fallback on un-doc'd audit chain; "
+        f"got: {[i['target'] for i in items]!r}"
+    )

@@ -64,6 +64,57 @@ def _map_log_entry_to_activity_event(entry: AuditLogEntry, target_label: str | N
     }
 
 
+def _resolve_audit_id_to_doc_name(
+    db: Session,
+    audit_ids: set[str],
+) -> dict[str, str]:
+    """
+    Resolve a set of audit_ids to human-readable document names.
+
+    Mechanism (TMX-3603-wire-deeper):
+      1. Each audit chain's JOB_STARTED log entry carries the doc_id in
+         its payload — the LangGraph writes it there at chain creation
+         (app/agents/graph.py:151).
+      2. We pull every JOB_STARTED entry for the requested audit_ids in
+         a single query, then look up the Document.name for each doc_id.
+      3. Returns { audit_id: doc_name }. audit_ids with no JOB_STARTED
+         entry, or a JOB_STARTED entry that lacks a doc_id, or a doc_id
+         that doesn't resolve to a Document, are absent from the map —
+         the caller falls back to its short-id format.
+
+    Two queries total regardless of input size (no N+1).
+    """
+    if not audit_ids:
+        return {}
+    starts = (
+        db.query(AuditLogEntry)
+        .filter(
+            AuditLogEntry.audit_id.in_(audit_ids),
+            AuditLogEntry.event_type == "JOB_STARTED",
+        )
+        .all()
+    )
+    audit_to_doc_id: dict[str, str] = {}
+    for s in starts:
+        payload = s.payload or {}
+        doc_id = payload.get("doc_id") if isinstance(payload, dict) else None
+        if isinstance(doc_id, str) and s.audit_id:
+            audit_to_doc_id[s.audit_id] = doc_id
+    if not audit_to_doc_id:
+        return {}
+    rows = (
+        db.query(Document.id, Document.name)
+        .filter(Document.id.in_(set(audit_to_doc_id.values())))
+        .all()
+    )
+    doc_name_by_id: dict[str, str] = {row[0]: row[1] for row in rows}
+    return {
+        audit_id: doc_name_by_id[doc_id]
+        for audit_id, doc_id in audit_to_doc_id.items()
+        if doc_id in doc_name_by_id
+    }
+
+
 @router.get("/activity-feed")
 def get_activity_feed(
     limit: int = 25,
@@ -75,9 +126,9 @@ def get_activity_feed(
 
     Source: `audit_log_entries` rows ordered by timestamp DESC. Each entry
     is the per-event tamper-evident log written by AuditService.log_event.
-    A future ticket (TMX-3603-richtarget) will resolve `audit_id` →
-    document name through TranslationJobQueue.request_json; for now the
-    target falls back to `audit <8-char>` so the feed shape is stable.
+    Audit chains are resolved to human-readable document names via
+    `_resolve_audit_id_to_doc_name` (TMX-3603-wire-deeper); chains with
+    no resolvable doc fall back to the short audit-id format.
     """
     cap = max(1, min(limit, 100))
     entries = (
@@ -87,7 +138,16 @@ def get_activity_feed(
         .all()
     )
 
-    items = [_map_log_entry_to_activity_event(e, None) for e in entries]
+    audit_ids = {e.audit_id for e in entries if e.audit_id}
+    doc_name_by_audit = _resolve_audit_id_to_doc_name(db, audit_ids)
+
+    items = [
+        _map_log_entry_to_activity_event(
+            e,
+            doc_name_by_audit.get(e.audit_id) if e.audit_id else None,
+        )
+        for e in entries
+    ]
     return {"items": items, "total": len(items)}
 
 
