@@ -89,15 +89,22 @@ export default function ReviewPage() {
 
                 if (cancelled) return
 
-                const mappedSegments: Segment[] = backendSegments.map((s: any, i: number) => ({
+                interface RawSegment {
+                    id?: string; block_id?: string
+                    source_text?: string; content?: string; text?: string
+                    target_text?: string; draft_text?: string; translated_text?: string
+                    confidence?: number
+                    defects?: Array<{ category?: string; severity?: string; message?: string; description?: string }>
+                }
+                const mappedSegments: Segment[] = (backendSegments as RawSegment[]).map((s, i) => ({
                     id: s.id || s.block_id || `seg-${i}`,
                     source_text: s.source_text || s.content || s.text || '',
                     target_text: s.target_text || s.draft_text || s.translated_text || '',
                     confidence: typeof s.confidence === 'number' ? s.confidence : 0,
-                    status: s.defects?.length > 0 ? 'review_required' : 'approved',
-                    violations: (s.defects || []).map((d: any) => ({
+                    status: (s.defects?.length ?? 0) > 0 ? 'review_required' : 'approved',
+                    violations: (s.defects || []).map(d => ({
                         category: d.category || 'quality',
-                        severity: d.severity || 'major',
+                        severity: (d.severity || 'major') as Violation["severity"],
                         message: d.message || d.description || 'Quality issue detected'
                     }))
                 }))

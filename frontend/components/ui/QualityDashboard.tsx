@@ -203,7 +203,12 @@ export function QualityDashboard({ metrics, sourceText }: QualityDashboardProps)
     )
 }
 
-function ScoreItem({ label, score, theme }: { label: string, score: number, theme: any }) {
+interface ScoreTheme {
+    bar: string
+    text: string
+    bg: string
+}
+function ScoreItem({ label, score, theme }: { label: string, score: number, theme: ScoreTheme }) {
     return (
         <div className="p-3 bg-white/80 rounded-lg border border-black/5 shadow-sm">
             <div className="flex justify-between items-end mb-2">

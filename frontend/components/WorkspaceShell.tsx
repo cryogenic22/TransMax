@@ -11,7 +11,7 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
     useEffect(() => {
         api.documents.list(1, 10).then(docs => {
             setRecentDocuments(
-                docs.items.map((doc: any) => ({
+                docs.items.map(doc => ({
                     id: doc.id,
                     name: doc.name || "Untitled",
                     status: doc.status || "uploaded"
@@ -27,7 +27,7 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
         const onFocus = () => {
             api.documents.list(1, 10).then(docs => {
                 setRecentDocuments(
-                    docs.items.map((doc: any) => ({
+                    docs.items.map(doc => ({
                         id: doc.id,
                         name: doc.name || "Untitled",
                         status: doc.status || "uploaded"

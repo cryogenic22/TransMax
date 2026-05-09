@@ -76,14 +76,15 @@ export default function DocumentReviewPage() {
                 const allViolations = segs.flatMap((s: Segment) => s.gate_results?.violations || [])
                 const withIssues = segs.filter((s: Segment) => (s.gate_results?.violations?.length || 0) > 0)
 
-                // Count violations by category
-                const terminologyIssues = allViolations.filter((v: any) => v.category === 'terminology_violation').length
-                const negationIssues = allViolations.filter((v: any) => v.category === 'negation_error' || v.severity === 'critical').length
-                const unitIssues = allViolations.filter((v: any) => v.category === 'unit_mismatch').length
-                const medicalIssues = allViolations.filter((v: any) => v.category === 'medical_inaccuracy').length
+                // Count violations by category — Violation shape is inferred
+                // from Segment.gate_results.violations (lib/api.ts).
+                const terminologyIssues = allViolations.filter(v => v.category === 'terminology_violation').length
+                const negationIssues = allViolations.filter(v => v.category === 'negation_error' || v.severity === 'critical').length
+                const unitIssues = allViolations.filter(v => v.category === 'unit_mismatch').length
+                const medicalIssues = allViolations.filter(v => v.category === 'medical_inaccuracy').length
 
-                // Check for critical issues 
-                const criticalIssues = allViolations.filter((v: any) => v.severity === 'critical').length
+                // Check for critical issues
+                const criticalIssues = allViolations.filter(v => v.severity === 'critical').length
 
                 // Determine status
                 let status: "PASSED" | "REVIEW_REQUIRED" | "BLOCKED" = "PASSED"
@@ -120,10 +121,10 @@ export default function DocumentReviewPage() {
     // Get defects from segments
     const defects: Defect[] = segments.flatMap(seg => {
         const violations = seg.gate_results?.violations || []
-        return violations.map((v: any) => ({
+        return violations.map(v => ({
             segment_id: seg.id,
             category: v.category || "Unknown",
-            severity: v.severity || "minor",
+            severity: (v.severity as Defect["severity"]) || "minor",
             message: v.message || "Issue detected",
             suggestion: v.suggestion
         }))

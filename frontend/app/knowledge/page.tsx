@@ -374,7 +374,12 @@ function RuleFormModal({ rule, onClose, onSaved }: { rule: Rule | null; onClose:
     })
     const [testSource, setTestSource] = useState("")
     const [testTarget, setTestTarget] = useState("")
-    const [testResult, setTestResult] = useState<any>(null)
+    const [testResult, setTestResult] = useState<{
+        would_fire?: boolean
+        suggested_action?: string
+        source_matches?: unknown[]
+        target_has_correction?: boolean
+    } | null>(null)
     const [saving, setSaving] = useState(false)
     const [testing, setTesting] = useState(false)
     const [error, setError] = useState("")
@@ -517,7 +522,7 @@ function RuleFormModal({ rule, onClose, onSaved }: { rule: Rule | null; onClose:
                         {testResult && (
                             <div className={`mt-3 p-3 rounded-lg text-sm ${testResult.would_fire ? "bg-amber-50 border border-amber-200 text-amber-800" : "bg-green-50 border border-green-200 text-green-800"}`}>
                                 <strong>{testResult.suggested_action}:</strong> Rule would {testResult.would_fire ? "fire" : "not fire"}.
-                                {testResult.source_matches?.length > 0 && <span> Found {testResult.source_matches.length} match(es) in source.</span>}
+                                {(testResult.source_matches?.length ?? 0) > 0 && <span> Found {testResult.source_matches?.length} match(es) in source.</span>}
                                 {testResult.target_has_correction && <span> Target already contains correction.</span>}
                             </div>
                         )}

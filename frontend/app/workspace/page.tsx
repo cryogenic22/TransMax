@@ -17,8 +17,13 @@ export default function TrustedTranslatePage() {
     const [loading, setLoading] = useState(false)
 
     // Result State
-    const [segments, setSegments] = useState<any[]>([])
-    const [resultMeta, setResultMeta] = useState<any>(null)
+    const [segments, setSegments] = useState<Array<{ source: string; target: string }>>([])
+    const [resultMeta, setResultMeta] = useState<{
+        confidence?: number
+        band?: string
+        score_breakdown?: unknown
+        recommendations?: string[]
+    } | null>(null)
     const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
     const [viewMode, setViewMode] = useState<'edit' | 'read'>('edit')
 
@@ -248,10 +253,10 @@ export default function TrustedTranslatePage() {
                     >
                         <QualityDashboard
                             metrics={{
-                                confidence: resultMeta.confidence,
-                                accuracy: resultMeta.confidence > 90 ? 98 : 85, // Mocked breakdown if not in API
-                                fluency: resultMeta.confidence > 90 ? 95 : 88,
-                                terminology: resultMeta.confidence > 90 ? 100 : 92,
+                                confidence: (resultMeta.confidence ?? 0),
+                                accuracy: (resultMeta.confidence ?? 0) > 90 ? 98 : 85, // Mocked breakdown if not in API
+                                fluency: (resultMeta.confidence ?? 0) > 90 ? 95 : 88,
+                                terminology: (resultMeta.confidence ?? 0) > 90 ? 100 : 92,
                                 formatting: 100
                             }}
                             sourceText={source}

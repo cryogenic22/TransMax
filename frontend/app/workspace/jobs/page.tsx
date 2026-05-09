@@ -23,7 +23,13 @@ interface EnrichedJob {
     translated_count: number
     quality_status?: string
     confidence_score?: number
-    score_breakdown?: any
+    score_breakdown?: {
+        base?: number
+        deterministic_penalty?: number
+        semantic_penalty?: number
+        structural_penalty?: number
+        process_penalty?: number
+    }
     created_at: string
     completed_at?: string
     duration?: string
@@ -66,7 +72,7 @@ export default function JobsPage() {
                     try {
                         const segments = await api.segments.list(doc.id)
                         segmentCount = segments.length
-                        translatedCount = segments.filter((s: any) => s.translated_text).length
+                        translatedCount = segments.filter(s => s.translated_text).length
                     } catch {
                         // Ignore segment fetch errors
                     }
@@ -97,7 +103,7 @@ export default function JobsPage() {
                     translated_count: translatedCount,
                     quality_status: doc.status === 'in_review' ? 'review_required' : 'passed',
                     confidence_score: doc.confidence_score,
-                    score_breakdown: (doc as any).score_breakdown,
+                    score_breakdown: (doc as Document & { score_breakdown?: EnrichedJob["score_breakdown"] }).score_breakdown,
                     created_at: doc.created_at,
                     completed_at: doc.updated_at
                 }
