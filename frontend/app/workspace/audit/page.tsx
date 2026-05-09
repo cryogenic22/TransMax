@@ -13,7 +13,7 @@ export default function AuditPage() {
         try {
             const data = await api.audit.list({ limit: 50 })
             setLogs(data)
-        } catch (err) {
+        } catch {
             setLogs([])
         } finally {
             setLoading(false)

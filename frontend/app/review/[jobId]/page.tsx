@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
-import { motion } from "framer-motion"
 import {
     ArrowLeft,
     Check,
@@ -12,7 +11,6 @@ import {
     CheckCircle,
     Download,
     Globe,
-    ChevronDown,
     Save
 } from "lucide-react"
 
@@ -59,8 +57,8 @@ export default function ReviewPage() {
     const [filter, setFilter] = useState<'all' | 'issues'>('all')
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editText, setEditText] = useState("")
-    const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    const [, setIsLoading] = useState(true)
+    const [, setError] = useState<string | null>(null)
 
     // Fetch real segments from backend API.
     // TMX-3004: explicit error states; never fall back to mock data.

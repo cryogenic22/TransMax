@@ -1,13 +1,11 @@
 import type { Metadata } from "next"
 import "./workspace.css"
-import TopNavigation from "@/components/TopNavigation"
+import WorkspaceShell from "@/components/WorkspaceShell"
 
 export const metadata: Metadata = {
     title: "Workspace | TransMax",
     description: "Professional pharmaceutical translation workspace",
 }
-
-import WorkspaceShell from "@/components/WorkspaceShell"
 
 export default function WorkspaceLayout({
     children,

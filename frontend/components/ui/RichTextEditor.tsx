@@ -1,6 +1,5 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import Link from '@tiptap/extension-link'
 import { Table } from '@tiptap/extension-table'
 import TableRow from '@tiptap/extension-table-row'
 import TableCell from '@tiptap/extension-table-cell'
@@ -69,7 +68,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
     )
 }
 
-export function RichTextEditor({ value, onChange, editable = true, placeholder, className }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, editable = true, placeholder: _placeholder, className }: RichTextEditorProps) {
     const editor = useEditor({
         extensions: [
             StarterKit,

@@ -2,21 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { StatusBadge } from "@/components/ui/StatusBadge"
-import {
-    FileText, Upload, Search, Clock, CheckCircle,
-    AlertCircle, Loader2, ArrowRight, X, ShieldCheck
-} from "lucide-react"
-
-// Strict API Types
-interface JobProfileRequest {
-    archetype: string
-    tier: string
-    modality: string
-}
+import { Clock, ArrowRight, ShieldCheck } from "lucide-react"
 
 interface JobResponse {
     job_id: string
@@ -30,7 +19,6 @@ const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001") + 
 export default function DashboardPage() {
     const router = useRouter()
     const [jobs, setJobs] = useState<JobResponse[]>([])
-    const [searchQuery, setSearchQuery] = useState("")
     const [isLoading, setIsLoading] = useState(true)
 
     // Stats

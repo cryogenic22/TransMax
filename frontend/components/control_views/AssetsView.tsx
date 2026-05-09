@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect } from "react"
-import { BookOpen, ArrowRight, RefreshCw } from "lucide-react"
+import { BookOpen, ArrowRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { api } from "@/lib/api"
 

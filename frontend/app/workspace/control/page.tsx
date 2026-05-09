@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState, Suspense } from 'react'
+import React, { Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { LayoutDashboard, List, ShieldCheck, Book, Building2 } from 'lucide-react'
 import { DashboardView } from '@/components/control_views/DashboardView'

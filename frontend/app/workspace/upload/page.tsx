@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react"
 import {
     Upload, FileText, Languages, CheckCircle2, Download,
     ArrowLeft, Loader2, AlertCircle, X, ArrowLeftRight,
-    RotateCcw, ExternalLink, Info
+    RotateCcw, ExternalLink
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -743,7 +743,7 @@ export default function TranslateDocumentPage() {
                             overflowY: "auto",
                             padding: "0"
                         }}>
-                            {segments.filter(s => s.translated_text).slice(0, 20).map((seg, idx) => (
+                            {segments.filter(s => s.translated_text).slice(0, 20).map((seg) => (
                                 <div key={seg.id} style={{
                                     padding: "1rem 1.5rem",
                                     borderBottom: "1px solid #f5f5f5",
