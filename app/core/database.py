@@ -89,6 +89,7 @@ def init_db():
     import app.models.database  # noqa: F401
     import app.models.auth  # noqa: F401
     import app.models.audit  # noqa: F401
+    import app.models.audit_v2  # noqa: F401  (TMX-3100)
     import app.models.translation  # noqa: F401
     import app.models.models  # noqa: F401
     from app.models.database import Base
