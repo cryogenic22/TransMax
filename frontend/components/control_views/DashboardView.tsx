@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from 'react'
 import { ArrowUpRight, CheckCircle2, Clock, FileText, Inbox, TrendingUp, Loader2, WifiOff, RefreshCw, Coins, Zap } from 'lucide-react'
 import { api } from '@/lib/api'
+import { ActivityFeed } from '@/components/ui/ActivityFeed'
+import { useActivityFeed } from '@/hooks/useActivity'
 
 interface DashboardStats {
     total_documents: number
@@ -14,30 +16,21 @@ interface DashboardStats {
     total_cost_usd: number
 }
 
-interface ActivityItem {
-    id: string
-    title: string
-    desc: string
-    status: string
-    priority: string
-    target_language: string
-    updated_at: string | null
-}
-
 export function DashboardView() {
     const [stats, setStats] = useState<DashboardStats | null>(null)
-    const [activity, setActivity] = useState<ActivityItem[]>([])
     const [loading, setLoading] = useState(true)
+    // TMX-3603-dashboard: replaced the bespoke ActivityItem polling with the
+    // shared useActivityFeed hook (TMX-3603-wire). The feed renders via the
+    // <ActivityFeed> design-system component, surfacing the audit chain
+    // event stream rather than a hand-rolled task list — see rescape
+    // designer review §Dashboard.
+    const { data: feedItems, error: feedError } = useActivityFeed(15)
 
     useEffect(() => {
         const load = async () => {
             try {
-                const [s, a] = await Promise.all([
-                    api.dashboard.stats().catch(() => null),
-                    api.dashboard.activity(5).catch(() => []),
-                ])
+                const s = await api.dashboard.stats().catch(() => null)
                 setStats(s)
-                setActivity(a)
             } finally {
                 setLoading(false)
             }
@@ -114,35 +107,28 @@ export function DashboardView() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Inbox */}
-                <div className="col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-                    <div className="flex items-center justify-between mb-6">
+                {/* Activity Feed — TMX-3603-dashboard: the audit chain event
+                    stream as the dashboard hero, replacing the hand-rolled
+                    "Pending: 0 / Active: 0" stat cards (rescape Direction 2). */}
+                <div className="col-span-2 space-y-3">
+                    <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Inbox size={20} className="text-slate-400" />
                             <h2 className="text-lg font-bold text-slate-800">Recent Activity</h2>
                         </div>
-                        {activity.length > 0 && (
+                        {feedItems && feedItems.length > 0 && (
                             <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
-                                {activity.length} Items
+                                {feedItems.length} events
                             </span>
                         )}
                     </div>
-
-                    <div className="space-y-4">
-                        {activity.length === 0 ? (
-                            <p className="text-sm text-slate-400 py-4 text-center">No recent activity</p>
-                        ) : (
-                            activity.map((item) => (
-                                <TaskItem
-                                    key={item.id}
-                                    title={item.title}
-                                    desc={item.desc}
-                                    time={item.updated_at ? timeAgo(item.updated_at) : "—"}
-                                    priority={item.priority}
-                                />
-                            ))
-                        )}
-                    </div>
+                    {feedError ? (
+                        <div className="rounded-lg border bg-amber-50 border-amber-200 p-4 text-sm text-amber-800">
+                            Activity feed temporarily unavailable: {feedError.message}
+                        </div>
+                    ) : (
+                        <ActivityFeed items={feedItems ?? []} />
+                    )}
                 </div>
 
                 {/* Summary panel */}
@@ -179,22 +165,6 @@ function KPICard({ title, value, change, icon }: { title: string; value: string;
     )
 }
 
-function TaskItem({ title, desc, time, priority }: { title: string; desc: string; time: string; priority: string }) {
-    return (
-        <div className="flex items-start gap-4 p-3 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-slate-100">
-            <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${priority === 'High' ? 'bg-red-500' : priority === 'Medium' ? 'bg-orange-500' : 'bg-blue-500'
-                }`} />
-            <div className="flex-1">
-                <div className="flex justify-between items-start">
-                    <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
-                    <span className="text-xs text-slate-400 whitespace-nowrap">{time}</span>
-                </div>
-                <p className="text-sm text-slate-500 mt-1">{desc}</p>
-            </div>
-        </div>
-    )
-}
-
 function HealthRow({ label, status, detail }: { label: string; status: "ok" | "error"; detail?: string }) {
     return (
         <div className="flex items-center justify-between">
@@ -205,15 +175,4 @@ function HealthRow({ label, status, detail }: { label: string; status: "ok" | "e
             </div>
         </div>
     )
-}
-
-function timeAgo(isoString: string): string {
-    const diff = Date.now() - new Date(isoString).getTime()
-    const mins = Math.floor(diff / 60000)
-    if (mins < 1) return "just now"
-    if (mins < 60) return `${mins}m ago`
-    const hours = Math.floor(mins / 60)
-    if (hours < 24) return `${hours}h ago`
-    const days = Math.floor(hours / 24)
-    return `${days}d ago`
 }
