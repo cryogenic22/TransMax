@@ -1,4 +1,5 @@
 
+import threading
 from typing import Dict, List, Any, Optional
 from dataclasses import asdict
 from app.core.defect_taxonomy import TaxonomyService, Defect, DefectSeverity, DefectCategory
@@ -8,20 +9,49 @@ class QualityGateService:
     """
     Deterministically checks segments against constraints.
     Returns list of Defect objects (v3.0) serialized as dicts.
+
+    Thread-safety (TMX-3053 / audit C-08): both the singleton ``__new__`` /
+    ``__init__`` guards and the lazy ``_lang_packs`` cache are protected by
+    ``_singleton_lock`` (class-level) and ``_lang_pack_lock`` (instance-level).
+    The classic double-checked-locking pattern is used: a fast no-lock check
+    on the hot path, then re-check under the lock before doing the work.
     """
     _instance = None
     _initialized = False
-    
+    _singleton_lock = threading.Lock()
+
     def __new__(cls):
+        # Double-checked locking: fast path avoids contending the lock once
+        # the singleton is constructed; slow path holds the lock to guarantee
+        # exactly-one allocation under concurrent first-touch.
         if cls._instance is None:
-            cls._instance = super(QualityGateService, cls).__new__(cls)
+            with cls._singleton_lock:
+                if cls._instance is None:
+                    cls._instance = super(QualityGateService, cls).__new__(cls)
         return cls._instance
-        
+
     def __init__(self):
+        # Same double-checked-locking shape for the init body. Without the
+        # lock, two threads can both observe `_initialized=False`, both run
+        # the body, and a partially-initialised instance can leak to the
+        # second thread's caller.
         if self._initialized:
             return
+        with type(self)._singleton_lock:
+            if self._initialized:
+                return
+            self._populate_initial_state()
+            self._initialized = True
+
+    def _populate_initial_state(self) -> None:
+        """
+        Initialise instance state. Extracted as a hookable method so
+        thread-safety tests can count exactly-once invocation without
+        having to patch ``__init__`` (which would destroy the guard the
+        test is meant to verify).
+        """
+        self._lang_pack_lock = threading.Lock()
         self._lang_packs = {}
-        self._initialized = True
     
     def calculate_semantic_drift(self, source_text: str, back_translation: str) -> float:
         """
@@ -383,26 +413,41 @@ class QualityGateService:
         return "NEUTRAL"
     
     def _load_lang_pack(self, lang_code: str):
-        """Load and cache a language pack by language code."""
-        if lang_code in self._lang_packs:
-            return self._lang_packs[lang_code]
+        """
+        Load and cache a language pack by language code.
 
-        pack = None
-        try:
-            from app.services.language_packs.factory import LanguagePackFactory
-            pack = LanguagePackFactory.get_pack(lang_code)
-        except Exception:
-            # Fallback to known packs
-            if lang_code == 'ja':
-                from app.services.language_packs.japanese import JapanesePack
-                pack = JapanesePack()
-            elif lang_code == 'ar':
-                from app.services.language_packs.arabic import ArabicPack
-                pack = ArabicPack()
+        Thread-safety (TMX-3053 / audit C-08): the lazy cache write is
+        protected by ``_lang_pack_lock`` using double-checked locking. The
+        fast path is a lock-free dict read (CPython dict reads of a single
+        key are atomic under the GIL); the slow path serialises load work
+        so two threads never both call ``LanguagePackFactory.get_pack`` for
+        the same language.
+        """
+        cached = self._lang_packs.get(lang_code)
+        if cached is not None:
+            return cached
 
-        if pack:
-            self._lang_packs[lang_code] = pack
-        return pack
+        with self._lang_pack_lock:
+            cached = self._lang_packs.get(lang_code)
+            if cached is not None:
+                return cached
+
+            pack = None
+            try:
+                from app.services.language_packs.factory import LanguagePackFactory
+                pack = LanguagePackFactory.get_pack(lang_code)
+            except Exception:
+                # Fallback to known packs
+                if lang_code == 'ja':
+                    from app.services.language_packs.japanese import JapanesePack
+                    pack = JapanesePack()
+                elif lang_code == 'ar':
+                    from app.services.language_packs.arabic import ArabicPack
+                    pack = ArabicPack()
+
+            if pack:
+                self._lang_packs[lang_code] = pack
+            return pack
 
     def _create_defect(self, category: DefectCategory, message: str) -> Defect:
         """Helper to create rated defect"""
@@ -705,13 +750,25 @@ class QualityGateService:
 
         return defects
 
-_gate_service_instance = None
+_gate_service_instance: Optional[QualityGateService] = None
+_accessor_lock = threading.Lock()
 
 def get_quality_gate_service() -> QualityGateService:
     """
     Singleton Accessor for QualityGateService.
+
+    Thread-safety (TMX-3053 / audit C-08): module-level cache uses
+    double-checked locking. The class-level ``__new__`` already guarantees
+    exactly-one ``QualityGateService`` instance even if the accessor races,
+    but locking here keeps the module-cache coherent (no torn writes
+    visible to other threads under the Python memory model) and avoids
+    the `not <falsy-instance>` ambiguity that the original `if not _x`
+    guard exhibited.
     """
     global _gate_service_instance
-    if not _gate_service_instance:
-        _gate_service_instance = QualityGateService()
-    return _gate_service_instance
+    if _gate_service_instance is not None:
+        return _gate_service_instance
+    with _accessor_lock:
+        if _gate_service_instance is None:
+            _gate_service_instance = QualityGateService()
+        return _gate_service_instance
