@@ -67,7 +67,9 @@ function WorkspaceJobDetailInner() {
 
     // TMX-3603-jobs-id: backend resolves job_id → audit_id internally so
     // this hook delivers the AgentLanes data without knowing the audit_id.
-    const { data: agentActivities } = useAgentActivityByJob(jobId)
+    // TMX-3603-agents-err: also surface the polling error so an empty
+    // lanes panel during a 500 outage isn't read as "no agents running".
+    const { data: agentActivities, error: agentError } = useAgentActivityByJob(jobId)
 
     const fetchData = useCallback(async () => {
         // TMX-3603-jobs-id-err: A3 — never silently substitute a default for
@@ -163,10 +165,15 @@ function WorkspaceJobDetailInner() {
                     translatedCount={translatedCount}
                     reviewedCount={reviewedCount}
                     agentActivities={agentActivities ?? []}
+                    agentError={agentError}
                 />
             )}
             {mode === "translate" && (
-                <TranslateView doc={doc} agentActivities={agentActivities ?? []} />
+                <TranslateView
+                    doc={doc}
+                    agentActivities={agentActivities ?? []}
+                    agentError={agentError}
+                />
             )}
             {mode === "review" && (
                 <ReviewView segments={segments} />
@@ -201,18 +208,38 @@ function ModeTabs({ jobId: _jobId, active, onChange }: { jobId: string; active: 
     )
 }
 
+/**
+ * TMX-3603-agents-err: shared banner above AgentLanes when the
+ * agent-activity poll is failing — empty lanes during a 500 outage
+ * would otherwise look like "no agents running yet".
+ */
+function AgentErrorBanner({ error }: { error: Error | null }) {
+    if (!error) return null
+    return (
+        <div
+            role="status"
+            aria-label="Agent activity feed failed to load"
+            className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
+        >
+            <strong>Agent activity feed unavailable.</strong> {error.message}
+        </div>
+    )
+}
+
 function Overview({
     doc,
     segments,
     translatedCount,
     reviewedCount,
     agentActivities,
+    agentError,
 }: {
     doc: Document
     segments: Segment[]
     translatedCount: number
     reviewedCount: number
     agentActivities: AgentActivity[]
+    agentError: Error | null
 }) {
     return (
         <div className="space-y-6">
@@ -224,19 +251,29 @@ function Overview({
             </div>
             <section className="space-y-2">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Agents</h2>
+                <AgentErrorBanner error={agentError} />
                 <AgentLanes activities={agentActivities} />
             </section>
         </div>
     )
 }
 
-function TranslateView({ doc, agentActivities }: { doc: Document; agentActivities: AgentActivity[] }) {
+function TranslateView({
+    doc,
+    agentActivities,
+    agentError,
+}: {
+    doc: Document
+    agentActivities: AgentActivity[]
+    agentError: Error | null
+}) {
     return (
         <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
                 Live multi-agent pipeline for <strong>{doc.name}</strong>. Each lane shows the
                 in-flight or completed work from the four canonical agents.
             </p>
+            <AgentErrorBanner error={agentError} />
             <AgentLanes activities={agentActivities} />
         </div>
     )
