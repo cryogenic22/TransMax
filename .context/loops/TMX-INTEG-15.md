@@ -1,10 +1,10 @@
 # Loop 15 — Frontend ↔ Backend integration tests
 
-**State**: `[Done]` pending push
+**State**: `[Done]`
 **Owner**: Reviewer Frontend pod (Antigravity / Pod B)
 **Sprint**: 1
 **Started**: 2026-05-09
-**Closed**: 2026-05-09
+**Closed**: 2026-05-09 — commit `724b276` on origin/main (TMX-3060 backfill 2026-05-10)
 
 ---
 
@@ -106,7 +106,7 @@ One iteration: rewrote `documents.spec.ts` test to check `body.items` (the backe
 - [x] Real bug surfaced (and fixed): contract drift in DocumentListResponse shape
 - [x] All Loop 14 checks still green: vitest 21/21, mocked e2e 3/3, lint 0e/185w, typecheck clean, build 16 routes
 - [x] Backend regression-free: 716/719 (3 pre-existing flakes unchanged), ratchet 17/17
-- [ ] Commit + push (next)
+- [x] Commit: `724b276` (subject `Loop 15: frontend ↔ backend integration tests + CI`) on `origin/main` — declared explicitly here by TMX-3060 drift audit (2026-05-10) because the commit subject does not begin with the ticket id.
 
 ---
 
