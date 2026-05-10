@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import { api, Document, Segment } from "@/lib/api"
 import { getErrMessage } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface QualityScorecard {
     overall_score: number
@@ -149,7 +150,11 @@ export default function DocumentReviewPage() {
             setSegments(segs)
             setEditingSegmentId(null)
         } catch (err) {
-            console.error("Failed to save:", err)
+            // TMX-3604-save-toast: HITL corrections are audit events
+            // (A1) so a silent save failure leaves the audit chain
+            // missing the attempt. Surface the real server message;
+            // edit mode persists so the reviewer can retry.
+            toast.error(getErrMessage(err, "Failed to save segment"))
         } finally {
             setSaving(false)
         }
