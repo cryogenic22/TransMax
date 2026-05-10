@@ -8,6 +8,8 @@ import { CopyButton } from '@/components/ui/CopyButton'
 import { ConfidenceMeter } from '@/components/ui/ConfidenceMeter'
 import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import { getAllLanguages, getLanguageName } from '@/lib/languages'
+import { getErrMessage } from '@/lib/utils'
+import { toast } from 'sonner'
 
 // ─── Tool API response shapes (TMX-3614-types-extended) ───────────────────
 // Frozen to the backend contract at app/api/tools.py. If the backend shape
@@ -175,7 +177,13 @@ export function FeedbackControls({ source, target, targetLang }: { source: strin
                     rating: 'positive',
                     target_language: targetLang
                 })
-            } catch (e) { console.error(e) }
+            } catch (err) {
+                // TMX-3604-tools-toast: surface vote failures so the
+                // 👍 button doesn't pretend the rating landed when it
+                // didn't (the green-fill state already happened
+                // optimistically; the toast tells the user to try again).
+                toast.error(getErrMessage(err, "Vote failed"))
+            }
         } else {
             setStatus('down')
             setShowModal(true)
@@ -193,7 +201,12 @@ export function FeedbackControls({ source, target, targetLang }: { source: strin
             })
             setShowModal(false)
             alert("Feedback submitted to Black Book!")
-        } catch (e) { console.error(e) }
+        } catch (err) {
+            // TMX-3604-tools-toast: A1 — Black Book corrections feed
+            // the audit chain. A silent submit failure means the rule
+            // never lands. Surface the real server message.
+            toast.error(getErrMessage(err, "Couldn't submit correction"))
+        }
     }
 
     return (
@@ -275,8 +288,9 @@ function QualityAuditor({ source, setSource, trans, setTrans, tgtLang, setTgtLan
         try {
             const res = await api.tools.audit(source, trans, tgtLang)
             setReport(res as AuditReport)
-        } catch (e) {
-            console.error(e)
+        } catch (err) {
+            // TMX-3604-tools-toast: regulator-facing audit on demand.
+            toast.error(getErrMessage(err, "Quality audit failed"))
         } finally {
             setLoading(false)
         }
@@ -396,7 +410,10 @@ function BackTranslationVerifier({ text, setText, sourceRef, setSourceRef, lang,
         try {
             const res = await api.tools.backTranslate(text, lang, sourceRef || undefined)
             setResult(res)
-        } catch (e) { console.error(e) }
+        } catch (err) {
+            // TMX-3604-tools-toast.
+            toast.error(getErrMessage(err, "Back-translation failed"))
+        }
         finally { setLoading(false) }
     }
 
@@ -487,7 +504,10 @@ function TranslationMatrix({ text, setText, langs, setLangs, result, setResult, 
         try {
             const res = await api.tools.matrix(text, langs)
             setResult(res as MatrixResult)
-        } catch (e) { console.error(e) }
+        } catch (err) {
+            // TMX-3604-tools-toast.
+            toast.error(getErrMessage(err, "Translation matrix failed"))
+        }
         finally { setLoading(false) }
     }
 
