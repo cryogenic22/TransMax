@@ -334,7 +334,10 @@ export default function DocumentReviewPage() {
                                     a.remove()
                                     URL.revokeObjectURL(url)
                                 } catch (err) {
-                                    console.error("Download failed:", err)
+                                    // TMX-3604-download-toast: same fix as
+                                    // JobsView download — silent failure
+                                    // looks like a popup blocker.
+                                    toast.error(getErrMessage(err, "Download failed"))
                                 }
                             }}
                             style={{
