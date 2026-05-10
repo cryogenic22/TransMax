@@ -121,11 +121,16 @@ class AuditAnchor(TenantScopedMixin, Base):
     anchor_date = Column(Date, nullable=False)
     merkle_root = Column(LargeBinary(32), nullable=False)
     event_count = Column(BigInteger, nullable=False)
-    first_event_id = Column(GUID, nullable=False)
-    last_event_id = Column(GUID, nullable=False)
+    # TMX-3107: first/last event ids and S3 retention metadata are NULL for
+    # empty-day anchors (an org with zero events on a given date) and for
+    # backends that don't expose a version id (e.g. LocalFilesystemObjectStore).
+    # A3: empty-day anchors are an honest "no events occurred" assertion, not
+    # a sentinel-padded silent fallback.
+    first_event_id = Column(GUID, nullable=True)
+    last_event_id = Column(GUID, nullable=True)
     s3_object_uri = Column(String, nullable=False)
-    s3_version_id = Column(String, nullable=False)
-    s3_object_lock_until = Column(DateTime(timezone=True), nullable=False)
+    s3_version_id = Column(String, nullable=True)
+    s3_object_lock_until = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,
