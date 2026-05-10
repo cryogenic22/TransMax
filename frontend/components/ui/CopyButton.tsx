@@ -1,6 +1,8 @@
 "use client"
 import React, { useState } from 'react'
 import { Copy, Check } from 'lucide-react'
+import { toast } from 'sonner'
+import { getErrMessage } from '@/lib/utils'
 
 export function CopyButton({ text }: { text: string }) {
     const [copied, setCopied] = useState(false)
@@ -12,7 +14,10 @@ export function CopyButton({ text }: { text: string }) {
             setCopied(true)
             setTimeout(() => setCopied(false), 2000)
         } catch (err) {
-            console.error('Failed to copy!', err)
+            // TMX-3604-copy-toast: clipboard rejections (HTTP context,
+            // denied perms, sandboxed iframe) used to leave the icon
+            // grey with no feedback. Toast surfaces the real reason.
+            toast.error(getErrMessage(err, "Couldn't copy to clipboard"))
         }
     }
 
