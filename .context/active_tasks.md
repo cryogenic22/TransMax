@@ -55,6 +55,7 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 | TMX-3702-a11y | Dynamic aria-label on RevisionIndicator (direction + magnitude) | Frontend | XS | 2 — **[Done, pending commit + push]** — see `.context/loops/TMX-3702-a11y.md` |
 | TMX-3603-jobs-id-err | Surface real fetch errors on workspace jobs page (A3 fix) | Frontend | XS | 2 — **[Done, pending commit + push]** — see `.context/loops/TMX-3603-jobs-id-err.md` |
 | TMX-3604-assets-err | Surface real fetch errors in Trust Center Assets view (A3 fix) | Frontend | XS | 2 — **[Done, pending commit + push]** — see `.context/loops/TMX-3604-assets-err.md` |
+| TMX-3705-glossary-err | Surface glossary fetch failures in upload form (A3 fix) — NB: prefix collides with parent TMX-3705 (Pipeline / file-type sniffing); this is a Frontend upload-UX sub-ticket, NOT a child of file-type sniffing | Frontend | XS | 2 — **[Done, pending commit + push]** — see `.context/loops/TMX-3705-glossary-err.md` |
 | TMX-3705 | File-type sniffing + size cap + AV scan trigger | Pipeline | M | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3705.md` |
 | TMX-3706 | Deeper DOCX vs XLSX vs PPTX disambiguation (peek inside ZIP for `[Content_Types].xml`) | Pipeline | S | 2 — **[Spawned by TMX-3705]** |
 | TMX-3707 | AV scanner integration (clamd / Cloud DLP) — wire `emit_av_scan_request` to actual scanner | Pipeline + Platform | M | 2 — **[Spawned by TMX-3705]** |
