@@ -156,8 +156,7 @@ async def register(request: RegisterRequest):
     db = SessionLocal()
     try:
         # TMX-3012c: organization_id auto-injected from request-scoped tenant
-        # context. TMX-3013 will resolve org from IdP claims (replacing the
-        # middleware fallback to DEFAULT_ORG_ID).
+        # context. TMX-3013 will resolve org from IdP claims.
         user = User(
             email=request.email,
             name=request.name,

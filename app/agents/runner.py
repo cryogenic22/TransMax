@@ -67,7 +67,7 @@ def run_pipeline_background(
     TMX-3012c: `org_id` is required and threaded into `run_pipeline_wrapper`
     so the fresh asyncio loop spawned by `asyncio.run(...)` carries the
     correct tenant context. Without this, every DB write inside the pipeline
-    would raise `TenantContextMissing` once the explicit `DEFAULT_ORG_ID`
-    literals are removed from the service layer.
+    would raise `TenantContextMissing` from the `TenantScopedMixin`
+    `before_insert` listener (A3 — no silent fallbacks).
     """
     asyncio.run(run_pipeline_wrapper(doc_id, target_lang, segment_ids, org_id=org_id))

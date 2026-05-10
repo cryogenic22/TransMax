@@ -118,7 +118,7 @@ async def _provision_sso_user(external_id: str, email: str, name: str,
         # Create new user. TMX-3012c: organization_id auto-injected from
         # request-scoped tenant context (OAuth callback runs inside the
         # TenantContextMiddleware). TMX-3013 will resolve org from IdP
-        # claims (replacing the middleware fallback to DEFAULT_ORG_ID).
+        # claims.
         user = User(
             email=email,
             name=name,
