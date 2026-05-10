@@ -14,7 +14,7 @@ from app.services.tracing import traced
 from app.services.quality_gate import QualityGateService
 from app.services.db_service import DatabaseService
 from app.services.audit_service import AuditService
-from app.services.resilience import ResilienceService
+from app.services.resilience import get_resilience_service
 from app.services.json_parser import RobustParser
 from app.services.llm import get_llm
 from app.core.config import settings
@@ -333,7 +333,7 @@ async def draft_translate(state: TransMaxState) -> TransMaxState:
     
     # 4. Execute LLM Call & Parse
     try:
-        response = await ResilienceService.resilient_llm_call(get_llm().ainvoke, messages)
+        response = await get_resilience_service().resilient_llm_call(get_llm().ainvoke, messages)
         data = RobustParser.parse(response.content)
     except (ValueError, Exception) as e:
          logger.error(f"Translation Error: {e}")
@@ -547,7 +547,7 @@ async def refine_translation(state: TransMaxState) -> TransMaxState:
     ]
     
     try:
-        response = await ResilienceService.resilient_llm_call(get_llm().ainvoke, messages)
+        response = await get_resilience_service().resilient_llm_call(get_llm().ainvoke, messages)
         data = RobustParser.parse(response.content)
         
         # Helper to find list

@@ -112,7 +112,7 @@ async def test_graph_tm_bypass():
             mock_llm_obj = MagicMock()
             mock_get_llm.return_value = mock_llm_obj
             
-            with patch("app.agents.graph.ResilienceService.resilient_llm_call") as mock_resilience:
+            with patch("app.services.resilience.ResilienceService.resilient_llm_call") as mock_resilience:
                 # Mock LLM Response for 'World'
                 async def mock_invoke(*args, **kwargs):
                     return MagicMock(content='```json\n{"segments": [{"id": "2", "target_text": "Monde"}]}\n```')

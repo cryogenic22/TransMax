@@ -8,7 +8,7 @@ from datetime import datetime
 from app.models.models import TranslationRule
 from app.services.db_service import get_db_service
 from app.services.llm import get_llm
-from app.services.resilience import ResilienceService
+from app.services.resilience import get_resilience_service
 from app.services.json_parser import RobustParser
 
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -82,7 +82,7 @@ class LearningService:
                 HumanMessage(content=user_content)
             ]
 
-            response = await ResilienceService.resilient_llm_call(llm.ainvoke, messages)
+            response = await get_resilience_service().resilient_llm_call(llm.ainvoke, messages)
             data = RobustParser.parse(response.content)
 
             if not data.get("rule_extracted"):
