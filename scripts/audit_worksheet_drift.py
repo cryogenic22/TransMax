@@ -44,139 +44,22 @@ import argparse
 import re
 import subprocess
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-# ---------------------------------------------------------------------------
-# Worksheet parsing
-# ---------------------------------------------------------------------------
+# Worksheet parsing primitives are shared with regulatory_pack/generators/
+# traceability.py via _worksheet_parser. Keep this script's behaviour
+# unchanged - the import is a refactor, not a feature change.
+_HERE = Path(__file__).resolve().parent
+if str(_HERE) not in sys.path:  # pragma: no cover - script-style runtime
+    sys.path.insert(0, str(_HERE))
 
-# Header line, e.g. `**State**: \`[Done]\` pending push` or
-# `**State**: \`[Verify]\` → \`[Done]\` pending commit`
-STATE_RE = re.compile(r"^\*\*State\*\*:\s*(.+)$", re.MULTILINE)
-
-# Bracketed states the README defines.
-STATE_TOKEN_RE = re.compile(r"\[(Spec|Design|WIP|Verify|Fix|Done|Blocked)\]")
-
-# Pending-push markers, normalised lowercase.
-PENDING_MARKERS = (
-    "pending commit + push",
-    "pending commit+push",
-    "pending push",
-    "pending commit",
-    "(local; awaiting push)",
-    "local; awaiting push",
-    "(awaiting push)",
-    "awaiting push",
+from _worksheet_parser import (  # noqa: E402  (after sys.path manipulation)
+    NON_TERMINAL_STATES,
+    TERMINAL_STATES,
+    Worksheet,
+    parse_worksheet,
 )
-
-# Planning-only marker (Done with explicit "no code change" disclaimer).
-PLANNING_ONLY_MARKERS = (
-    "no code change",
-    "planning only",
-    "planning-only",
-)
-
-TERMINAL_STATES = {"Done"}
-NON_TERMINAL_STATES = {"Spec", "Design", "WIP", "Verify", "Fix", "Blocked"}
-
-IGNORE_BASENAMES = {"_template.md", "README.md"}
-IGNORE_PREFIXES = ("HANDOFF",)
-
-# Match a 7-12 char hex SHA preceded by a non-hex word boundary. Used to
-# pick up explicit `Commit: \`abc1234\`` claims in worksheet bodies.
-SHA_RE = re.compile(r"(?:^|[^0-9a-f])([0-9a-f]{7,12})(?:[^0-9a-f]|$)", re.IGNORECASE)
-
-# Lines in the worksheet that look like a STRUCTURED commit-SHA declaration
-# (deploy-stage checkbox or status-log SHA cell). Excludes prose mentions of
-# OTHER tickets' commits like `(see TMX-3700 b043075)` or
-# `Loop fire 16 (\`a48c2b6\`) shipped …`.
-COMMIT_DECLARATION_RE = re.compile(
-    r"^\s*(?:- \[[x ]\]\s+)?(?:Commit|Code|Shipped|Closed)\b"
-    r"(?:\s+at|\s+via|:\s+|\s+)`?[0-9a-f]{7,12}`?",
-    re.IGNORECASE | re.MULTILINE,
-)
-
-
-@dataclass
-class Worksheet:
-    """Parsed worksheet header."""
-
-    path: Path
-    ticket_id: str  # filename stem, e.g. "TMX-3050" or "TMX-3702-a11y"
-    raw_state_line: str
-    state_token: Optional[str]  # Spec / Design / WIP / Verify / Fix / Done / Blocked
-    pending: bool
-    planning_only: bool
-    declared_shas: list[str]  # any explicit SHAs the worksheet body claims
-
-
-def _normalise(text: str) -> str:
-    return text.lower().replace("\r\n", "\n").replace("\r", "\n")
-
-
-def parse_worksheet(path: Path) -> Optional[Worksheet]:
-    """Parse a single worksheet file. Returns None if it should be ignored."""
-    if path.name in IGNORE_BASENAMES:
-        return None
-    if any(path.name.startswith(prefix) for prefix in IGNORE_PREFIXES):
-        return None
-    if not path.name.startswith("TMX-"):
-        return None
-
-    try:
-        # Universal-newline translation handles CRLF on Windows.
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError as exc:  # pragma: no cover — fs error path
-        print(f"# error reading {path}: {exc}", file=sys.stderr)
-        return None
-
-    norm = _normalise(text)
-
-    state_match = STATE_RE.search(text)
-    raw_state_line = state_match.group(1).strip() if state_match else ""
-
-    state_token: Optional[str] = None
-    if state_match:
-        # Multiple state tokens may appear on a single line (e.g.
-        # `[Verify]` → `[Done]` pending commit). Take the LAST one as the
-        # current state.
-        tokens = STATE_TOKEN_RE.findall(state_match.group(0))
-        if tokens:
-            state_token = tokens[-1]
-
-    raw_state_norm = _normalise(raw_state_line)
-    pending = any(marker in raw_state_norm for marker in PENDING_MARKERS)
-
-    # Planning-only override: the worksheet must EXPLICITLY say so in its
-    # deploy / status-log section. Defaults to False so missing commits stay
-    # loud.
-    planning_only = any(marker in norm for marker in PLANNING_ONLY_MARKERS)
-
-    # Declared SHAs — pulled only from STRUCTURED declarations. We do NOT
-    # parse free prose because that picks up cross-references to OTHER
-    # tickets' commits (e.g. `Loop fire 16 (\`a48c2b6\`) shipped …`) and
-    # would yield false-positive resolutions.
-    declared_shas: list[str] = []
-    for line in text.splitlines():
-        if not COMMIT_DECLARATION_RE.match(line):
-            continue
-        for match in SHA_RE.finditer(line):
-            sha = match.group(1).lower()
-            if len(sha) >= 7 and any(c in sha for c in "abcdef"):
-                if sha not in declared_shas:
-                    declared_shas.append(sha)
-
-    return Worksheet(
-        path=path,
-        ticket_id=path.stem,
-        raw_state_line=raw_state_line,
-        state_token=state_token,
-        pending=pending,
-        planning_only=planning_only,
-        declared_shas=declared_shas,
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -404,15 +287,15 @@ def main() -> int:
         claimed = ws.raw_state_line[:50] if ws.raw_state_line else "(unparsed)"
         if ws.pending and "pending" not in claimed.lower():
             claimed += " (pending marker)"
-        print(
-            f"| `{ws.ticket_id}` | {claimed} | {summary} | **{verdict}** |"
-        )
+        print(f"| `{ws.ticket_id}` | {claimed} | {summary} | **{verdict}** |")
     print()
     print("## Summary")
     print(f"- OK: {ok_count}")
     print(f"- LOCAL-ONLY (drift): {drift_count}")
     print(f"- MISSING-COMMIT (lying-backlog suspect): {missing_count}")
-    print(f"- STALE-STATE (worksheet header out of sync with shipped code): {stale_count}")
+    print(
+        f"- STALE-STATE (worksheet header out of sync with shipped code): {stale_count}"
+    )
     print(f"- IN-FLIGHT: {inflight_count}")
     print(f"- IGNORE: {ignore_count}")
 
