@@ -6,6 +6,7 @@ import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
 import { Bold, Italic, List, ListOrdered, Table as TableIcon, Columns, Rows, Trash2 } from 'lucide-react'
 import { cn } from "@/lib/utils"
+import { sanitizeRichTextHtml } from "@/lib/sanitizeHtml"
 
 interface RichTextEditorProps {
     value: string
@@ -80,7 +81,11 @@ export function RichTextEditor({ value, onChange, editable = true, placeholder: 
         content: value,
         editable: editable,
         onUpdate: ({ editor }) => {
-            onChange(editor.getHTML())
+            // TMX-3050 / F-H03: never forward Tiptap's raw getHTML() to
+            // persistence. Always sanitise first to neutralise stored-XSS
+            // vectors that survived the editor's own input handling
+            // (paste-from-clipboard, drag-and-drop, etc.).
+            onChange(sanitizeRichTextHtml(editor.getHTML()))
         },
         editorProps: {
             attributes: {
