@@ -35,6 +35,9 @@ export default function TranslateDocumentPage() {
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const [glossaries, setGlossaries] = useState<Array<{ glossary_id: string; version: string; is_active: boolean; meta_json?: { source_language?: string; target_language?: string } | null }>>([])
     const [selectedGlossary, setSelectedGlossary] = useState("")
+    // TMX-3705-glossary-err: A3 — translator must know if the selector
+    // is missing because no glossaries exist vs. because the API failed.
+    const [glossaryError, setGlossaryError] = useState<string | null>(null)
 
     // Feature 1: Pipeline step tracking
     const [pipelineSteps, setPipelineSteps] = useState<AgentStep[]>([])
@@ -62,11 +65,15 @@ export default function TranslateDocumentPage() {
         }
     }, [])
 
-    // Fetch active glossaries for the selector
+    // Fetch active glossaries for the selector. TMX-3705-glossary-err:
+    // failure is captured in glossaryError so the UI can surface it
+    // inline rather than silently hiding the selector.
     useEffect(() => {
         api.knowledge.listGlossaries().then(data => {
             setGlossaries((data as Array<{ glossary_id: string; version: string; is_active: boolean; meta_json?: { source_language?: string; target_language?: string } | null }>).filter(g => g.is_active))
-        }).catch(() => {})
+        }).catch(err => {
+            setGlossaryError(getErrMessage(err, "Failed to load glossaries"))
+        })
     }, [])
 
     const averageConfidence = segments.length > 0
@@ -413,6 +420,31 @@ export default function TranslateDocumentPage() {
                     </div>
                 )}
 
+                {/* TMX-3705-glossary-err: state-agnostic glossary failure
+                    notice. Renders on idle AND uploaded states so the
+                    translator sees the issue from landing, not only after
+                    upload. role='status' + aria-label per pattern from
+                    TMX-3603-jobs-id-err and TMX-3604-assets-err. */}
+                {glossaryError && (
+                    <div
+                        role="status"
+                        aria-label="Glossary list failed to load"
+                        style={{
+                            padding: "0.75rem 1.25rem",
+                            background: "#fef3c7",
+                            border: "1px solid #fde68a",
+                            borderRadius: "10px",
+                            marginBottom: "1.5rem",
+                            fontSize: "0.875rem",
+                            color: "#92400e",
+                            textAlign: "left",
+                        }}
+                    >
+                        <strong>Couldn&apos;t load glossaries.</strong>{" "}
+                        {glossaryError}
+                    </div>
+                )}
+
                 {/* ===== IDLE STATE ===== */}
                 {state === "idle" && (
                     <div
@@ -575,7 +607,7 @@ export default function TranslateDocumentPage() {
                         )}
 
                         {/* Glossary Selector */}
-                        {glossaries.length > 0 && (
+                        {!glossaryError && glossaries.length > 0 && (
                             <div style={{
                                 display: "flex",
                                 alignItems: "center",
