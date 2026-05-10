@@ -10,6 +10,7 @@ import {
     Languages
 } from "lucide-react"
 import { api, Document, Segment } from "@/lib/api"
+import { getErrMessage } from "@/lib/utils"
 
 interface QualityScorecard {
     overall_score: number
@@ -41,6 +42,10 @@ export default function DocumentReviewPage() {
     const [document, setDocument] = useState<Document | null>(null)
     const [segments, setSegments] = useState<Segment[]>([])
     const [loading, setLoading] = useState(true)
+    // TMX-3604-doc-review-err: A3 — never substitute a default for a
+    // failed fetch on a regulator-facing surface. Capture the actual
+    // server message and surface it instead of "Document not found".
+    const [error, setError] = useState<string | null>(null)
     const [viewMode, setViewMode] = useState<ViewMode>("scorecard")
     const [editingSegmentId, setEditingSegmentId] = useState<string | null>(null)
     const [editText, setEditText] = useState("")
@@ -109,7 +114,8 @@ export default function DocumentReviewPage() {
                     translated_segments: translated.length,
                     issue_segments: withIssues.length
                 })
-            } catch {
+            } catch (err) {
+                setError(getErrMessage(err, "Failed to load document"))
                 setDocument(null)
             } finally {
                 setLoading(false)
@@ -199,7 +205,19 @@ export default function DocumentReviewPage() {
     if (!document) {
         return (
             <div style={{ padding: "3rem", textAlign: "center" }}>
-                <h2>Document not found</h2>
+                {/* TMX-3604-doc-review-err: surface the real server message
+                    when a fetch failed; fall through to the legitimate
+                    "Document not found" only when the server returned
+                    nothing (initial empty state, never reached in practice
+                    since fetch always sets either doc or error). */}
+                {error ? (
+                    <>
+                        <h2>Couldn&apos;t load document</h2>
+                        <p style={{ color: "#5f6368", marginTop: "0.5rem", marginBottom: "1.5rem" }}>{error}</p>
+                    </>
+                ) : (
+                    <h2>Document not found</h2>
+                )}
                 <Link href="/workspace">Back to Workspace</Link>
             </div>
         )
