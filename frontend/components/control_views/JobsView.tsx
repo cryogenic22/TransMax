@@ -10,6 +10,7 @@ import Link from "next/link"
 import { api, Document, DeletionRecord } from "@/lib/api"
 import { ConfidenceMeter } from "@/components/ui/ConfidenceMeter"
 import { getErrMessage } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface EnrichedJob {
     id: string
@@ -105,7 +106,11 @@ export function JobsView() {
             // Refresh deletion log if visible
             if (showDeletionLog) fetchDeletionLog()
         } catch (err) {
-            console.error("Delete failed:", err)
+            // TMX-3604-delete-toast: A3 — silent mutation failure is the
+            // mutation-error analogue of the silent-fallback fetch class.
+            // Surface the real server message so a regulator chasing an
+            // audit-trail tombstone (A9) knows their click didn't land.
+            toast.error(getErrMessage(err, "Delete failed"))
         } finally {
             setDeleting(false)
         }
