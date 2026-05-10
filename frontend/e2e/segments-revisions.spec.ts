@@ -256,4 +256,54 @@ test.describe("Workspace jobs page error UX (TMX-3603-jobs-id-err)", () => {
     await expect(banner).toBeVisible()
     await expect(banner).toContainText(/segments index unavailable/)
   })
+
+  test("renders agent-activity error banner when poll fails (TMX-3603-agents-err)", async ({
+    page,
+  }) => {
+    // Doc + segments OK; agent-activity polling 500. The agent lanes
+    // would otherwise render empty silently — indistinguishable from
+    // "no agents running yet". Banner makes the failure visible.
+    await page.route("**/api/**", async (route: Route) => {
+      const url = route.request().url()
+      if (url.endsWith(`/api/documents/${STUB_DOC_ID}`)) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(STUB_DOC),
+        })
+        return
+      }
+      if (url.endsWith(`/api/documents/${STUB_DOC_ID}/segments`)) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(STUB_SEGMENTS),
+        })
+        return
+      }
+      if (url.includes("/api/dashboard/agent-activity-by-job/")) {
+        await route.fulfill({
+          status: 500,
+          contentType: "application/json",
+          body: JSON.stringify({ detail: "TMX-3603-agents-test: activity feed offline" }),
+        })
+        return
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({}),
+      })
+    })
+
+    // Translate mode renders AgentLanes — best place to verify the
+    // agent-activity error surfaces. Review mode doesn't show lanes.
+    await page.goto(`/workspace/jobs/${STUB_DOC_ID}?mode=translate`)
+    await page.waitForLoadState("networkidle")
+
+    const banner = page.getByRole("status", { name: /agent activity feed failed to load/i })
+    await expect(banner).toBeVisible()
+    // Hook returns Error("HTTP 500") on non-OK; render that message.
+    await expect(banner).toContainText(/HTTP 500/)
+  })
 })
