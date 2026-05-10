@@ -283,7 +283,10 @@ export function JobsView() {
                                                             a.remove()
                                                             URL.revokeObjectURL(url)
                                                         } catch (err) {
-                                                            console.error("Download failed:", err)
+                                                            // TMX-3604-download-toast: user clicks
+                                                            // download → API fails → silent. Surface
+                                                            // the real server message.
+                                                            toast.error(getErrMessage(err, "Download failed"))
                                                         }
                                                     }}
                                                     className="text-slate-500 hover:text-blue-600 transition-colors"
