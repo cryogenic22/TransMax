@@ -51,11 +51,23 @@ class LearningService:
     """
     
     async def process_learning_event(self, segment_id: str, human_correction: str, source_text: str, mt_text: str):
-        """
-        Analyzes a correction and potentially creates a new Knowledge Rule.
+        """Analyse a HITL correction and queue a candidate rule for review.
+
+        Pillar 1 / A3 — **no rule auto-promotes.** Every learned rule lands
+        in `PROPOSED` state regardless of LLM-reported confidence. Promotion
+        to `ACTIVE` requires an explicit, signed call to
+        `app.services.rule_promotion.promote_rule()` by a holder of
+        `Permission.RULE_APPROVE`.
+
+        This method previously contained an auto-promote branch
+        (`if confidence >= 0.90: status = "ACTIVE"`) — the C-13 hazard
+        identified in the 2026-05-09 audit. That branch was a silent
+        fallback in a regulated path: an LLM-reported confidence is not
+        a substitute for a signed human approval. It is gone, period.
+        Re-introducing it is a pre-commit blocker.
         """
         logger.info(f"Learning: Analyzing correction for {segment_id}")
-        
+
         # 1. Calls Core Learning Agent
         try:
             llm = get_llm()
@@ -64,43 +76,42 @@ class LearningService:
             Machine Translation: {mt_text}
             Human Correction: {human_correction}
             """
-            
+
             messages = [
                 SystemMessage(content=LEARNING_SYSTEM_PROMPT),
                 HumanMessage(content=user_content)
             ]
-            
+
             response = await ResilienceService.resilient_llm_call(llm.ainvoke, messages)
             data = RobustParser.parse(response.content)
-            
+
             if not data.get("rule_extracted"):
                 logger.info("Learning: No clear rule extracted.")
                 return
-            
-            # 2. Decision Logic (Confidence Threshold)
+
+            # 2. Persist as PROPOSED. No threshold logic. No auto-promote.
+            #    A signed promote_rule() call is the ONLY path to ACTIVE.
             confidence = data.get("confidence", 0.0)
-            status = "PENDING_APPROVAL"
-            
-            # Auto-approve High Confidence rules (The "Autonomous Update")
-            if confidence >= 0.90:
-                status = "ACTIVE"
-                logger.info(f"Learning: Auto-approving High Confidence Rule ({confidence})")
-            else:
-                logger.info(f"Learning: Queuing Low Confidence Rule ({confidence}) for Board Review")
-                
-            # 3. Persist Rule to Black Book
+            logger.info(
+                f"Learning: queued PROPOSED rule (confidence={confidence}) "
+                f"for {segment_id}; awaits signed promote_rule()."
+            )
             self._save_rule(
                 source_pattern=data.get("source_pattern"),
                 target_correction=data.get("target_correction"),
                 confidence=confidence,
-                status=status,
-                origin_id=segment_id
+                status="PROPOSED",
+                origin_id=segment_id,
             )
-            
+
         except Exception as e:
             logger.error(f"Learning Agent failed: {e}")
-            
-    def _save_rule(self, source_pattern, target_correction, confidence, status, origin_id):
+
+    def _save_rule(self, *, source_pattern, target_correction, confidence, status, origin_id):
+        """Persist a candidate rule. `status` is always `PROPOSED` from
+        `process_learning_event` (TMX-3045 / Pillar 1). Other callers MUST
+        also pass `PROPOSED`; promotion to `ACTIVE` runs through
+        `app.services.rule_promotion.promote_rule()`."""
         db_service = get_db_service()
         db = db_service.get_session()
         try:

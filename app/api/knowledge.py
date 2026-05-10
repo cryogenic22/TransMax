@@ -202,7 +202,14 @@ async def create_rule(
     rule: RuleCreateSchema,
     user: AuthenticatedIdentity = Depends(require_permission(Permission.KNOWLEDGE_MANAGE)),
 ):
-    """Create a new Black Book rule."""
+    """Create a new Black Book rule.
+
+    Curator-authored creation: the caller's `KNOWLEDGE_MANAGE` permission
+    IS the Pillar 1 signature. We stamp `approved_by`/`approved_at` from
+    the authenticated user so every ACTIVE row in the rule-base has a
+    verifiable signature, regardless of whether it was learned (must
+    transit through `promote_rule()`) or manually authored (this path).
+    """
     db_service = get_db_service()
     session = db_service.get_session()
     try:
@@ -228,6 +235,11 @@ async def create_rule(
             description=rule.description,
             status="ACTIVE",
             created_by=user.user_id,
+            # TMX-3045: Pillar 1 — stamp approver fields on curator-authored
+            # creations so every ACTIVE row carries a verifiable signature.
+            approved_by=user.user_id,
+            approved_at=datetime.now(timezone.utc),
+            approval_reason="curator-authored direct creation",
         )
         session.add(new_rule)
         session.commit()
@@ -414,6 +426,10 @@ async def import_rules(
                     description=row.get("description") or None,
                     status="ACTIVE",
                     created_by=user.user_id,
+                    # TMX-3045: Pillar 1 — stamp approver on curator-imported rules.
+                    approved_by=user.user_id,
+                    approved_at=datetime.now(timezone.utc),
+                    approval_reason="curator-authored bulk import",
                 )
                 session.add(new_rule)
                 imported += 1

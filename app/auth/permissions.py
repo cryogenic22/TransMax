@@ -29,6 +29,11 @@ class Permission(str, Enum):
     # Knowledge / Black Book
     KNOWLEDGE_READ = "knowledge:read"
     KNOWLEDGE_MANAGE = "knowledge:manage"
+    # TMX-3045 / Pillar 1: signed promotion of a learned rule from PROPOSED
+    # to ACTIVE. Strictly stronger than KNOWLEDGE_MANAGE — KNOWLEDGE_MANAGE
+    # lets a curator create or edit rules manually, but ONLY a holder of
+    # RULE_APPROVE may flip a learned (LLM-extracted) rule to ACTIVE.
+    RULE_APPROVE = "rule:approve"
 
     # Audit
     AUDIT_READ = "audit:read"
@@ -63,6 +68,7 @@ ROLE_PERMISSIONS: Dict[UserRole, Set[Permission]] = {
         Permission.SEGMENT_READ, Permission.SEGMENT_EDIT,
         Permission.REVIEW_APPROVE, Permission.REVIEW_REJECT,
         Permission.KNOWLEDGE_READ, Permission.KNOWLEDGE_MANAGE,
+        Permission.RULE_APPROVE,  # TMX-3045: PMs may sign rule promotions.
         Permission.AUDIT_READ, Permission.AUDIT_EXPORT,
         Permission.TOOLS_USE, Permission.USERS_READ,
     },
@@ -90,6 +96,7 @@ ROLE_PERMISSIONS: Dict[UserRole, Set[Permission]] = {
         Permission.DOCUMENT_READ,
         Permission.SEGMENT_READ,
         Permission.KNOWLEDGE_READ, Permission.KNOWLEDGE_MANAGE,
+        Permission.RULE_APPROVE,  # TMX-3045: curators are the canonical rule approvers.
         Permission.AUDIT_READ,
         Permission.TOOLS_USE,
     },

@@ -43,6 +43,16 @@ class TranslationRule(TenantScopedMixin, SoftDeleteMixin, Base):
     false_positive_count = Column(Integer, default=0)            # Analytics: reported false positives
     created_by = Column(String, nullable=True)                   # User who created the rule
 
+    # TMX-3045 / Pillar 1 — signed approval of a learned rule.
+    # Set by `app.services.rule_promotion.promote_rule()`; remain NULL on
+    # rules created via direct curator action (`POST /api/knowledge/rules`)
+    # because that path implies KNOWLEDGE_MANAGE-as-author signature already.
+    # Historical rows from before TMX-3045 will have these NULL — TMX-3045a
+    # will backfill canonical signatures for the auto-promoted ones.
+    approved_by = Column(String, nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    approval_reason = Column(Text, nullable=True)
+
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
