@@ -1,10 +1,10 @@
 # TMX-3704-ui — Surface directional move semantics in `<RevisionIndicator>`
 
-**State**: `[Spec]`
+**State**: `[Done]`
 **Owner**: Reviewer Frontend pod (Antigravity / Pod B)
 **Sprint**: 2
 **Started**: 2026-05-09
-**Closed**: —
+**Closed**: 2026-05-09 (header backfilled by TMX-3060 drift audit on 2026-05-10; commit `c4b4eef` on origin/main)
 **Reversibility**: `two-way` — single component change, additive label paths.
 **Pre-mortem**: If this fails in production, the failure mode is — a reviewer reads "moved" on a segment that lost text and confuses it for one that gained text, signs off thinking the relocation is benign when in fact the original copy was relocated to a different SmPC section. The directional info from TMX-3704 is what protects against this; without UI, the wire-format change is dark.
 **Blast radius**: `frontend/components/ui/RevisionIndicator.tsx` only + tests. Demo page on `/workspace/design-system` extends with 2 more fixtures (moveFrom-only, moveTo-only).
@@ -87,7 +87,7 @@ $ npm run lint && npm run typecheck && npm run build
 
 ## 8. Deploy
 
-- [ ] Commit + push
+- [x] Commit: `c4b4eef` — backfilled by TMX-3060 drift audit (2026-05-10) on `origin/main`
 
 ---
 

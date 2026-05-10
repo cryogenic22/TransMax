@@ -1,10 +1,10 @@
 # TMX-AUDIT-CLEANUP-ROUTES — fix TestClient route 404s caused by fresh_db fixture pollution
 
-**State**: `[Spec]`
+**State**: `[Done]`
 **Owner**: pod-A (Auth & Tenancy / Antigravity main thread)
 **Sprint**: 2
 **Started**: 2026-05-09
-**Closed**: —
+**Closed**: 2026-05-09 (header backfilled by TMX-3060 drift audit on 2026-05-10; commit `16d4667` on origin/main)
 **Reversibility**: `two-way` (test-infra refactor; no runtime contract changes; reversible by reverting)
 **Pre-mortem**: *"if this fails in production, … it can't — this is test-infra only. The risk is OTHER tests start failing because the in-place engine swap doesn't behave identically to module reload."*
 **Blast radius**: `tests/conftest.py` (new) + 5 fresh_db fixtures across `test_organizations_model.py`, `test_organization_fk.py`, `test_soft_delete.py`, `test_audit_events_v2_schema.py`, `test_tenant_session.py`. **No app/ code changes.**
@@ -217,8 +217,8 @@ No findings from stages 5 or 6 required code changes. **Clean first pass.**
 - [x] Foundation suite 50/50 pass
 - [x] Full suite 434/438 pass (was 427/438) — 7 tests fixed by this single change
 - [x] Ratchet 17/17
-- [ ] Commit — pending
-- [ ] CI green — verifies on push
+- [x] Commit: `16d4667` — backfilled by TMX-3060 drift audit (2026-05-10) on `origin/main`
+- [x] CI green — verified on push
 
 ---
 

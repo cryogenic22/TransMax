@@ -38,11 +38,11 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 |---|---|---|---|---|
 | TMX-3010 | Add `organizations` table + tenant model | Auth | M | 1 — **[Done]** c0ac3a3 — see `.context/loops/TMX-3010.md` |
 | TMX-3011 | Add `organization_id` to all domain tables | Auth | M | 1 — **[Done]** bf58ae4 — see `.context/loops/TMX-3011.md` |
-| TMX-3012 | Tenant-scoped session factory | Auth | M | 1 — **[Done]** (local; awaiting push) — see `.context/loops/TMX-3012.md`. AC-6/8 split to TMX-3012b. |
+| TMX-3012 | Tenant-scoped session factory | Auth | M | 1 — **[Done]** c68a1b4 — see `.context/loops/TMX-3012.md`. AC-6/8 split to TMX-3012b. SHA backfilled by TMX-3060. |
 | TMX-3013 | Auth0 / Keycloak integration; OIDC + SAML; MFA enforced | Auth | L | 1-2 |
-| TMX-3015 | Soft-delete columns + filter logic | Auth | M | 1 — **[Done]** 349838a (local; awaiting push) — see `.context/loops/TMX-3015.md` |
-| TMX-3100 | `audit_events_v2` schema + migration | Audit | M | 1 — **[Done]** (local; awaiting push) — see `.context/loops/TMX-3100.md` |
-| TMX-3700 | DOCX ingestion v2 with tracked-changes preservation | Pipeline | L | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3700.md` |
+| TMX-3015 | Soft-delete columns + filter logic | Auth | M | 1 — **[Done]** 349838a — see `.context/loops/TMX-3015.md`. SHA verified on origin/main by TMX-3060. |
+| TMX-3100 | `audit_events_v2` schema + migration | Audit | M | 1 — **[Done]** 7022f49 — see `.context/loops/TMX-3100.md`. SHA backfilled by TMX-3060. |
+| TMX-3700 | DOCX ingestion v2 with tracked-changes preservation | Pipeline | L | 1 — **[Done]** b043075 — see `.context/loops/TMX-3700.md`. SHA backfilled by TMX-3060. |
 | TMX-3701 | Round-trip DOCX export with revision-mark preservation (export side) | Pipeline | M | 2 — **[Spawned by TMX-3700]** |
 | TMX-3702 | Reviewer-frontend UX for accept/reject revisions | Frontend | M | 2 — **[Spawned by TMX-3700]** (TMX-3606 unblocked) |
 | TMX-3703 | Differential rendering (current vs. proposed) | Frontend | M | 2 — **[Spawned by TMX-3700]** (TMX-3606 unblocked) |
@@ -51,24 +51,24 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 | TMX-3617 | Rename `middleware.ts` → `proxy.ts` (Next.js 16 deprecation) | Frontend | XS | 1 — **[Done]** (0f21dc3). |
 | TMX-3616-auth0 | Server-issue cookies via Auth0 with httpOnly + add CSRF tokens | Frontend + Auth | M | 2 — **[Spawned by TMX-3616 partial close; blocked on TMX-3013 Auth0 wiring]** |
 | TMX-3704 | `<w:moveFrom>` / `<w:moveTo>` semantic handling | Pipeline | S | 2 — **[Spawned by TMX-3700]** |
-| TMX-3704-pairing | Capture `w:id` on move marks for cross-block correlation | Pipeline | XS | 2 — **[Done, pending commit + push]** — see `.context/loops/TMX-3704-pairing.md` |
-| TMX-3702-a11y | Dynamic aria-label on RevisionIndicator (direction + magnitude) | Frontend | XS | 2 — **[Done, pending commit + push]** — see `.context/loops/TMX-3702-a11y.md` |
-| TMX-3603-jobs-id-err | Surface real fetch errors on workspace jobs page (A3 fix) | Frontend | XS | 2 — **[Done, pending commit + push]** — see `.context/loops/TMX-3603-jobs-id-err.md` |
-| TMX-3604-assets-err | Surface real fetch errors in Trust Center Assets view (A3 fix) | Frontend | XS | 2 — **[Done, pending commit + push]** — see `.context/loops/TMX-3604-assets-err.md` |
-| TMX-3705-glossary-err | Surface glossary fetch failures in upload form (A3 fix) — NB: prefix collides with parent TMX-3705 (Pipeline / file-type sniffing); this is a Frontend upload-UX sub-ticket, NOT a child of file-type sniffing | Frontend | XS | 2 — **[Done, pending commit + push]** — see `.context/loops/TMX-3705-glossary-err.md` |
-| TMX-3603-agents-err | Surface agent-activity poll errors on workspace jobs page (A3 fix; completes the page's error triad alongside doc + segments) | Frontend | XS | 2 — **[Done, pending commit + push]** — see `.context/loops/TMX-3603-agents-err.md` |
-| TMX-3705 | File-type sniffing + size cap + AV scan trigger | Pipeline | M | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3705.md` |
+| TMX-3704-pairing | Capture `w:id` on move marks for cross-block correlation | Pipeline | XS | 2 — **[Done]** 9e53928 — see `.context/loops/TMX-3704-pairing.md`. SHA backfilled by TMX-3060. |
+| TMX-3702-a11y | Dynamic aria-label on RevisionIndicator (direction + magnitude) | Frontend | XS | 2 — **[Done]** 7ee4441 — see `.context/loops/TMX-3702-a11y.md`. SHA backfilled by TMX-3060. |
+| TMX-3603-jobs-id-err | Surface real fetch errors on workspace jobs page (A3 fix) | Frontend | XS | 2 — **[Done]** c7d7473 — see `.context/loops/TMX-3603-jobs-id-err.md`. SHA backfilled by TMX-3060. |
+| TMX-3604-assets-err | Surface real fetch errors in Trust Center Assets view (A3 fix) | Frontend | XS | 2 — **[Done]** 517a547 — see `.context/loops/TMX-3604-assets-err.md`. SHA backfilled by TMX-3060. |
+| TMX-3705-glossary-err | Surface glossary fetch failures in upload form (A3 fix) — NB: prefix collides with parent TMX-3705 (Pipeline / file-type sniffing); this is a Frontend upload-UX sub-ticket, NOT a child of file-type sniffing | Frontend | XS | 2 — **[Done]** e2ac305 — see `.context/loops/TMX-3705-glossary-err.md`. SHA backfilled by TMX-3060. |
+| TMX-3603-agents-err | Surface agent-activity poll errors on workspace jobs page (A3 fix; completes the page's error triad alongside doc + segments) | Frontend | XS | 2 — **[Done]** 418cbc5 (+ active_tasks-backfill `c0d886d`) — see `.context/loops/TMX-3603-agents-err.md`. Pushed to origin/main by TMX-3060 reconciliation. |
+| TMX-3705 | File-type sniffing + size cap + AV scan trigger | Pipeline | M | 1 — **[Done]** dc4795c — see `.context/loops/TMX-3705.md`. SHA backfilled by TMX-3060. |
 | TMX-3706 | Deeper DOCX vs XLSX vs PPTX disambiguation (peek inside ZIP for `[Content_Types].xml`) | Pipeline | S | 2 — **[Spawned by TMX-3705]** |
 | TMX-3707 | AV scanner integration (clamd / Cloud DLP) — wire `emit_av_scan_request` to actual scanner | Pipeline + Platform | M | 2 — **[Spawned by TMX-3705]** |
 | TMX-3708 | Wire `validate_and_save_upload` into endpoints.py + knowledge.py upload routes | Pipeline | XS | 2 — **[Spawned by TMX-3705]** |
-| TMX-3800 | Sentence segmenter service skeleton + interface | Pipeline | M | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3800.md` |
+| TMX-3800 | Sentence segmenter service skeleton + interface | Pipeline | M | 1 — **[Done]** a67ad04 — see `.context/loops/TMX-3800.md`. SHA backfilled by TMX-3060. |
 | TMX-3801 | NLTK / spaCy / pragmatic-segmenter backend integration | Pipeline | M | 2 — **[Spawned by TMX-3800]** |
 | TMX-3802 | Language-specific segmenters for ZH/JA/KO (CJK boundary rules differ) | Pipeline | M | 2 — **[Spawned by TMX-3800]** |
 | TMX-3803 | Stable segment IDs (storage-layer; A5 follow-up) | Pipeline + Auth | L | 2 — **[Spawned by TMX-3800]** |
-| TMX-3200 | Prompt registry directory layout + loader | Agent | M | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3200-3201.md` |
-| TMX-3201 | Migrate `prompts.py` constants to v1.0.0 YAML files | Agent | M | 1 — **[Done, pending commit + push]** — bundled with TMX-3200 in same loop |
-| TMX-3204 | Wire `lang_instruction` into graph.py + batch_translator.py | Agent | XS | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3204.md` |
-| TMX-3212 | Audit timestamp bug fix (datetime UTC ISO) | Agent | XS | 1 — **[Done, pending commit]** — see `.context/loops/TMX-3212.md` |
+| TMX-3200 | Prompt registry directory layout + loader | Agent | M | 1 — **[Done]** fdeb256 — see `.context/loops/TMX-3200-3201.md`. SHA backfilled by TMX-3060. |
+| TMX-3201 | Migrate `prompts.py` constants to v1.0.0 YAML files | Agent | M | 1 — **[Done]** fdeb256 — bundled with TMX-3200 in same loop. SHA backfilled by TMX-3060. |
+| TMX-3204 | Wire `lang_instruction` into graph.py + batch_translator.py | Agent | XS | 1 — **[Done]** 3575845 — see `.context/loops/TMX-3204.md`. SHA backfilled by TMX-3060. |
+| TMX-3212 | Audit timestamp bug fix (datetime UTC ISO) | Agent | XS | 1 — **[Done]** 5bfafd3 — see `.context/loops/TMX-3212.md`. SHA backfilled by TMX-3060. |
 | TMX-3600 | Pick canonical IA = `/workspace/*`; redirect map | Frontend | S | 1 — **[Done]** — shipped via TMX-3606 de-tangle (cbef01f). 308 redirects for `/document`, `/new`, `/dashboard`, `/design-system`; 308 for `/translate/:jobId`, `/review/:jobId` (TMX-3603-jobs-id tightened from 307); 307 for `/knowledge`. Legacy page files deleted in cleanup commit 252a4ad. |
 | TMX-3606 | De-tangle frontend nested-git-repo | Frontend + Platform | S | 1 — **[Done]** (cbef01f) — option (b) merge into parent. History preserved at `parking_lot/frontend-pre-detangle-history.bundle`. |
 | TMX-3601 | Theme unification + design tokens + brand mark | Frontend + Design | M | 1 — **[Done]** (cdef0e2) — TMX tokens in `:root` + `.dark` (AI gradient, Provenance chip, Status Lifecycle, Agent identity); brand mark at `frontend/public/transmax-mark.svg`. |
@@ -76,7 +76,7 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 | TMX-3615 | CSP / HSTS / X-Frame-Options / Permissions-Policy via next.config.ts | Frontend | S | 1 — **[Done]** (f46dae8) — 6 headers via `headers()`; 2 integration tests verify they ship + ride redirect destinations. |
 | TMX-3616 | Cookie hardening — httpOnly Secure SameSite=Strict + CSRF tokens | Frontend + Auth | M | 1 — **[Done partial]** (48427d9) — Secure flag on https; SameSite=Lax kept (Strict breaks OAuth callbacks); removeCookie matches flag set. `httpOnly` blocked on Auth0 wiring (ADR-0003) and tracked as **TMX-3616-auth0**. CSRF tokens deferred until Auth0 lands a real session. |
 | TMX-3618 | File upload validation + size cap + magic-byte sniff | Frontend + Pipeline | M | 1 — **[Done]** (570c8b4) — `frontend/lib/fileValidation.ts` mirrors backend `app/services/file_validation.py`; 50 MB cap, .pdf/.docx/.txt whitelist, magic-byte sniff. Wired into DocumentUpload with inline error UX. 10 vitest cases. |
-| TMX-3900 | OpenTelemetry SDK wired across LangGraph nodes | Platform | M | 1 — **[Done, pending commit + push]** — see `.context/loops/TMX-3900.md` |
+| TMX-3900 | OpenTelemetry SDK wired across LangGraph nodes | Platform | M | 1 — **[Done]** 3dd5623 — see `.context/loops/TMX-3900.md`. SHA backfilled by TMX-3060. |
 | TMX-3901 | LLM-call child spans with prompt_version/content_hash/token_usage attributes | Agent + Platform | S | 2 — **[Spawned by TMX-3900]** |
 | TMX-3902 | OTLP exporter config (Honeycomb/Jaeger/Tempo) in deployment manifests | Platform | S | 2 — **[Spawned by TMX-3900]** |
 
@@ -112,10 +112,10 @@ Per plan §9 + §III.D — the Programme Lead (Kapil) owes:
 
 Two cases in `tests/evals/data/en_es/critical_safety.jsonl` failed at the start of Sprint 1, surfacing real bugs in the deterministic gates:
 
-- **`number_001`** (TMX-3408) — `NUMERIC_MISMATCH` did NOT fire on a 10mg→100mg tamper because `SpanishPack.check_numbers` used Python `in` (substring containment), so "10" was "found" inside "100". **[Done, pending commit]** — see `.context/loops/TMX-3408.md`. Eval moved 8/10 → 9/10.
-- **`good_001`** (TMX-3409) — false-positive `FREQUENCY_MISMATCH` on canonical EN→ES because `check_frequency` lacked Spanish patterns. **[Done, pending commit]** — see `.context/loops/TMX-3409.md`. Eval moved 9/10 → 10/10. All EN→ES critical-safety cases now pass. Spawned TMX-3411 (Sprint 2) for the cross-language frequency-pattern sweep covering DE/IT/PT/KO/ZH/JA/AR.
+- **`number_001`** (TMX-3408) — `NUMERIC_MISMATCH` did NOT fire on a 10mg→100mg tamper because `SpanishPack.check_numbers` used Python `in` (substring containment), so "10" was "found" inside "100". **[Done]** 181ff7c — see `.context/loops/TMX-3408.md`. Eval moved 8/10 → 9/10. SHA backfilled by TMX-3060.
+- **`good_001`** (TMX-3409) — false-positive `FREQUENCY_MISMATCH` on canonical EN→ES because `check_frequency` lacked Spanish patterns. **[Done]** fc091dc — see `.context/loops/TMX-3409.md`. Eval moved 9/10 → 10/10. All EN→ES critical-safety cases now pass. Spawned TMX-3411 (Sprint 2) for the cross-language frequency-pattern sweep covering DE/IT/PT/KO/ZH/JA/AR. SHA backfilled by TMX-3060.
 
-### TMX-3410 — Cross-pack `check_numbers` sweep — **[Done, pending commit + push]**
+### TMX-3410 — Cross-pack `check_numbers` sweep — **[Done]** 7a5ade0 (+ TMX-3410-fix d478641); SHA backfilled by TMX-3060
 
 Closed 2026-05-07. Word-bounded `_find_missing_numbers` helper added to `BaseLanguagePack`; all 8 packs (Spanish, German, French, Portuguese, Korean, Chinese, Japanese, GenericLanguagePack) now delegate. Japanese preserves full-width digit handling via `digit_translate` arg. 13 parametrised tests in `tests/test_lang_packs_numeric_word_boundary.py`; combined 50/50 unit tests across all 4 loops. Eval 10/10. See `.context/loops/TMX-3410.md`.
 
@@ -134,9 +134,10 @@ The 4-agent loop verification ran on 2026-05-09 over `HEAD~30..HEAD`. Reports ar
 | TMX-LOOP-HYGIENE | Backfill worksheets for `9d3c4e7` (CI init_db) and `97b2935` (FK test fix) — sub-ticket fixes spawned by TMX-3011's blast; one-line worksheets with `Stage 5: N/A` per loop README | Quality-audit Concern #5 | pod-A | 2 |
 | TMX-AUDIT-CLEANUP-DASH | Dashboard activity feed empty (4 tests) | Pytest-audit | Platform | 2 — **[Done]** closed by TMX-AUDIT-CLEANUP-ROUTES (same `importlib.reload` test pollution; fixing one fixed both) |
 | TMX-AUDIT-CLEANUP-DOCX | DOCX round-trip: ingestion not prefixing translatable text with `TR:` — 4 tests fail in `test_docx_roundtrip.py` (paragraph-table order, header, footer, ingestion-export order). In-flight from TMX-3700 | Pytest-audit | Pipeline | 2 — **[Pod B's lane]** — flagged, not for pod-A to touch |
-| TMX-AUDIT-CLEANUP-ROUTES | Test pollution: 5 `fresh_db` fixtures used `importlib.reload(core_db)` which created NEW `get_db` function objects — broke FastAPI dependency overrides in unrelated tests, manifesting as 404s on routes that ARE correctly registered. Audit diagnosis was wrong (route registration); real cause was test infra | Pytest-audit | pod-A | 2 — **[Done]** (local; awaiting push) — see `.context/loops/TMX-AUDIT-CLEANUP-ROUTES.md`. Full suite went 11 → 4 failures. |
+| TMX-AUDIT-CLEANUP-ROUTES | Test pollution: 5 `fresh_db` fixtures used `importlib.reload(core_db)` which created NEW `get_db` function objects — broke FastAPI dependency overrides in unrelated tests, manifesting as 404s on routes that ARE correctly registered. Audit diagnosis was wrong (route registration); real cause was test infra | Pytest-audit | pod-A | 2 — **[Done]** 16d4667 — see `.context/loops/TMX-AUDIT-CLEANUP-ROUTES.md`. Full suite went 11 → 4 failures. SHA backfilled by TMX-3060. |
 | TMX-VERIFY-AUDIT-PROMPT-V2 | Spawned by red team of TMX-AUDIT-CLEANUP-ROUTES: extend the verify-audit Agent 2 prompt to run failing tests in ISOLATION as a pollution-screening step before bucketing root cause. Saves a future loop the diagnosis-rework | Loop hygiene | pod-A | 2 |
-| TMX-3050 | Sanitise Tiptap RichTextEditor egress via DOMPurify (audit F-H03 — stored XSS) | F-H03 (2026-05-09 audit) | Reviewer Frontend | 2 — **[Done]** `05abca8` (awaiting push) — see `.context/loops/TMX-3050.md`. New `frontend/lib/sanitizeHtml.ts` with explicit allowlist + URI-scheme guard + two-pass sanitisation; `RichTextEditor` `onUpdate` now wraps `editor.getHTML()` in `sanitizeRichTextHtml()`. 15 new vitest cases (10 negative XSS-vector + 5 positive legitimate-markup). Frontend 104/104 (was 89/89), typecheck 0, lint 0, build green, ratchet 16/17 (one pre-existing TODO regression unrelated). Spawned TMX-3050a (audit-event hook), TMX-3050b (backend HTML sanitisation), TMX-3050c (initial-load sanitisation). |
+| TMX-3050 | Sanitise Tiptap RichTextEditor egress via DOMPurify (audit F-H03 — stored XSS) | F-H03 (2026-05-09 audit) | Reviewer Frontend | 2 — **[Done]** `05abca8` — see `.context/loops/TMX-3050.md`. New `frontend/lib/sanitizeHtml.ts` with explicit allowlist + URI-scheme guard + two-pass sanitisation; `RichTextEditor` `onUpdate` now wraps `editor.getHTML()` in `sanitizeRichTextHtml()`. 15 new vitest cases (10 negative XSS-vector + 5 positive legitimate-markup). Frontend 104/104 (was 89/89), typecheck 0, lint 0, build green, ratchet 16/17 (one pre-existing TODO regression unrelated). Spawned TMX-3050a (audit-event hook), TMX-3050b (backend HTML sanitisation), TMX-3050c (initial-load sanitisation). SHA verified on origin/main by TMX-3060. |
+| TMX-3060 | Worksheet/commit drift audit + push-hygiene codification | 2026-05-09 audit §6 / Risk D | Platform & Observability | 2 — **[Done]** `<sha>` — see `.context/loops/TMX-3060.md`. New `scripts/audit_worksheet_drift.py` (read-only CLI + advisory pre-commit hook); reconciled 7 STALE-STATE worksheets, 1 LOCAL-ONLY (TMX-3603-agents-err pushed), 1 MISSING-COMMIT (TMX-INTEG-15 SHA declared); CLAUDE.md gains "End-of-loop and end-of-sprint push hygiene" section under Loop discipline. Drift script now exits 0 on origin/main. |
 
 **Foundation suites stayed green** — every new TMX-3010 / 3011 / 3012 / 3015 / 3100 regression test passed (43/43); ratchet 17/17. The yellow is well-known pre-existing technical debt and in-flight work, not loop-introduced regressions.
 

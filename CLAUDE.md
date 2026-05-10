@@ -106,6 +106,16 @@ When opening a fresh session on this repo, ask the user one of:
 | Continue an in-flight worksheet | Read the worksheet's status log; resume at the last filled stage. |
 | Status / dashboard | Summarise `.context/active_tasks.md` + recent `.context/loops/*.md` headers + `git log --oneline -10`. |
 
+### End-of-loop and end-of-sprint push hygiene
+
+Codified after the 2026-05-09 audit found ~30 worksheets stuck at `[Done, pending commit + push]`. Drift between worksheet claims and `origin/main` is a Tier 0 entropy hit (A10) — a fresh clone cannot reproduce the claimed state, CI never validates, and the audit chain becomes a paper exercise.
+
+1. **Per loop**: stage 8 closes only when the commit SHA is on `origin/main`. `[Done]` requires the SHA to be pushed, not just committed locally. The deploy-stage table must record the SHA in a structured line (`Commit: <sha>`) so the drift audit can resolve it.
+2. **End of sprint**: run `python scripts/audit_worksheet_drift.py` (read-only, exits non-zero on drift). Any `LOCAL-ONLY` / `MISSING-COMMIT` / `STALE-STATE` verdict blocks sprint close — fix or escalate before flipping the sprint.
+3. **Stale work-in-progress**: any worksheet stuck at `[WIP]` / `[Verify]` for >7 days must either close, escalate to `[Blocked]` with a status-log reason, or move to `parking_lot/`. Indefinite WIP is invisible drift.
+
+Drift script also runs as an advisory pre-commit hook (`drift-audit-advisory`) — warn-only, does not block local commits.
+
 ### Where to look first
 
 | What | Where |
