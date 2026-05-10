@@ -142,7 +142,7 @@ async def test_learning_service_never_auto_promotes(confidence):
         captured_status["source_pattern"] = source_pattern
 
     with patch("app.services.learning_service.get_llm") as mock_get_llm, \
-         patch("app.services.learning_service.ResilienceService.resilient_llm_call",
+         patch("app.services.resilience.ResilienceService.resilient_llm_call",
                new=AsyncMock(return_value=fake_response)), \
          patch.object(LearningService, "_save_rule", fake_save_rule):
         mock_get_llm.return_value = MagicMock()
