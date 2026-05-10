@@ -110,3 +110,54 @@ Pod B did not touch any of these surfaces. Pod A (Auth & Tenancy) and Quality la
 ## Files of record
 
 This snapshot is intended to live alongside the periodic 4-agent verify-audit reports per CLAUDE.md §"Periodic verification". It complements rather than replaces the next full audit, which should be run after backend regressions clear.
+
+---
+
+## Session-end addendum (fires 30–37)
+
+After fire 35 wrote the initial snapshot, three more bounded fixes shipped before the lane reached the genuine cliff:
+
+- `e62b69c` — TMX-3614-workers: pin Playwright `workers: 1` for non-CI so `npm run e2e` is reliable without the `--workers=1` flag (the dev-machine flake was a shared-`npm run dev`-server race against parallel workers; CI was already serial).
+- `e1c1f9a` — TMX-3604-copy-toast: CopyButton clipboard rejections (HTTP context, denied perms, sandboxed iframe) now surface via `toast.error` instead of `console.error` only. Component-level vitest with sonner mocked + `Object.defineProperty(navigator, 'clipboard', ...)` for the rejection stub.
+
+Plus, before fire 35:
+- `60edef1` itself — this snapshot doc.
+
+### Session loop totals (fires 22–37)
+
+13 frontend commits across this loop chain:
+
+| Class | Commit | Surface |
+|---|---|---|
+| Demo + e2e count | `9f379a6` | design-system fixture; segments-revisions e2e count assertion |
+| Worksheet + ADR | `29b43ba` | TMX-3702-counts close-out |
+| Backend (DOCX) | `9e53928` | TMX-3704-pairing — `w:id` capture for cross-block move correlation |
+| A11y | `7ee4441` | TMX-3702-a11y dynamic aria-label |
+| Fetch sweep | `c7d7473` | jobs/[id] doc + segments error UX |
+| Fetch sweep | `517a547` | Trust Center Assets cards |
+| Fetch sweep | `e2ac305` | upload glossary catalog |
+| Fetch sweep | `418cbc5` (+ `c0d886d` backfill) | jobs/[id] agent-activity poll |
+| Fetch sweep | `9c3adca` | documents/[id] doc fetch |
+| Mutation sweep | `c6f87a0` | jobs delete (audit-trail tombstone path) |
+| Mutation sweep | `1836924` | segment save (HITL correction audit-event path) |
+| Mutation sweep | `fae481d` | downloads × 2 (JobsView + documents/[id]) |
+| Mutation sweep | `944f8d7` | tools-page 5 sub-sites |
+| Sonner-everywhere | `6d529fd` | alert() → toast.success/error × 2 |
+| Tooling | `e62b69c` | Playwright workers=1 non-CI |
+| Mutation sweep | `e1c1f9a` | CopyButton clipboard |
+| Snapshot | `60edef1` | this doc |
+
+Roughly 11 user-visible improvements + 2 tooling polishes + 1 doc.
+
+### Cliff status
+
+The remaining frontend backlog tickets are:
+
+- **TMX-3702 parent** (accept/reject revisions UX) — BLOCKED on ADR-0004 schema decision (TMX-3702-v2 4-option proposal sits in `docs/decisions/0004-revision-decision-persistence.md`)
+- **TMX-3703** (differential rendering current-vs-proposed) — large/strategic, needs design pass
+- **TMX-3616-auth0** (httpOnly cookies via Auth0) — BLOCKED on TMX-3013 Auth0 wiring
+- **TMX-3618** (Playwright visual snapshots) — stuck on cross-platform baseline strategy (Windows dev / Linux CI; needs Docker-based snapshot runner OR per-OS baseline policy)
+
+Pod B is at the cliff for the standing `/loop drive the backlog` prompt. Cleanly handing off to whatever comes next — backend regressions, design polish work from `reSCApe_designer_review.docx`, or new tickets from Kapil.
+
+**Loop stopped intentionally** at the close of fire 38 — no `ScheduleWakeup` issued. Re-engage by running the `/loop` command again or by claiming a specific ticket.
