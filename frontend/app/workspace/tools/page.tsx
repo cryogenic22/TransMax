@@ -200,7 +200,11 @@ export function FeedbackControls({ source, target, targetLang }: { source: strin
                 target_language: targetLang
             })
             setShowModal(false)
-            alert("Feedback submitted to Black Book!")
+            // TMX-3604-alert-to-toast: blocking alert() replaced with
+            // sonner toast.success — non-blocking, matches the
+            // sonner-everywhere convention shipped by the failure-mode
+            // sweep.
+            toast.success("Feedback submitted to Black Book!")
         } catch (err) {
             // TMX-3604-tools-toast: A1 — Black Book corrections feed
             // the audit chain. A silent submit failure means the rule
