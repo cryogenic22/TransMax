@@ -48,3 +48,7 @@ htmlcov/
 # Node / Frontend (handled by frontend/.gitignore)
 node_modules/
 .next/
+
+# Regulatory Pack per-release output (TMX-3500); keep .gitkeep
+regulatory_pack/releases/*
+!regulatory_pack/releases/.gitkeep
