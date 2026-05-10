@@ -61,7 +61,8 @@ The non-negotiable list. Day-1 work; no sprint-planning needed.
 | TMX-3604-delete-toast | Surface delete-job failures via toast (A3 mutation-error class; first ticket pivoting from fetch-sweep) | Frontend | XS | 2 — **[Done]** c6f87a0 — see `.context/loops/TMX-3604-delete-toast.md` |
 | TMX-3604-save-toast | Surface segment-save failures via toast (A3 mutation-error class; HITL-correction audit-event path) | Frontend | XS | 2 — **[Done]** 1836924 — see `.context/loops/TMX-3604-save-toast.md` |
 | TMX-3604-download-toast | Surface download failures via toast (A3 mutation-error class; covers JobsView + documents/[id] download buttons in one commit) | Frontend | XS | 2 — **[Done]** fae481d — see `.context/loops/TMX-3604-download-toast.md` |
-| TMX-3604-tools-toast | Surface tools-page action failures via toast (5 sites; closes the mutation-error sweep) | Frontend | XS | 2 — **[Done, pending commit + push]** — see `.context/loops/TMX-3604-tools-toast.md` |
+| TMX-3604-tools-toast | Surface tools-page action failures via toast (5 sites; closes the mutation-error sweep) | Frontend | XS | 2 — **[Done]** 944f8d7 — see `.context/loops/TMX-3604-tools-toast.md` |
+| TMX-3604-alert-to-toast | Replace blocking alert() with sonner toasts (1 success + 1 failure site; closes the sonner-everywhere arc) | Frontend | XS | 2 — **[Done, pending commit + push]** — see `.context/loops/TMX-3604-alert-to-toast.md` |
 | TMX-3705 | File-type sniffing + size cap + AV scan trigger | Pipeline | M | 1 — **[Done]** dc4795c — see `.context/loops/TMX-3705.md`. SHA backfilled by TMX-3060. |
 | TMX-3706 | Deeper DOCX vs XLSX vs PPTX disambiguation (peek inside ZIP for `[Content_Types].xml`) | Pipeline | S | 2 — **[Spawned by TMX-3705]** |
 | TMX-3707 | AV scanner integration (clamd / Cloud DLP) — wire `emit_av_scan_request` to actual scanner | Pipeline + Platform | M | 2 — **[Spawned by TMX-3705]** |

@@ -8,6 +8,8 @@ import { CopyButton } from '@/components/ui/CopyButton'
 import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import Link from 'next/link'
 import { QualityDashboard } from '@/components/ui/QualityDashboard'
+import { getErrMessage } from '@/lib/utils'
+import { toast } from 'sonner'
 
 export default function TrustedTranslatePage() {
     // State
@@ -57,9 +59,10 @@ export default function TrustedTranslatePage() {
             })
 
             setViewMode('read')
-        } catch (e) {
-            console.error(e)
-            alert("Translation failed. Please try again.")
+        } catch (err) {
+            // TMX-3604-alert-to-toast: blocking alert() replaced with
+            // toast.error so the failure UX matches the sweep pattern.
+            toast.error(getErrMessage(err, "Translation failed. Please try again."))
         } finally {
             setLoading(false)
         }
