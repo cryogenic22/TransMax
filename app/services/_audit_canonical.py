@@ -25,10 +25,13 @@ from __future__ import annotations
 # if every other input byte collides, the tag bytes guarantee distinct
 # hash outputs.
 #
-# Note: TMX-3101 writer docstring claims "20 bytes". That comment in the
-# writer is wrong — the actual byte literal is 18 bytes and the
-# hardcoded hex digest pinned in tests/test_audit_writer_v2.py confirms
-# 18 is the canonical-by-test value. The 18-byte tag IS the spec.
+# Historical note: an earlier TMX-3101 writer docstring claimed "20 bytes".
+# That was a narrative-only error (the byte literal was always 18 bytes and
+# the pinned hex digest in tests/test_audit_writer_v2.py is computed from
+# the 18-byte literal). The docstrings were corrected by
+# TMX-CORRECTIVE-20260511; the assertion below is the load-bearing check
+# that prevents any future re-jigger of the constant from drifting silently.
+# The 18-byte tag IS the spec.
 DOMAIN_TAG: bytes = b"transmax.audit.v1\0"
 
 # The 32-byte zero sentinel used as ``previous_hash`` for
