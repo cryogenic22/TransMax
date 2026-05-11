@@ -15,7 +15,7 @@ Constants
 
 ::
 
-    DOMAIN_TAG    = b"transmax.audit.v1\\0"   # 20 bytes; NUL-terminated UTF-8
+    DOMAIN_TAG    = b"transmax.audit.v1\\0"   # 18 bytes (17 ASCII + 1 NUL terminator)
     GENESIS_HASH  = b"\\x00" * 32              # 32 zero bytes (well-defined
                                               # sentinel; NOT the v1 string).
 
@@ -55,13 +55,13 @@ Hash construction
     payload_hash = SHA-256(canonical_json(payload))         # 32 bytes
 
     event_hash   = SHA-256(
-        DOMAIN_TAG                                           # 20 bytes
+        DOMAIN_TAG                                           # 18 bytes
         || sequence_index.to_bytes(8, 'little', signed=False) #  8 bytes
         || previous_hash                                     # 32 bytes
         || payload_hash                                      # 32 bytes
     )                                                        # 32 bytes
 
-Total preimage = 20 + 8 + 32 + 32 = **92 bytes** of fixed-width input. No
+Total preimage = 18 + 8 + 32 + 32 = **90 bytes** of fixed-width input. No
 length-prefix needed — every component is fixed-width and the variable-
 length JSON payload is hashed first into a fixed-width digest.
 
@@ -119,7 +119,7 @@ class AuditWriterV2:
 
     Public API:
 
-    - :py:attr:`DOMAIN_TAG` — the 20-byte canonical domain tag (NUL-terminated).
+    - :py:attr:`DOMAIN_TAG` — the 18-byte canonical domain tag (17 ASCII + 1 NUL terminator).
     - :py:attr:`GENESIS_HASH` — the 32-byte zero sentinel for genesis events.
     - :py:meth:`record_event` — append an event to the chain.
     - :py:meth:`compute_payload_hash` — pure helper; canonical JSON + SHA-256.
@@ -134,8 +134,8 @@ class AuditWriterV2:
     # --- Canonical algorithm constants (the spec) -----------------------
 
     DOMAIN_TAG: bytes = b"transmax.audit.v1\0"
-    """20-byte domain tag. NUL-terminator is part of the tag (domain separator
-    vs. any future tag without trailing NUL)."""
+    """18-byte domain tag (17 ASCII characters + 1 NUL terminator). NUL-terminator
+    is part of the tag (domain separator vs. any future tag without trailing NUL)."""
 
     GENESIS_HASH: bytes = b"\x00" * 32
     """32-byte zero sentinel used as ``previous_hash`` for ``sequence_index == 0``.
@@ -198,7 +198,7 @@ class AuditWriterV2:
         ::
 
             event_hash = SHA-256(
-                DOMAIN_TAG               # 20 bytes
+                DOMAIN_TAG               # 18 bytes
                 || seq.to_bytes(8, 'little', signed=False)  # 8 bytes
                 || prev_hash             # 32 bytes
                 || payload_hash          # 32 bytes

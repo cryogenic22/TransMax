@@ -202,8 +202,8 @@ class AuditVerifierV2:
     """
 
     DOMAIN_TAG: bytes = DOMAIN_TAG
-    """20-byte domain tag. Pulled from ``_audit_canonical``. Equals the
-    writer's :py:attr:`AuditWriterV2.DOMAIN_TAG`."""
+    """18-byte domain tag (17 ASCII characters + 1 NUL terminator). Pulled from
+    ``_audit_canonical``. Equals the writer's :py:attr:`AuditWriterV2.DOMAIN_TAG`."""
 
     GENESIS_HASH: bytes = GENESIS_HASH
     """32-byte zero sentinel for genesis events. Pulled from
@@ -275,11 +275,11 @@ class AuditVerifierV2:
         ::
 
             event_hash = SHA-256(
-                DOMAIN_TAG                                          # 20 bytes
+                DOMAIN_TAG                                          # 18 bytes
                 || seq.to_bytes(8, 'little', signed=False)         #  8 bytes
                 || prev_hash                                        # 32 bytes
                 || payload_hash                                     # 32 bytes
-            )                                                       # = 92 bytes preimage
+            )                                                       # = 90 bytes preimage
 
         Args:
             seq: non-negative sequence index for this event.
