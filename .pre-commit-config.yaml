@@ -87,6 +87,24 @@ repos:
         stages: [pre-commit]
         verbose: true
 
+  # ── Worktree-vs-origin/main drift audit (advisory) ────────────────────
+  # Sister to the worksheet drift audit. Catches the case where the
+  # local working tree silently reverts shipped code (e.g. a re-introduced
+  # DEFAULT_ORG_ID literal that TMX-3012d's test would catch). Advisory
+  # only — surfaces findings via `verbose: true` but `|| true` keeps a
+  # non-zero exit from blocking emergency commits. Spawned by
+  # TMX-CORRECTIVE-20260511.
+  - repo: local
+    hooks:
+      - id: worktree-clean-advisory
+        name: Worktree-vs-origin/main drift audit (advisory)
+        entry: bash -c 'python scripts/audit_worktree_clean.py || true'
+        language: system
+        pass_filenames: false
+        files: ^(app|tests)/.*\.py$
+        stages: [pre-commit]
+        verbose: true
+
   # ── Red-flag attestation (kp-sdlc/harness) ────────────────────────────
   # Appends a Self-review skeleton to the commit message if missing.
   - repo: local
