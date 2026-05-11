@@ -157,6 +157,18 @@ The 4-agent loop verification ran on 2026-05-09 over `HEAD~30..HEAD`. Reports ar
 
 ---
 
+## Corrective loops (filed 2026-05-11 from 2026-05-11 verify-audit RED)
+
+The 4-agent verify-audit on 2026-05-11 went RED on Agent 2 (pytest) with 53 reds out of 869. Triage showed three causes: (1) ~41 schema-staleness reds from the committed `transmax.db` missing TMX-3015/3045 columns, (2) ~2 dirty-worktree reds from a silent revert of TMX-3012c's `DEFAULT_ORG_ID` invariant, (3) ~1 PII test failure that was actually downstream of cause (1). Corrective loop TMX-CORRECTIVE-20260511 closed all three.
+
+| Ticket | Title | Source | Owner | Sprint |
+|---|---|---|---|---|
+| TMX-CORRECTIVE-20260511 | Corrective loop — worktree restore + DB rebuild + TMX-3101 docstring fix + audit_worktree_clean.py | 2026-05-11 verify-audit Agent 2 RED | Platform & Observability | corrective — **[Done]** SHAs pending — see `.context/loops/TMX-CORRECTIVE-20260511.md`. Outcomes: (a) `git checkout HEAD --` restored 5 service-layer files reverting silent `DEFAULT_ORG_ID` re-introduction; (b) local-only `transmax.db` rebuilt with current Alembic schema (sprint6_safety 5/5 green); (c) TMX-3101 narrative-only docstring fix (writer/verifier "20 bytes" → "18 bytes (17 ASCII + 1 NUL terminator)" at 7 docstring sites; pinned hex digest unchanged); (d) new `scripts/audit_worktree_clean.py` + 5 synthetic-drift tests + advisory pre-commit hook `worktree-clean-advisory`; (e) CLAUDE.md updates for push-hygiene + recurring-`transmax.db` rebuild command. Spawned: **TMX-AUDIT-DB-3002a**, **TMX-AUDIT-WORKTREE-WATCH-CI**. |
+| TMX-AUDIT-DB-3002a | Test-fixture cleanup — migrate the ~84 test files NOT using `tests/conftest.py::fresh_engine_for_db` so the committed `transmax.db` cannot mask schema-staleness false-reds in future verify-audits | TMX-CORRECTIVE-20260511 stage 6 | Platform & Observability | 2 — **[READY]** |
+| TMX-AUDIT-WORKTREE-WATCH-CI | Promote `scripts/audit_worktree_clean.py` from advisory pre-commit hook to a blocking CI gate, after the script has run advisory-mode for 2-3 sprints without false positives | TMX-CORRECTIVE-20260511 stage 6 | Platform & Observability | 3-4 — **[READY]** after a 2-sprint stability window |
+
+---
+
 ## Recently completed
 
 - Phase 0 / pre-v3 work (the legacy backlog: Tickets 10-23) — all done before 2026-05-01; superseded by the v3.0 epic structure.

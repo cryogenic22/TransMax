@@ -116,6 +116,8 @@ Codified after the 2026-05-09 audit found ~30 worksheets stuck at `[Done, pendin
 
 Drift script also runs as an advisory pre-commit hook (`drift-audit-advisory`) — warn-only, does not block local commits.
 
+4. **Worktree-vs-`origin/main` drift**: a sister script `python scripts/audit_worktree_clean.py` flags the case where the local working tree silently reverts shipped code (e.g. a re-introduced `DEFAULT_ORG_ID` literal). Runs as the advisory pre-commit hook `worktree-clean-advisory`. Spawned by TMX-CORRECTIVE-20260511 after the 2026-05-11 verify-audit found 2 false-red regressions caused by a dirty worktree the audit's pytest couldn't distinguish from a real regression.
+
 ### Where to look first
 
 | What | Where |
@@ -349,7 +351,7 @@ These are real bugs the May 2026 review identified. Fix them only with an explic
 - `app/agents/graph.py:432` — `state['iteration_count'] = 999` is a hack to break the refinement loop on safety regression. v3.0 ticket TMX-3211 replaces with an explicit `force_finalize` flag.
 - `app/agents/graph.py:615` — final audit `output_hash: "placeholder_hash"`. v3.0 ticket TMX-3213 chains the real hash.
 - `app/services/audit_service.py` — chained-hashing uses string concatenation, no domain separator (review C-04). v3.0 epic E2 rebuilds the ledger.
-- `transmax.db` — SQLite file committed in git, recently grew 266KB → 5.6MB. v3.0 ticket TMX-3002 removes from history.
+- `transmax.db` — SQLite file committed in git, recently grew 266KB → 5.6MB. v3.0 ticket TMX-3002 removes from history. **Recurring schema-staleness:** the committed file lags behind every Alembic migration (TMX-3015 soft-delete columns, TMX-3045 approval columns) and causes ~40 false-red test failures whenever a test falls through to it instead of using `tests/conftest.py`'s `fresh_engine_for_db` fixture. To rebuild locally so tests stop tripping on schema drift: `python -c "import os; os.remove('transmax.db') if os.path.exists('transmax.db') else None; from app.core.database import init_db; init_db()"` — DO NOT commit the rebuilt file (TMX-3002 is Kapil-gated for the `git rm --cached` step). Follow-up TMX-AUDIT-DB-3002a audits test-fixture usage.
 - `.env` — committed with what appears to be a real OpenAI key (review C-01). **Do not edit until the key has been rotated and the file purged from history (TMX-3000).**
 - Single Alembic mega-migration (review C-06). v3.0 ticket TMX-3017 unwinds it.
 - `app/services/quality_gate.py` is a thread-unsafe lazy singleton (review C-08). v3.0 ticket TMX-3400 makes it instance-based.
