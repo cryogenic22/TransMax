@@ -26,9 +26,12 @@ test.describe("Design system visual regression (TMX-3618)", () => {
     await page.clock.install({ time: new Date("2026-05-10T00:00:00Z") })
 
     await page.goto("/workspace/design-system")
-    await page.waitForLoadState("networkidle")
-    // Belt-and-braces: wait for fonts to settle so antialiasing is
-    // stable across runs.
+    // `networkidle` is fragile when `page.clock.install` freezes the
+    // page clock (pollers using setInterval never quiesce). Use `load`
+    // instead — by the time the load event fires, the design-system
+    // page (no async data fetching, only static fixtures) is render-
+    // stable enough for the snapshot.
+    await page.waitForLoadState("load")
     await page.evaluate(() => document.fonts.ready)
 
     await expect(page).toHaveScreenshot("design-system-page.png", {

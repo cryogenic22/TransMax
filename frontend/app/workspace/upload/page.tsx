@@ -16,6 +16,14 @@ import { getErrMessage } from "@/lib/utils"
 import { LiveIsland, AgentStep } from "@/components/ui/live-island"
 import { toast } from "sonner"
 import { addActiveJob, removeActiveJob } from "@/hooks/useTranslationNotifications"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 
 type FlowState = "idle" | "uploaded" | "translating" | "done" | "estimating"
 
@@ -898,33 +906,30 @@ export default function TranslateDocumentPage() {
                         </div>
                     </div>
                 )}
-                {/* ===== Feature 4: ESTIMATE DIALOG ===== */}
-                {showEstimateDialog && estimate && (
-                    <div style={{
-                        position: "fixed",
-                        inset: 0,
-                        background: "rgba(0,0,0,0.4)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 200
-                    }}>
-                        <div style={{
-                            background: "white",
-                            borderRadius: "16px",
-                            padding: "2rem",
-                            maxWidth: "480px",
-                            width: "90%",
-                            boxShadow: "0 20px 60px rgba(0,0,0,0.2)"
-                        }}>
-                            <h3 style={{ fontSize: "1.125rem", fontWeight: 600, color: "#202124", marginBottom: "1.25rem" }}>
-                                Translation Estimate
-                            </h3>
+                {/* TMX-3709 Feature 4: ESTIMATE DIALOG via radix-dialog
+                    so SR/keyboard users get role=dialog + focus trap +
+                    Escape. */}
+                <Dialog
+                    open={showEstimateDialog && !!estimate}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setShowEstimateDialog(false)
+                            setEstimate(null)
+                        }
+                    }}
+                >
+                    {estimate && (
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Translation Estimate</DialogTitle>
+                                <DialogDescription>
+                                    Review the cost and scope before starting the translation pipeline.
+                                </DialogDescription>
+                            </DialogHeader>
                             <div style={{
                                 display: "grid",
                                 gridTemplateColumns: "1fr 1fr",
                                 gap: "1rem",
-                                marginBottom: "1.5rem"
                             }}>
                                 {[
                                     { label: "Segments", value: estimate.segment_count },
@@ -944,11 +949,12 @@ export default function TranslateDocumentPage() {
                                     </div>
                                 ))}
                             </div>
-                            <div style={{ fontSize: "0.75rem", color: "#80868b", marginBottom: "1rem" }}>
+                            <div style={{ fontSize: "0.75rem", color: "#80868b" }}>
                                 Model: {estimate.model || "gpt-4o-mini"} · Batch size: 5 segments
                             </div>
-                            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+                            <DialogFooter>
                                 <button
+                                    type="button"
                                     onClick={() => { setShowEstimateDialog(false); setEstimate(null) }}
                                     style={{
                                         padding: "0.625rem 1.25rem",
@@ -963,6 +969,7 @@ export default function TranslateDocumentPage() {
                                     Cancel
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={confirmTranslation}
                                     style={{
                                         padding: "0.625rem 1.25rem",
@@ -978,10 +985,10 @@ export default function TranslateDocumentPage() {
                                 >
                                     Start Translation
                                 </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                            </DialogFooter>
+                        </DialogContent>
+                    )}
+                </Dialog>
             </main>
 
             <style jsx global>{`
