@@ -10,6 +10,14 @@ import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import { getAllLanguages, getLanguageName } from '@/lib/languages'
 import { getErrMessage } from '@/lib/utils'
 import { toast } from 'sonner'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
 
 // ─── Tool API response shapes (TMX-3614-types-extended) ───────────────────
 // Frozen to the backend contract at app/api/tools.py. If the backend shape
@@ -231,45 +239,53 @@ export function FeedbackControls({ source, target, targetLang }: { source: strin
                 <ThumbsDown size={14} /> Issue
             </button>
 
-            {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+            {/* TMX-3709 — radix-dialog migration. Black Book correction
+                submission is an audit-event path (A1); accessible focus
+                management matters. */}
+            <Dialog open={showModal} onOpenChange={setShowModal}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
                             <MessageSquarePlus className="text-blue-600" />
                             Submit Correction
-                        </h3>
-                        <p className="text-sm text-slate-500 mb-4">
+                        </DialogTitle>
+                        <DialogDescription>
                             Help us improve. Your correction handles reinforcement learning for future translations.
-                        </p>
-
-                        <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">Suggested Correction</label>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div>
+                        <label htmlFor="correction-textarea" className="block text-xs font-semibold uppercase text-slate-500 mb-1">
+                            Suggested Correction
+                        </label>
                         <textarea
-                            className="w-full p-3 border rounded-lg mb-4 text-sm focus:ring-2 ring-blue-500 outline-none"
+                            id="correction-textarea"
+                            className="w-full p-3 border rounded-lg text-sm focus:ring-2 ring-blue-500 outline-none"
                             rows={4}
                             placeholder="Enter the correct translation here..."
                             value={correction}
                             onChange={e => setCorrection(e.target.value)}
                             autoFocus
                         />
-
-                        <div className="flex justify-end gap-2">
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSubmitCorrection}
-                                disabled={!correction}
-                                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                            >
-                                Submit Rule
-                            </button>
-                        </div>
                     </div>
-                </div>
-            )}
+                    <DialogFooter>
+                        <button
+                            type="button"
+                            onClick={() => setShowModal(false)}
+                            className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSubmitCorrection}
+                            disabled={!correction}
+                            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                        >
+                            Submit Rule
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

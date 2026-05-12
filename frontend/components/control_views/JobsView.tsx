@@ -4,13 +4,21 @@ import { useState, useEffect, useMemo } from "react"
 import {
     Clock, CheckCircle2, AlertCircle, Play, RefreshCw, FileText,
     Search, Target, WifiOff, Download, Trash2,
-    ChevronDown, ChevronUp, X
+    ChevronDown, ChevronUp
 } from "lucide-react"
 import Link from "next/link"
 import { api, Document, DeletionRecord } from "@/lib/api"
 import { ConfidenceMeter } from "@/components/ui/ConfidenceMeter"
 import { getErrMessage } from "@/lib/utils"
 import { toast } from "sonner"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 
 interface EnrichedJob {
     id: string
@@ -355,44 +363,53 @@ export function JobsView() {
                 )}
             </div>
 
-            {/* Delete Confirmation Dialog */}
-            {deleteTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-slate-900">Delete Document</h3>
-                            <button onClick={() => { setDeleteTarget(null); setDeleteReason("") }} className="text-slate-400 hover:text-slate-600">
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <p className="text-sm text-slate-600">
-                            Are you sure you want to delete <span className="font-semibold">{deleteTarget.document_name}</span>? This action cannot be undone.
-                        </p>
-                        <textarea
-                            placeholder="Reason for deletion (optional)"
-                            value={deleteReason}
-                            onChange={e => setDeleteReason(e.target.value)}
-                            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 resize-none"
-                            rows={3}
-                        />
-                        <div className="flex justify-end gap-3">
-                            <button
-                                onClick={() => { setDeleteTarget(null); setDeleteReason("") }}
-                                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDelete}
-                                disabled={deleting}
-                                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50"
-                            >
-                                {deleting ? "Deleting..." : "Delete"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* TMX-3709 Delete confirmation — radix-dialog gives role,
+                aria-modal, focus trap, Escape, focus return. */}
+            <Dialog
+                open={!!deleteTarget}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setDeleteTarget(null)
+                        setDeleteReason("")
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete Document</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete{" "}
+                            <span className="font-semibold">{deleteTarget?.document_name}</span>?
+                            This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <textarea
+                        placeholder="Reason for deletion (optional)"
+                        value={deleteReason}
+                        onChange={e => setDeleteReason(e.target.value)}
+                        className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 resize-none"
+                        rows={3}
+                        aria-label="Reason for deletion"
+                    />
+                    <DialogFooter>
+                        <button
+                            type="button"
+                            onClick={() => { setDeleteTarget(null); setDeleteReason("") }}
+                            className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleDelete}
+                            disabled={deleting}
+                            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50"
+                        >
+                            {deleting ? "Deleting..." : "Delete"}
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
