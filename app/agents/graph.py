@@ -14,6 +14,7 @@ from app.services.tracing import traced
 from app.services.quality_gate import QualityGateService
 from app.services.db_service import DatabaseService
 from app.services.audit_service import AuditService
+from app.agents._audit_v2_emit import emit_v2_audit_event as _emit_v2_audit_event
 from app.services.resilience import get_resilience_service
 from app.services.json_parser import RobustParser
 from app.services.llm import get_llm
@@ -135,7 +136,21 @@ async def validate_request(state: TransMaxState) -> TransMaxState:
             # 1. Create Trail
             audit_id = audit_svc.create_audit_trail(state['job_id'])
             state['audit_id'] = audit_id
-            
+
+            # 1b. TMX-3110 Phase 1: also emit to v2 chain. The v1 audit_id is
+            # preserved in the v2 payload as `audit_id_v1` for cross-reference
+            # during the Phase 2 coverage audit (TMX-3110b).
+            _emit_v2_audit_event(
+                job_id=state['job_id'],
+                event_type="AUDIT_TRAIL_INITIALIZED",
+                actor_id=None,
+                actor_kind="system",
+                payload={
+                    "audit_id_v1": audit_id,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                },
+            )
+
             # 2. Capture Config Snapshot (Inputs)
             # Freeze the state of the request and system defaults
             config_snapshot = {
@@ -146,17 +161,36 @@ async def validate_request(state: TransMaxState) -> TransMaxState:
                 }
             }
             audit_svc.capture_config_snapshot(state['job_id'], config_snapshot)
-            
+
+            # 2b. TMX-3110 Phase 1: also emit to v2 chain.
+            _emit_v2_audit_event(
+                job_id=state['job_id'],
+                event_type="CONFIG_SNAPSHOT_CAPTURED",
+                actor_id=None,
+                actor_kind="system",
+                payload=config_snapshot,
+            )
+
             # 3. Log Genesis Event
-            audit_svc.log_event(audit_id, "JOB_STARTED", {
+            genesis_payload = {
                 "doc_id": state['doc_id'],
                 "timestamp": datetime.now(timezone.utc).isoformat()
-            })
-            
+            }
+            audit_svc.log_event(audit_id, "JOB_STARTED", genesis_payload)
+
+            # 3b. TMX-3110 Phase 1: also emit to v2 chain.
+            _emit_v2_audit_event(
+                job_id=state['job_id'],
+                event_type="JOB_STARTED",
+                actor_id=None,
+                actor_kind="system",
+                payload=genesis_payload,
+            )
+
         except Exception as e:
             logger.error(f"Failed to initialize Audit Trail: {e}")
             # In strict GxP, we might start failing here. For now, log.
-            
+
     return state
 
 @traced("graph.node.load_segments")
@@ -217,21 +251,19 @@ async def compile_constraints(state: TransMaxState) -> TransMaxState:
     
     state['constraint_pack'] = constraints
     
-    # NEW: Segment-Level Exact Match Lookup (Sprint 3)
-    # We iterate and find if any segment has a 100% match to bypass LLM
-    logger.info("Checking for TM Exact Matches...")
-    exact_count = 0
+    # Batch exact-match lookup: single DB query replaces N sequential find_best_match() calls
+    logger.info("Checking for TM Exact Matches (batch)...")
+    exact_matches = get_db_service().find_exact_matches_batch(
+        segments=state['segments'],
+        source_lang=source_lang,
+        target_lang=state['target_language']
+    )
     for seg in state['segments']:
-        match = get_db_service().find_best_match(
-            source_text=seg['source_text'],
-            source_lang=source_lang,
-            target_lang=state['target_language']
-        )
-        if match and match['type'] == SubstitutionType.TM_EXACT:
-             seg['tm_match'] = match 
-             exact_count += 1
-             
-    logger.info(f"Found {exact_count} exact TM matches.")
+        match = exact_matches.get(seg['segment_id'])
+        if match:
+            seg['tm_match'] = match
+
+    logger.info(f"Found {len(exact_matches)} exact TM matches.")
     return state
 
 
@@ -470,11 +502,26 @@ async def run_quality_gates(state: TransMaxState) -> TransMaxState:
         if state.get('job_id'):
             get_db_service().save_quality_scorecard(state['job_id'], scorecard_data, violations)
             if state.get('audit_id'):
-                get_audit_service().log_event(state['audit_id'], "SCORECARD_GENERATED", {
+                scorecard_payload = {
                     "status": status,
                     "reason": verdict["reason"],
                     "metrics": current_metrics
-                })
+                }
+                get_audit_service().log_event(state['audit_id'], "SCORECARD_GENERATED", scorecard_payload)
+                # TMX-3110 Phase 1: also emit to v2 chain. quality_gate node IS
+                # the agent emitting this — actor_kind=agent. NOTE: actor_id is
+                # `None` because v2 schema types actor_id as GUID (FK target),
+                # and agent node-names are not UUIDs. The node-name is preserved
+                # in the payload as `_actor_node` for cross-reference until
+                # TMX-3110-actor-id-schema decides whether to widen actor_id to
+                # String or to mint UUID5s per node-name.
+                _emit_v2_audit_event(
+                    job_id=state['job_id'],
+                    event_type="SCORECARD_GENERATED",
+                    actor_id=None,
+                    actor_kind="agent",
+                    payload={**scorecard_payload, "_actor_node": "quality_gate"},
+                )
 
         state['quality_report'] = {
             "violations": violations,
@@ -629,13 +676,27 @@ async def finalize_job(state: TransMaxState) -> TransMaxState:
     try:
         if state.get('audit_id'):
             # Log Final Event
-            get_audit_service().log_event(state['audit_id'], "JOB_FINALIZED", {
+            final_payload = {
                 "final_status": str(final_status),
                 "decision": "PASS" if final_status == DocumentStatus.TRANSLATED else "HELD",
-                "output_hash": "placeholder_hash" 
-            })
+                "output_hash": "placeholder_hash"
+            }
+            get_audit_service().log_event(state['audit_id'], "JOB_FINALIZED", final_payload)
             logger.info(f"Finalized Audit Trail {state['audit_id']}")
-            
+
+            # TMX-3110 Phase 1: also emit to v2 chain. finalize_job node IS
+            # the agent making the final decision — actor_kind=agent. See the
+            # quality_gate emit above for why actor_id stays None and the node
+            # name lives in payload['_actor_node'] (GUID schema constraint).
+            if state.get('job_id'):
+                _emit_v2_audit_event(
+                    job_id=state['job_id'],
+                    event_type="JOB_FINALIZED",
+                    actor_id=None,
+                    actor_kind="agent",
+                    payload={**final_payload, "_actor_node": "finalizer"},
+                )
+
     except Exception as e:
         logger.error(f"Warning: Failed to save audit log: {e}")
 
