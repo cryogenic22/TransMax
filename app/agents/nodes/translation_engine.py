@@ -311,16 +311,20 @@ class TranslationEngine:
         duration = time.time() - start_time
         await self._update_document_status(doc_id, progress.stats)
 
-        # Feature 5: Persist token usage and cost
-        total_tokens = self._total_input_tokens + self._total_output_tokens
-        # TMX-PRICING-1: route through the canonical pricing table (single
-        # source of truth). The engine bills LLM drafting at the gpt-4o-mini
-        # tier; see app/core/model_pricing.py.
-        from app.core.model_pricing import cost_for
-        estimated_cost = cost_for(
-            "gpt-4o-mini", self._total_input_tokens, self._total_output_tokens
-        )
+        # Feature 5: Persist token usage and cost. Cost telemetry must never
+        # break translation (A3 applies to regulated *content* paths, not best-
+        # effort metrics) — the whole block is wrapped, including the pricing
+        # lookup, so a non-numeric token count (e.g. a mocked LLM response in
+        # tests) can't abort the pipeline before the quality gate runs.
         try:
+            total_tokens = self._total_input_tokens + self._total_output_tokens
+            # TMX-PRICING-1: route through the canonical pricing table (single
+            # source of truth). The engine bills LLM drafting at the gpt-4o-mini
+            # tier; see app/core/model_pricing.py.
+            from app.core.model_pricing import cost_for
+            estimated_cost = cost_for(
+                "gpt-4o-mini", self._total_input_tokens, self._total_output_tokens
+            )
             self.db_service.update_document_cost(doc_id, total_tokens, round(estimated_cost, 6))
         except Exception as e:
             logger.warning(f"Failed to persist cost metrics: {e}")

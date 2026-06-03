@@ -49,6 +49,12 @@ def get_audit_service():
         _audit_service = AuditService()
     return _audit_service
 
+# Agents whose prompts are pinned into the JobConfigSnapshot. The pipeline
+# drives translation through these three LLM-backed agents (translator drafts,
+# fixer repairs, reviewer scores), so a regulator asking "which exact prompt
+# produced this output?" (A8) must be able to resolve every one of them.
+_SNAPSHOT_PROMPT_AGENTS = ("translator", "fixer", "reviewer")
+
 class TransMaxState(TypedDict):
     """
     The state object flowing through the TransMax graph.
@@ -76,6 +82,41 @@ class TransMaxState(TypedDict):
     
     # Reflexion (Sprint D)
     reverse_translation: Optional[str]
+
+def _build_config_snapshot(state: TransMaxState) -> Dict[str, Any]:
+    """Freeze the request + qualified-supplier telemetry for the audit chain.
+
+    Per A6 (LLM = qualified supplier) the JobConfigSnapshot must record the
+    REAL configured model and the EXACT prompt versions used, not placeholders.
+    Per A8 (pin every prompt to a version) each agent's prompt is captured by
+    its on-disk semver `version` plus its SHA-256 `content_hash`, so the snapshot
+    is reproducible: a later reader can re-resolve the same prompt and verify the
+    hash matches what ran.
+
+    The model is read from `settings.default_gpt_model` (the configured default),
+    replacing the prior hard-coded "gpt-4o" placeholder (TMX-3202 / known issue
+    graph.py:141). If the prompt registry cannot resolve an agent — a real
+    misconfiguration — we do NOT substitute a default (A3): we raise, so the job
+    fails loud rather than recording a snapshot that lies about provenance.
+    """
+    prompts: Dict[str, Dict[str, str]] = {}
+    for agent in _SNAPSHOT_PROMPT_AGENTS:
+        loaded = PromptRegistry.load(agent)
+        prompts[agent] = {
+            "version": loaded.version,
+            "content_hash": loaded.content_hash,
+        }
+
+    return {
+        "request": {
+            k: v for k, v in state.items()
+            if k in ["doc_id", "target_language", "job_id"]
+        },
+        "system": {
+            "model": settings.default_gpt_model,
+            "prompts": prompts,
+        },
+    }
 
 # ---------------------------------------------------------
 # NODES
@@ -152,14 +193,10 @@ async def validate_request(state: TransMaxState) -> TransMaxState:
             )
 
             # 2. Capture Config Snapshot (Inputs)
-            # Freeze the state of the request and system defaults
-            config_snapshot = {
-                "request": {k:v for k,v in state.items() if k in ["doc_id", "target_language", "job_id"]},
-                "system": {
-                     "model": "gpt-4o", # Placeholder, should fetch from config
-                     "prompts_version": "v1.0"
-                }
-            }
+            # Freeze the request + the REAL qualified-supplier telemetry: the
+            # configured model and the pinned prompt versions + content hashes
+            # (A6 / A8). See _build_config_snapshot for the provenance contract.
+            config_snapshot = _build_config_snapshot(state)
             audit_svc.capture_config_snapshot(state['job_id'], config_snapshot)
 
             # 2b. TMX-3110 Phase 1: also emit to v2 chain.
@@ -478,9 +515,11 @@ async def run_quality_gates(state: TransMaxState) -> TransMaxState:
                 # If we are in loop, decide_next_step checks iterations < 3.
                 # If we set STATUS="REVIEW_REQUIRED", it continues if it < 3.
                 # We need to signal "STOP_ITERATING".
-                # Let's set iteration_count to MAX to force exit? Hacky but works.
-                state['iteration_count'] = 999 
-        
+                # TODO(TMX-3211): replace iteration_count=999 sentinel with an
+                # explicit force_finalize flag in QualityGateState. Crude but
+                # functional — listed in CLAUDE.md "Known issues".
+                state['iteration_count'] = 999
+
         # Append current to history
         new_history_entry = {
             "metrics": current_metrics,
