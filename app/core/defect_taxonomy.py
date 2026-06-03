@@ -34,6 +34,21 @@ class DefectCategory(str, Enum):
     STRUCTURE_ERROR = "STRUCTURE_ERROR"               # Major (Regulatory)
     PROMPT_INJECTION = "PROMPT_INJECTION"             # Critical (Input safety — TMX-INJ-1)
 
+def is_critical(severity) -> bool:
+    """Case-insensitive check whether a severity is CRITICAL (TMX-QG-SEVCASE).
+
+    Defect severities are produced as the uppercase enum value ("CRITICAL")
+    by the quality gate, but some legacy paths emit lowercase ("critical").
+    Several call sites compared against the lowercase literal and so silently
+    NEVER matched a real critical defect — auto-blocking and refine-exclusion
+    were broken. This canonical helper normalises both forms.
+    """
+    if severity is None:
+        return False
+    value = getattr(severity, "value", severity)  # accept DefectSeverity or str
+    return str(value).upper() == DefectSeverity.CRITICAL.value
+
+
 @dataclass
 class Defect:
     category: DefectCategory

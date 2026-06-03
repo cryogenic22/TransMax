@@ -47,6 +47,7 @@ from app.agents.prompts import PromptRegistry
 from app.models.database import SegmentStatus, DocumentStatus
 from app.core.constants import SubstitutionType
 from app.core.config import settings
+from app.core.defect_taxonomy import is_critical
 from app.services.language_packs.factory import LanguagePackFactory
 from app.services.budget_guard import JobBudget
 
@@ -554,7 +555,7 @@ class TranslationEngine:
                             # Enrich gate results with scoring breakdown for UI
                             gate_result = {
                                 "violations": violations,
-                                "blocked": score_result.status == "BLOCKED" or any(v.get('severity') == 'critical' for v in violations),
+                                "blocked": score_result.status == "BLOCKED" or any(is_critical(v.get('severity')) for v in violations),
                                 "score_breakdown": score_result.components,
                                 "score_reasoning": score_result.breakdown_reasoning,
                                 "score_band": score_result.band
