@@ -109,3 +109,113 @@ def test_check_segment_flags_injected_source():
         target_lang="fr",
     )
     assert not [v for v in clean if v["category"] == DefectCategory.PROMPT_INJECTION.value]
+
+
+# --- TMX-INJ-1b: INJECTION_DETECTED audit event ---------------------------
+
+import uuid  # noqa: E402
+from datetime import datetime, timezone  # noqa: E402
+
+from sqlalchemy import text  # noqa: E402
+
+_INJ_ORG = "00000000-0000-0000-0000-0000000000b2"
+
+
+def _seed_org_and_job(core_db, org_id: str, job_id: str) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    src_id = str(uuid.uuid4())
+    with core_db.engine.begin() as conn:
+        conn.execute(text(
+            "INSERT OR IGNORE INTO organizations "
+            "(id, name, slug, org_kind, is_active, created_at, updated_at) "
+            "VALUES (:id, :n, :s, 'customer', 1, :ts, :ts)"
+        ).bindparams(id=org_id, n="org-injb", s="org-injb", ts=now))
+        conn.execute(text(
+            "INSERT OR IGNORE INTO translation_jobs "
+            "(id, source_document_id, organization_id, source_language, "
+            "target_language, provider, is_deleted, created_at) "
+            "VALUES (:id, :src, :org, 'en', 'es', 'OPENAI', 0, :ts)"
+        ).bindparams(id=job_id, src=src_id, org=org_id, ts=now))
+
+
+def _query_events(core_db, job_id: str, event_type: str) -> list:
+    from app.models.audit_v2 import AuditEventV2
+    session = core_db.SessionLocal()
+    try:
+        return (
+            session.query(AuditEventV2)
+            .filter(AuditEventV2.job_id == job_id, AuditEventV2.event_type == event_type)
+            .all()
+        )
+    finally:
+        session.close()
+
+
+class _FakeEngineInjection:
+    """Returns a report carrying a PROMPT_INJECTION violation (gate already ran)."""
+
+    def __init__(self, with_injection: bool):
+        self._with = with_injection
+
+    async def translate_document(self, doc_id, segments, target_language, constraint_pack):
+        violations = []
+        if self._with:
+            violations.append({
+                "segment_id": "1",
+                "category": DefectCategory.PROMPT_INJECTION.value,
+                "severity": DefectSeverity.CRITICAL.value,
+                "message": "Prompt injection detected in source (ignore_previous): '...'",
+            })
+        report = {"status": "REVIEW_REQUIRED", "metrics": {}, "violations": violations}
+        return ([{**s} for s in segments], report)
+
+
+async def test_node_emits_injection_detected_event(fresh_engine_for_db, monkeypatch):
+    """A PROMPT_INJECTION violation in the report ⇒ one INJECTION_DETECTED event."""
+    import app.agents.nodes.translation_engine_node as te
+    from app.agents import _audit_v2_emit
+    from app.core.tenant_context import org_context
+
+    core_db = fresh_engine_for_db
+    job_id = str(uuid.uuid4())
+    _seed_org_and_job(core_db, _INJ_ORG, job_id)
+    _audit_v2_emit.reset_writer_singleton_for_test()
+    monkeypatch.setattr(te, "get_engine", lambda: _FakeEngineInjection(with_injection=True))
+
+    state = {
+        "doc_id": "doc-1", "job_id": job_id, "target_language": "es",
+        "segments": [{"segment_id": "1", "source_text": "x", "order_index": 1}],
+        "constraint_pack": {},
+    }
+    with org_context(_INJ_ORG):
+        await te.translation_engine_node(state)
+        events = _query_events(core_db, job_id, "INJECTION_DETECTED")
+
+    assert len(events) == 1
+    assert events[0].payload["count"] == 1
+    assert events[0].payload["segment_ids"] == ["1"]
+    assert events[0].payload["_actor_node"] == "translator"
+
+
+async def test_node_no_injection_no_event(fresh_engine_for_db, monkeypatch):
+    """A clean report emits no INJECTION_DETECTED event."""
+    import app.agents.nodes.translation_engine_node as te
+    from app.agents import _audit_v2_emit
+    from app.core.tenant_context import org_context
+
+    core_db = fresh_engine_for_db
+    job_id = str(uuid.uuid4())
+    _seed_org_and_job(core_db, _INJ_ORG, job_id)
+    _audit_v2_emit.reset_writer_singleton_for_test()
+    monkeypatch.setattr(te, "get_engine", lambda: _FakeEngineInjection(with_injection=False))
+
+    state = {
+        "doc_id": "doc-1", "job_id": job_id, "target_language": "es",
+        "segments": [{"segment_id": "1", "source_text": "x", "order_index": 1}],
+        "constraint_pack": {},
+    }
+    with org_context(_INJ_ORG):
+        await te.translation_engine_node(state)
+        events = _query_events(core_db, job_id, "INJECTION_DETECTED")
+
+    assert events == []
