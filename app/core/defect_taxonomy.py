@@ -1,6 +1,6 @@
 
 from enum import Enum
-from typing import List, Dict, Optional, Any
+from typing import Optional
 from dataclasses import dataclass
 
 class DefectSeverity(str, Enum):
@@ -32,6 +32,7 @@ class DefectCategory(str, Enum):
     FREQUENCY_MISMATCH = "FREQUENCY_MISMATCH"         # Critical (Dosing)
     FORMATTING_ERROR = "FORMATTING_ERROR"             # Major (Regulatory)
     STRUCTURE_ERROR = "STRUCTURE_ERROR"               # Major (Regulatory)
+    PROMPT_INJECTION = "PROMPT_INJECTION"             # Critical (Input safety — TMX-INJ-1)
 
 @dataclass
 class Defect:
@@ -59,6 +60,9 @@ class TaxonomyService:
             return DefectSeverity.CRITICAL
             
         if "negation" in message_lower: # "Do NOT take" vs "Take"
+            return DefectSeverity.CRITICAL
+
+        if "injection" in message_lower: # TMX-INJ-1: embedded prompt-injection in source
             return DefectSeverity.CRITICAL
 
         if "contraindication" in message_lower:

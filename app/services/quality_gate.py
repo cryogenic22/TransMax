@@ -239,6 +239,9 @@ class QualityGateService:
         # 7. Frequency Gate (Pharma abbreviation matching)
         defects.extend(self.check_frequency(source_text, target_text))
 
+        # 7b. Prompt-Injection Source Scan (TMX-INJ-1, Critical input-safety)
+        defects.extend(self.check_prompt_injection(source_text))
+
         # 8. Regulatory Profile Checks (if profile_id is provided)
         if profile_id:
             defects.extend(self.check_date_formatting(target_text, profile_id))
@@ -448,6 +451,21 @@ class QualityGateService:
             if pack:
                 self._lang_packs[lang_code] = pack
             return pack
+
+    def check_prompt_injection(self, source_text: str) -> List[Defect]:
+        """TMX-INJ-1: flag prompt-injection / instruction-override attempts in
+        the SOURCE as CRITICAL PROMPT_INJECTION defects (A2 deterministic gate,
+        A3 fail-loud). Detection lives in the pure injection_guard scanner."""
+        from app.services.injection_guard import default_injection_scanner
+
+        defects: List[Defect] = []
+        for finding in default_injection_scanner.scan(source_text):
+            defects.append(self._create_defect(
+                DefectCategory.PROMPT_INJECTION,
+                f"Prompt injection detected in source ({finding.label}): "
+                f"{finding.snippet!r}",
+            ))
+        return defects
 
     def _create_defect(self, category: DefectCategory, message: str) -> Defect:
         """Helper to create rated defect"""
