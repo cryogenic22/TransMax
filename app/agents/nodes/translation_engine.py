@@ -260,6 +260,9 @@ class TranslationEngine:
             reset_timeout=config.circuit_breaker_reset_seconds
         )
         self._semaphore = asyncio.Semaphore(config.max_concurrent_batches)
+        # Feature 5: Token usage accumulators
+        self._total_input_tokens = 0
+        self._total_output_tokens = 0
 
     async def translate_document(
         self,
@@ -307,7 +310,21 @@ class TranslationEngine:
         # 5. Finalize
         duration = time.time() - start_time
         await self._update_document_status(doc_id, progress.stats)
-        
+
+        # Feature 5: Persist token usage and cost
+        total_tokens = self._total_input_tokens + self._total_output_tokens
+        # TMX-PRICING-1: route through the canonical pricing table (single
+        # source of truth). The engine bills LLM drafting at the gpt-4o-mini
+        # tier; see app/core/model_pricing.py.
+        from app.core.model_pricing import cost_for
+        estimated_cost = cost_for(
+            "gpt-4o-mini", self._total_input_tokens, self._total_output_tokens
+        )
+        try:
+            self.db_service.update_document_cost(doc_id, total_tokens, round(estimated_cost, 6))
+        except Exception as e:
+            logger.warning(f"Failed to persist cost metrics: {e}")
+
         # Re-assemble results
         all_units = sorted(tm_units + llm_units, key=lambda u: u.order_index)
         result_segments = [u.to_update_dict() for u in all_units]
@@ -546,7 +563,19 @@ class TranslationEngine:
             self.llm.ainvoke(messages),
             timeout=self.config.llm_timeout_seconds
         )
-        
+
+        # Feature 5: Capture token usage
+        try:
+            token_usage = getattr(response, 'response_metadata', {}).get('token_usage', {})
+            if token_usage:
+                self._total_input_tokens += token_usage.get('prompt_tokens', 0)
+                self._total_output_tokens += token_usage.get('completion_tokens', 0)
+            elif hasattr(response, 'usage_metadata') and response.usage_metadata:
+                self._total_input_tokens += getattr(response.usage_metadata, 'input_tokens', 0)
+                self._total_output_tokens += getattr(response.usage_metadata, 'output_tokens', 0)
+        except Exception:
+            pass  # Don't fail translation over metrics
+
         # Parse response
         data = RobustParser.parse(response.content)
         

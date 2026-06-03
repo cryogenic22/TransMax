@@ -249,6 +249,10 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         Segment.status.in_(["translated", "edited", "approved"])
     ).scalar() or 0
 
+    # Feature 5: Financial metrics
+    total_tokens = db.query(func.coalesce(func.sum(Document.total_tokens), 0)).scalar() or 0
+    total_cost_usd = db.query(func.coalesce(func.sum(Document.total_cost_usd), 0.0)).scalar() or 0.0
+
     return {
         "total_documents": total_docs,
         "active_jobs": active_jobs,
@@ -256,6 +260,8 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         "completed_24h": completed_24h,
         "total_segments": total_segments,
         "translated_segments": translated_segments,
+        "total_tokens": total_tokens,
+        "total_cost_usd": round(total_cost_usd, 4),
     }
 
 
