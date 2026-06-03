@@ -90,13 +90,10 @@ async def test_graph_tm_bypass():
         mock_db_service = MagicMock()
         mock_get_db.return_value = mock_db_service
         
-        # 1. Setup find_best_match responses
-        def side_effect_find(source_text, source_lang, target_lang):
-            if source_text == "Hello":
-                return {"type": "TM_EXACT", "target": "Bonjour", "score": 1.0}
-            return None
-        
-        mock_db_service.find_best_match.side_effect = side_effect_find
+        # 1. Setup find_exact_matches_batch response (batch replaces per-segment calls)
+        mock_db_service.find_exact_matches_batch.return_value = {
+            "1": {"type": "TM_EXACT", "target": "Bonjour", "score": 1.0}
+        }
         mock_db_service.get_constraints.return_value = {"glossary": [], "tm_matches": []}
         
         # 2. Run 'compile_constraints'
