@@ -1,0 +1,121 @@
+# Dependabot — bootstrapped 2026-05-01 per v3.0 plan TMX-3008.
+# Per the May 2026 review (L1: requirements.txt has no version pins) we lean
+# on Dependabot to surface upstream changes while we work toward proper pinning
+# (deferred to v3.1; see parking_lot/deferred_features.md §8).
+
+version: 2
+updates:
+  # ── Python (backend) ──────────────────────────────────────────────────────
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Berlin"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "deps(py)"
+      include: "scope"
+    groups:
+      langchain-ecosystem:
+        patterns:
+          - "langchain*"
+          - "langgraph"
+      pydantic-ecosystem:
+        patterns:
+          - "pydantic*"
+      sqlalchemy-ecosystem:
+        patterns:
+          - "sqlalchemy"
+          - "alembic"
+          - "psycopg2*"
+          - "pgvector"
+      llm-providers:
+        patterns:
+          - "openai"
+          - "anthropic"
+          - "deepl"
+      observability:
+        patterns:
+          - "opentelemetry*"
+          - "prometheus*"
+      security-critical:
+        patterns:
+          - "python-jose*"
+          - "passlib*"
+          - "cryptography"
+        update-types:
+          - "patch"
+          - "minor"
+
+  # ── Frontend (npm) ─────────────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Berlin"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "frontend"
+    commit-message:
+      prefix: "deps(web)"
+      include: "scope"
+    groups:
+      next-ecosystem:
+        patterns:
+          - "next"
+          - "eslint-config-next"
+          - "@next/*"
+      react-ecosystem:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+      radix-ui:
+        patterns:
+          - "@radix-ui/*"
+      tiptap:
+        patterns:
+          - "@tiptap/*"
+      tailwind-ecosystem:
+        patterns:
+          - "tailwind*"
+          - "@tailwindcss/*"
+          - "autoprefixer"
+          - "postcss"
+      typescript-tooling:
+        patterns:
+          - "typescript"
+          - "eslint"
+          - "@types/*"
+
+  # ── GitHub Actions ─────────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "deps(ci)"
+
+  # ── Docker ─────────────────────────────────────────────────────────────────
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "deps(docker)"

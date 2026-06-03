@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TransMax — Sprint 2 Review &amp; Path Forward (2026-05-13)</title>
+<style>
+  :root{
+    --ink:#1a1f2e; --muted:#5b6677; --line:#e3e8ef; --bg:#f7f9fc;
+    --green:#0a7d4d; --greenbg:#e6f6ee; --amber:#9a6700; --amberbg:#fff4d6;
+    --red:#b3261e; --redbg:#fce8e6; --blue:#1456c4; --bluebg:#e8f0fe;
+    --card:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{font:15px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);margin:0;padding:0}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 28px 80px}
+  h1{font-size:30px;line-height:1.2;margin:0 0 6px}
+  h2{font-size:22px;margin:44px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--line)}
+  h3{font-size:17px;margin:26px 0 8px}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 4px}
+  .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:.02em}
+  .pill.g{background:var(--greenbg);color:var(--green)}
+  .pill.a{background:var(--amberbg);color:var(--amber)}
+  .pill.r{background:var(--redbg);color:var(--red)}
+  .pill.b{background:var(--bluebg);color:var(--blue)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin:14px 0;box-shadow:0 1px 2px rgba(20,30,50,.04)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:16px 0}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .kpi .n{font-size:30px;font-weight:700;line-height:1}
+  .kpi .l{color:var(--muted);font-size:13px;margin-top:6px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px;background:var(--card)}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#eef2f8;font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+  tr:last-child td{border-bottom:none}
+  code{background:#eef1f6;padding:1px 6px;border-radius:5px;font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}
+  .mono{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+  .lead{font-size:16.5px;color:#2c3444}
+  .note{background:var(--bluebg);border-left:4px solid var(--blue);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+  .warn{background:var(--amberbg);border-left:4px solid var(--amber);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+  ul{margin:8px 0 8px 2px;padding-left:20px}
+  li{margin:5px 0}
+  .tag{font:12px ui-monospace,monospace;color:var(--muted)}
+  .small{font-size:13px;color:var(--muted)}
+  .toc{columns:2;column-gap:30px;font-size:14px}
+  .toc a{color:var(--blue);text-decoration:none}
+  header.top{border-bottom:3px solid var(--ink);padding-bottom:18px;margin-bottom:8px}
+  .legend span{margin-right:16px;font-size:13px}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>TransMax — Sprint 2 Review &amp; Path Forward</h1>
+  <p class="sub">Auditable AI pharma-translation agent · Pilot-readiness hardening</p>
+  <p class="sub"><strong>Prepared for:</strong> Kapil (CEO) &nbsp;·&nbsp; <strong>Date:</strong> 2026-05-13 &nbsp;·&nbsp; <strong>Branch:</strong> <code>main</code> @ <code>578bcaf</code></p>
+  <p style="margin-top:10px">
+    <span class="pill g">Sprint 2 chain: green</span>
+    <span class="pill g">0 real regressions</span>
+    <span class="pill b">Audit ledger v2 live in pipeline</span>
+  </p>
+</header>
+
+<div class="card">
+  <strong>How to read this</strong>
+  <div class="toc" style="margin-top:8px">
+    <a href="#tldr">1. Executive summary</a><br>
+    <a href="#done">2. What was delivered (with evidence)</a><br>
+    <a href="#value">3. Incremental value &amp; benefit</a><br>
+    <a href="#evidence">4. Evidence base</a><br>
+    <a href="#arch">5. Architecture judgment (LangGraph)</a><br>
+    <a href="#path">6. Path to desired state</a><br>
+    <a href="#epics">7. Next epics / loops &amp; their value</a><br>
+    <a href="#risks">8. Open risks &amp; gates</a>
+  </div>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="tldr">1. Executive summary</h2>
+<p class="lead">
+  Sprint 2 was a <strong>hardening sprint</strong>, not a feature sprint. The job was to close the gap
+  between what the codebase <em>claims</em> (cryptographic audit chains, regulatory compliance, quality
+  gates) and what it can actually <em>defend</em> in front of a pharma CSV reviewer. We took the external
+  audit (<code>TRANSMAX_AUDIT_2026-05-09.md</code>), turned every Critical/High finding into a disciplined
+  loop, and shipped fixes one at a time — each with a failing-test-first, a red-team pass, and a pushed commit.
+</p>
+
+<div class="grid">
+  <div class="kpi"><div class="n">9 / 9</div><div class="l">Critical &amp; High audit findings closed</div></div>
+  <div class="kpi"><div class="n">108</div><div class="l">commits pushed since 2026-05-08</div></div>
+  <div class="kpi"><div class="n">~875</div><div class="l">backend tests passing (0 fail)</div></div>
+  <div class="kpi"><div class="n">16 → 3</div><div class="l">ratchet TODO-debt floor tightened</div></div>
+</div>
+
+<p>
+  The single most consequential outcome: <strong>the v2 audit ledger is no longer dormant infrastructure</strong>.
+  We shipped the canonical chained-hash writer (TMX-3101), an independent re-compute verifier (TMX-3104), a daily
+  Merkle anchor (TMX-3107), and — this week — wired the live pipeline to <em>actually emit</em> v2 events alongside
+  v1 (TMX-3110 Phase 1). That is the differentiator the audit called "the strongest single asset in TransMax,"
+  moved from <em>schema-only</em> to <em>flowing data</em>.
+</p>
+
+<!-- ============ 2 ============ -->
+<h2 id="done">2. What was delivered (mapped to the external audit)</h2>
+<p class="small">Each row is a closed loop: spec → failing test → surgical code → red-team → pushed SHA. Findings IDs are from <code>TRANSMAX_AUDIT_2026-05-09.md</code>.</p>
+
+<table>
+<thead><tr><th>Finding</th><th>Severity</th><th>What it was</th><th>What we shipped</th><th>Loop / SHA</th></tr></thead>
+<tbody>
+<tr>
+  <td><strong>C-02 / C-03</strong></td><td><span class="pill r">Critical</span></td>
+  <td><code>secret_key</code> defaulted to <code>"change-me-in-production"</code> and <code>auth_mode</code> to <code>"none"</code> — no production guard.</td>
+  <td><code>assert_production_safe()</code> + <code>InsecureProductionConfigError</code>: the app now refuses to boot in production with insecure defaults.</td>
+  <td>TMX-3003</td>
+</tr>
+<tr>
+  <td><strong>C-04</strong></td><td><span class="pill r">Critical</span></td>
+  <td>Audit chain used naive string-concat hashing, literal <code>"GENESIS_HASH"</code>, no domain separator, no anchor — cryptographically weak, not Part-11 defensible.</td>
+  <td>Canonical writer: <code>SHA-256(DOMAIN_TAG ‖ seq ‖ prev_hash ‖ payload_hash)</code>, real genesis, deterministic canonical JSON, append-only with concurrency retry. Hex digest pinned in tests.</td>
+  <td>TMX-3101 · <span class="mono">c531b5a</span></td>
+</tr>
+<tr>
+  <td><strong>C-04 (verify)</strong></td><td><span class="pill r">Critical</span></td>
+  <td>A chain you can't independently re-verify is evidence theatre.</td>
+  <td>Independent verifier that re-implements the hash separately from the writer; both must produce byte-identical output. Detects tamper + sequence gaps.</td>
+  <td>TMX-3104 · <span class="mono">531d9b9</span></td>
+</tr>
+<tr>
+  <td><strong>C-04 (anchor)</strong></td><td><span class="pill r">Critical</span></td>
+  <td>No external anchor → an insider could rewrite the whole chain.</td>
+  <td>Daily RFC-6962-style Merkle anchor with domain-separated leaf/internal prefixes and a pluggable object-store backend (S3 Object Lock stub).</td>
+  <td>TMX-3107 · <span class="mono">7149403</span></td>
+</tr>
+<tr>
+  <td><strong>C-04 (flow)</strong></td><td><span class="pill r">Critical</span></td>
+  <td>Writer + verifier + anchor existed but <em>no events flowed through them</em> — dormant infra.</td>
+  <td>Pipeline now double-writes 5 event types (trail-init, config-snapshot, job-started, scorecard, finalize) to the v2 chain alongside v1. v1 path byte-for-byte unchanged.</td>
+  <td>TMX-3110 P1 · <span class="mono">a23b0eb</span></td>
+</tr>
+<tr>
+  <td><strong>C-07</strong></td><td><span class="pill a">High</span></td>
+  <td>Circuit breaker stored state in class-level globals — race-prone, comment literally admitted "accepting race conditions."</td>
+  <td>Instance-based breaker behind a <code>CircuitBreakerStateStore</code> Protocol (in-memory default, Redis stub for prod).</td>
+  <td>TMX-3052 · <span class="mono">fb3c8ee</span></td>
+</tr>
+<tr>
+  <td><strong>C-08</strong></td><td><span class="pill a">High</span></td>
+  <td>QualityGateService lazy singleton had a race-prone init flag (lost 16/16 concurrent loads in repro).</td>
+  <td>Double-checked <code>threading.Lock</code> at 4 init points. Post-fix: 50/50 concurrent loads atomic.</td>
+  <td>TMX-3053 · <span class="mono">3ee727e</span></td>
+</tr>
+<tr>
+  <td><strong>C-13</strong></td><td><span class="pill a">High</span></td>
+  <td>Learning service auto-promoted rules at confidence ≥ 0.90 — unsigned, unreviewed rules going live.</td>
+  <td>Removed auto-promote. All learned rules now <code>PROPOSED</code>; promotion requires signed human approval with <code>RULE_APPROVE</code> permission + a <code>RULE_PROMOTED</code> audit event.</td>
+  <td>TMX-3045 · <span class="mono">7231c7d</span></td>
+</tr>
+<tr>
+  <td><strong>F-H03</strong></td><td><span class="pill a">High</span></td>
+  <td>Tiptap editor HTML output not sanitised → stored-XSS vector in a regulated surface.</td>
+  <td>DOMPurify two-pass sanitisation with tag denylist in <code>sanitizeHtml.ts</code>.</td>
+  <td>TMX-3050</td>
+</tr>
+</tbody>
+</table>
+
+<h3>Discipline &amp; anti-drift work (not in the audit, but load-bearing)</h3>
+<table>
+<thead><tr><th>Item</th><th>What &amp; why</th></tr></thead>
+<tbody>
+<tr><td><strong>Push-hygiene drift audit</strong> (TMX-3060)</td><td><code>audit_worksheet_drift.py</code> + advisory pre-commit hook. Catches the "[Done] but never pushed" drift that the audit found across ~30 worksheets. <code>[Done]</code> now <em>requires</em> a pushed SHA.</td></tr>
+<tr><td><strong>Worktree-clean audit</strong> (corrective)</td><td><code>audit_worktree_clean.py</code> — flags when the working tree silently reverts shipped code. Spawned after a verify-audit produced 2 false-red regressions from a dirty worktree.</td></tr>
+<tr><td><strong>Lying-backlog fix</strong> (TMX-3003)</td><td>Found &amp; fixed a ticket marked Done with no code behind it — the exact anti-pattern the audit warned about.</td></tr>
+<tr><td><strong>Ratchet TODO sweep</strong></td><td>Resolved 9 self-references + 4 false-positives, annotated 3 real TODOs with ticket IDs. Debt floor tightened <strong>16 → 3</strong>.</td></tr>
+<tr><td><strong>Regulatory Pack scaffold</strong> (TMX-3500)</td><td>URS/FS/IQ/OQ/PQ templates + traceability harness — the GAMP-5 paperwork spine a pilot CSV team expects.</td></tr>
+</tbody>
+</table>
+
+<!-- ============ 3 ============ -->
+<h2 id="value">3. Incremental value &amp; benefit</h2>
+
+<div class="grid">
+  <div class="card">
+    <span class="pill b">Trust</span>
+    <h3 style="margin-top:10px">Defensible audit evidence</h3>
+    <p class="small">The chain moved from "string concat, hope nobody looks" to a domain-separated, independently-verifiable, externally-anchored ledger that now carries <em>live</em> pipeline events. This is the wedge against Phrase / Smartling / DeepL — none of them can hand a pharma reviewer a tamper-evident chain of custody.</p>
+  </div>
+  <div class="card">
+    <span class="pill b">Robustness</span>
+    <h3 style="margin-top:10px">Concurrency &amp; boot safety</h3>
+    <p class="small">Two race conditions (circuit breaker, quality-gate singleton) closed with reproduced-then-fixed tests. The app can no longer boot into production with default secrets or auth disabled. These are silent-failure modes removed, not features added.</p>
+  </div>
+  <div class="card">
+    <span class="pill b">Compliance</span>
+    <h3 style="margin-top:10px">Human-in-the-loop integrity</h3>
+    <p class="small">Auto-promotion of learned rules is gone — every rule that goes live now carries a signed approval and an audit event. That's the difference between "the AI changed its own behaviour silently" and "a qualified person approved this change," which is exactly what an Annex-11 reviewer checks.</p>
+  </div>
+  <div class="card">
+    <span class="pill b">Stability</span>
+    <h3 style="margin-top:10px">Anti-drift machinery</h3>
+    <p class="small">The drift + worktree audits mean the worksheet board can no longer lie about what's shipped. A fresh clone now reproduces the claimed state — the precondition for any honest compliance posture.</p>
+  </div>
+</div>
+
+<div class="note">
+<strong>The compounding benefit:</strong> every loop ran through the same 8-stage discipline (spec → failing test → code → red-team → push) and left a worksheet behind. The result is that the <em>evidence of how each fix was made</em> is itself audit-grade — which is the meta-product TransMax sells.
+</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="evidence">4. Evidence base</h2>
+<ul>
+  <li><strong>Test suite:</strong> ~875 backend tests passing, 2 skipped, 0 failing (full run, <code>--ignore=tests/evals</code>). TMX-3110 added 7 ACs; the v2 audit trio (writer/verifier/anchor) carries 46 tests.</li>
+  <li><strong>Spec-binding tests:</strong> the v2 writer pins an exact SHA-256 hex digest for a known payload — if the hash algorithm ever changes by a byte, the test fails. This is design-by-contract, not coverage padding.</li>
+  <li><strong>Ratchet:</strong> 17 monotonic metrics tracked in <code>ratchet/baseline.json</code>. TODO-debt floor tightened 16→3. The one accepted regression (<code>any_annotations</code> +1) is documented as necessary for v2 payload typing.</li>
+  <li><strong>Drift audit:</strong> <code>audit_worksheet_drift.py</code> reports 57 OK, 0 lying-backlog, 0 stale — the board matches <code>origin/main</code>.</li>
+  <li><strong>Verify-audit (Round 11):</strong> 4 parallel agents (quality, pytest, vitest, spec-compliance). Initial 53 failures were <em>all</em> traced to a stale committed <code>transmax.db</code> + worktree drift — <strong>zero real regressions</strong> in the Sprint 2 chain (53 → 0 after corrective loop).</li>
+  <li><strong>Audit-extract reports</strong> in <code>docs/audit-extracts/</code> capture the raw run output for each of the four verification agents.</li>
+</ul>
+
+<!-- ============ 5 ============ -->
+<h2 id="arch">5. Architecture judgment — is LangGraph required?</h2>
+<p>
+  You asked whether a more optimised agentic implementation is possible and whether LangGraph is required.
+  My judgment, recorded in <strong>ADR-0002</strong> (<code>docs/decisions/0002-langgraph-necessity.md</code>):
+</p>
+<table>
+<thead><tr><th>Observation</th><th>Detail</th></tr></thead>
+<tbody>
+<tr><td>Actual topology</td><td>8 nodes, <strong>1</strong> conditional edge (gates → refine | reflexion), <strong>1</strong> cycle (refine → gates). A <code>TypedDict</code> state object.</td></tr>
+<tr><td>LangGraph features used</td><td><code>StateGraph</code>, <code>add_conditional_edges</code>, <code>add_edge</code>. That's it.</td></tr>
+<tr><td>LangGraph features <em>not</em> used</td><td>Checkpointing, streaming, human-in-the-loop interrupts, sub-graphs, tool-calling integration — none.</td></tr>
+<tr><td>LangChain wrappers</td><td><code>ChatOpenAI</code> / <code>SystemMessage</code> are largely dead weight — <code>app.services.llm</code> already abstracts the provider.</td></tr>
+</tbody>
+</table>
+<p><strong>Decision:</strong> <span class="pill g">Keep LangGraph for the pilot</span>. The orchestration this codebase needs could be a ~80-line plain async <code>Pipeline</code> class (a <code>while iteration_count &lt; MAX</code> loop + a 3-branch <code>if</code>), which would shed ~200 LOC and 2 dependencies. But swapping it mid-pilot would disturb the eval harness, the <code>@traced</code> wiring, and ~30 graph tests — for marginal gain — while the audit ledger is the genuine critical path. <strong>The right move is to defer the swap to v3.5</strong> via a planned worksheet <code>TMX-3500-ARCH-LANGGRAPH-REVIEW</code>, and meanwhile drop the unused LangChain aliases as cheap bookkeeping.</p>
+<div class="warn"><strong>Why this is the disciplined answer:</strong> "rewrite the orchestrator" is a classic <em>while-I'm-here</em> anti-bloat trap. The state is already a plain <code>TypedDict</code> with no LangGraph-specific persistence, so the future swap stays cheap — meaning there is no penalty for waiting. We bank the option without paying for it now.</p>
+
+<!-- ============ 6 ============ -->
+<h2 id="path">6. Path to the desired state</h2>
+<p>Desired end-state = <em>a pilot-ready, GxP-defensible, single-IA translation agent a pharma CSV team will sign off.</em> Remaining distance, in dependency order:</p>
+
+<table>
+<thead><tr><th>Phase</th><th>Goal</th><th>Gating work</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><strong>A. Audit ledger to "defensible"</strong></td><td>v2 chain is the system of record, not a shadow copy.</td><td>TMX-3110 Phases 2–4 (coverage audit → consumer swap → retire v1), TMX-3109 historical migration, TMX-3105 verifier endpoint, TMX-3107a S3 wiring.</td><td><span class="pill a">In progress</span></td></tr>
+<tr><td><strong>B. Secret &amp; history hygiene</strong></td><td>No live/dead secrets in git history.</td><td>TMX-3000 (filter-repo the rotated key), TMX-3002 (<code>git rm --cached transmax.db</code>).</td><td><span class="pill r">Kapil-gated</span></td></tr>
+<tr><td><strong>C. Auth &amp; tenancy for pilot SSO</strong></td><td>Real tenant isolation + SSO the audit says pilots demand.</td><td>TMX-3013 (Auth0) — blocked on D-3 sign-off.</td><td><span class="pill a">Blocked</span></td></tr>
+<tr><td><strong>D. Single canonical IA</strong></td><td>Retire the parallel top-level routes; everything under <code>/workspace/*</code>.</td><td>TMX-3600 family (largely landed); finish route retirement.</td><td><span class="pill g">Mostly done</span></td></tr>
+<tr><td><strong>E. Real NLP where regex pretends</strong></td><td>Replace regex PII + naive segmenter with defensible components.</td><td>TMX-3800 (segmenter — done), TMX-3805 (Presidio PII — pending).</td><td><span class="pill a">Partial</span></td></tr>
+<tr><td><strong>F. Regulatory pack to live artifact</strong></td><td>IQ/OQ/PQ auto-generated from real run evidence, not templates.</td><td>TMX-3500 follow-ups (bind traceability to actual audit events).</td><td><span class="pill a">Scaffold only</span></td></tr>
+</tbody>
+</table>
+
+<!-- ============ 7 ============ -->
+<h2 id="epics">7. Next epics / loops I propose — and why</h2>
+<p class="small">Ordered by value-to-the-outcome. Each is a candidate loop with a clear pilot benefit; the first three are queued and ready to run now.</p>
+
+<div class="card">
+  <span class="pill b">Epic E-A · Audit ledger completion</span>
+  <h3>TMX-3110 Phase 2 → 4 + TMX-3105 + TMX-3109</h3>
+  <p><strong>What:</strong> (P2) a per-job v1↔v2 coverage audit script that catches any event the Phase-1 broad-except wrapper dropped; (P3) switch bundle-export &amp; integrity reads to v2; (P4) retire v1 emits. Plus TMX-3105 verifier HTTP endpoint and TMX-3109 historical v1→v2 backfill.</p>
+  <p><strong>Why / value:</strong> Until consumers <em>read</em> v2 and v1 is retired, we maintain two chains and can't claim v2 is the system of record. This is the straight-line path to a <em>defensible</em> (not just present) audit ledger — the core differentiator. <span class="tag">Trust ✚✚✚ · Robustness ✚✚</span></p>
+</div>
+
+<div class="card">
+  <span class="pill b">Epic E-B · Reviewer-facing verification</span>
+  <h3>TMX-3105 — "Verify this chain" endpoint + UI badge</h3>
+  <p><strong>What:</strong> expose <code>AuditVerifierV2</code> at <code>/api/v1/audit/{job_id}/verify</code> and render a verified-state badge on the reviewer surface.</p>
+  <p><strong>Why / value:</strong> A reviewer who can click "verify" and watch the chain re-compute live is worth more in a sales/pilot demo than any amount of backend correctness they can't see. Trust signals must be <em>visible</em> where a regulator looks (TransMax addendum). <span class="tag">Trust ✚✚✚ · End-user value ✚✚</span></p>
+</div>
+
+<div class="card">
+  <span class="pill b">Epic E-C · Defensible PII</span>
+  <h3>TMX-3805 — Presidio replaces regex PII</h3>
+  <p><strong>What:</strong> swap the regex-only, sequential-pass PII service for Microsoft Presidio (or Comprehend Medical) with proper entity recognition.</p>
+  <p><strong>Why / value:</strong> Pharma documents carry patient identifiers. A regex PII filter that misses entities is a compliance liability, not a feature. This closes audit finding C-12 and removes a "we said we redact PII but actually we mostly don't" exposure. <span class="tag">Compliance ✚✚✚ · Robustness ✚✚</span></p>
+</div>
+
+<div class="card">
+  <span class="pill b">Epic E-D · Regulatory pack → live evidence</span>
+  <h3>TMX-3500 follow-ups — bind IQ/OQ/PQ to real audit events</h3>
+  <p><strong>What:</strong> generate the qualification documents from actual run + audit-chain evidence instead of static templates, with traceability links resolving to real event hashes.</p>
+  <p><strong>Why / value:</strong> The pack is the artifact a CSV team signs. A template is a promise; a pack built from real evidence is the deliverable. This converts the scaffold into the thing that closes a pilot. <span class="tag">Compliance ✚✚✚ · End-user value ✚✚</span></p>
+</div>
+
+<div class="card">
+  <span class="pill b">Epic E-E · Arch simplification (v3.5)</span>
+  <h3>TMX-3500-ARCH-LANGGRAPH-REVIEW</h3>
+  <p><strong>What:</strong> replace LangGraph with a plain async <code>Pipeline</code> class; drop unused <code>langchain_core</code> / <code>langchain_openai</code> imports; centralise tracing.</p>
+  <p><strong>Why / value:</strong> ~200 LOC and 2 dependencies removed, simpler onboarding, fewer CVE surfaces. Deliberately scheduled <em>after</em> the audit work because it's an optimisation, not a capability — and the cost of waiting is near-zero (per ADR-0002). <span class="tag">Stability ✚✚ · Robustness ✚</span></p>
+</div>
+
+<div class="card">
+  <span class="pill r">Kapil-gated · cannot proceed without you</span>
+  <h3>TMX-3000 (secret history purge) &amp; TMX-3002 (db de-commit) &amp; TMX-3013 (Auth0)</h3>
+  <p><strong>What:</strong> filter-repo the rotated OpenAI key out of git history; <code>git rm --cached transmax.db</code>; stand up Auth0 SSO.</p>
+  <p><strong>Why / value:</strong> these are one-way / destructive / external-credential operations the loop discipline routes to you for sign-off. The dead key in history is still a hygiene flag; the committed DB causes ~40 false-red test failures; Auth0 is the audit's #1 pilot-demand item. <strong>These need an explicit go from you.</strong> <span class="tag">Trust ✚✚ · Pilot-blocker</span></p>
+</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="risks">8. Open risks &amp; gates</h2>
+<table>
+<thead><tr><th>Risk</th><th>Exposure</th><th>Mitigation / next step</th></tr></thead>
+<tbody>
+<tr><td>Dual audit chains (v1 + v2)</td><td><span class="pill a">Medium</span></td><td>TMX-3110 P2–P4 retire v1. Until then, v2 is additive and verifier reports any gap.</td></tr>
+<tr><td>Rotated key still in git history</td><td><span class="pill a">Medium</span></td><td>Key is dead, but TMX-3000 filter-repo is Kapil-gated. Scheduling needed.</td></tr>
+<tr><td><code>transmax.db</code> committed &amp; stale</td><td><span class="pill a">Medium</span></td><td>Causes false-red tests; rebuild locally per CLAUDE.md. De-commit (TMX-3002) Kapil-gated.</td></tr>
+<tr><td>Regex PII in regulated path</td><td><span class="pill r">High</span></td><td>Epic E-C (Presidio) queued.</td></tr>
+<tr><td>Regulatory pack is template-only</td><td><span class="pill a">Medium</span></td><td>Epic E-D binds it to real evidence.</td></tr>
+</tbody>
+</table>
+
+<div class="note">
+<strong>My recommendation for the next run:</strong> proceed with <strong>E-A → E-B → E-C</strong> in that order (all autonomously runnable as loops), then bring you the E-D regulatory-pack design for review since it touches the artifact you'll put in front of pilot customers. The three Kapil-gated items (TMX-3000 / 3002 / 3013) need your explicit go whenever you're ready.
+</div>
+
+<div class="footer">
+  Generated 2026-05-13 · TransMax Sprint 2 hardening · evidence from <code>git log</code>, <code>ratchet/baseline.json</code>,
+  <code>.context/loops/*.md</code>, <code>docs/audit-extracts/</code>, and <code>TRANSMAX_AUDIT_2026-05-09.md</code>.
+  All claims trace to a pushed commit on <code>origin/main</code>. This document is a review aid, not an audit artifact.
+</div>
+
+</div>
+</body>
+</html>
