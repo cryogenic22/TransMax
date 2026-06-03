@@ -84,9 +84,9 @@ No code changes needed from red team (default-off + A3-wrapping already cover th
 - [x] Tests: full suite (see status log); budget 7/7 + A6-2 6/6
 - [x] Ruff clean (graph.py retains 2 pre-existing E402 — TMX-GRAPH-E402)
 - [x] Ratchet 17/17 (no loosening; node extraction kept mega_files green)
-- [ ] Commit: <SHA>
-- [ ] Pushed to origin/main
-- [ ] `.context/active_tasks.md` updated
+- [x] Commit: `0b8ca74`
+- [x] Pushed to origin/main (`fbcebc7..0b8ca74`)
+- [x] `.context/active_tasks.md` updated
 
 ### Spawned follow-ups
 - **TMX-BUDGET-1a** — surface budget posture in the dashboard/Trust Center UI (remaining budget, breach badge).
@@ -101,6 +101,7 @@ No code changes needed from red team (default-off + A3-wrapping already cover th
 |---|---|---|---|
 | 2026-06-03T~20:40Z | — | `[Spec]` | Created; baseline 917 passed/0 failed (post-A6-2) green |
 | 2026-06-03T~20:55Z | `[Spec]` | `[Verify]` | Code + node extraction done; budget 7/7 + A6-2 6/6; ratchet 17/17; awaiting full suite |
+| 2026-06-03T~21:05Z | `[Verify]` | `[Done]` | Shipped `0b8ca74`; full suite 924/0; ratchet 17/17 no loosening; node adapter extracted to its own module |
 
 ---
 
