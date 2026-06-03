@@ -68,9 +68,9 @@ Broadened the `forget` pattern (red-team / first-run miss). No other findings. R
 
 - [x] Ruff clean on all changed files (added code)
 - [x] Ratchet 17/17 (no loosening)
-- [ ] Commit: <SHA>
-- [ ] Pushed to origin/main
-- [ ] `.context/active_tasks.md` updated
+- [x] Commit: `d1e0b48`
+- [x] Pushed to origin/main (`091f12a..d1e0b48`)
+- [x] `.context/active_tasks.md` updated
 
 ### Spawned follow-ups
 - **TMX-INJ-1a** — input normalisation (homoglyph/whitespace fold) + expanded vector corpus + eval-suite cases under `tests/evals/`.
