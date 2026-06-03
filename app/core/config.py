@@ -76,6 +76,13 @@ class Settings(BaseSettings):
     enable_back_translation: bool = True
     confidence_threshold: float = 0.85
 
+    # Per-job LLM budget (TMX-BUDGET-1). Opt-in: None ⇒ unbounded (no behaviour
+    # change). When set, the engine stops spending once a job's accumulated
+    # token/cost consumption exceeds the limit — unspent segments are BLOCKED
+    # (A3 fail-loud) and a BUDGET_EXCEEDED audit event is recorded (A1).
+    max_tokens_per_job: Optional[int] = None
+    max_cost_usd_per_job: Optional[float] = None
+
     # Feature Flags (Epic 4: Surgical Reality)
     enable_real_pdf_parsing: bool = True  # Enabled for demo
     enable_live_llm_inference: bool = True
