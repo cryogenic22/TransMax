@@ -2,12 +2,11 @@ import asyncio
 import logging
 from typing import Dict, Any, Optional
 from langchain_core.messages import SystemMessage, HumanMessage
-from app.services.llm import get_llm
+from app.services.llm import get_llm, resolve_model
 from app.services.db_service import get_db_service
 from app.services.quality_gate import get_quality_gate_service
 from app.services.tracing import traced
 from app.services.llm_usage import extract_token_usage, emit_usage_event
-from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +35,7 @@ async def reverse_translate_node(state: Dict[str, Any]) -> Dict[str, Any]:
         print("No segments to reverse translate")
         return {"segments": segments}
         
-    llm = get_llm()
+    llm = get_llm(task="review")  # TMX-ROUTER-2: back-translation = verification task
     semaphore = asyncio.Semaphore(CONCURRENCY_LIMIT)
     # TMX-A6-2b-reflexion: accumulate per-segment back-translation token usage.
     # asyncio is single-threaded so += across the gathered workers is safe.
@@ -130,7 +129,7 @@ async def reverse_translate_node(state: Dict[str, Any]) -> Dict[str, Any]:
     if job_id and (usage_acc["in"] or usage_acc["out"]):
         try:
             emit_usage_event(
-                job_id, settings.default_gpt_model, usage_acc["in"], usage_acc["out"],
+                job_id, resolve_model(task="review"), usage_acc["in"], usage_acc["out"],
                 actor_node="reflexion", extra={"pass": "reflexion"},
             )
         except Exception as e:  # noqa: BLE001 — telemetry never blocks the pipeline (A3)
