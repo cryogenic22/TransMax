@@ -218,7 +218,7 @@ no live caller) rather than papering over it.
 
 ## 8. Deploy
 
-- [x] Commit: <filled post-commit>
+- [x] Commit: 060b96d
 - [ ] Pushed: NO — task explicitly says commit to worktree branch, do not push.
 - [x] `.context/active_tasks.md`: not updated (isolated worktree loop; the
   orchestrator owns the board merge).
