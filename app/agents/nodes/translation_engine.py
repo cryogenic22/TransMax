@@ -36,8 +36,6 @@ import time
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, Callable, Tuple
 from enum import Enum
-from collections import deque
-import hashlib
 
 from langchain_core.messages import SystemMessage, HumanMessage
 
@@ -49,7 +47,10 @@ from app.agents.prompts import PromptRegistry
 from app.services.tracing import traced
 from app.models.database import SegmentStatus, DocumentStatus
 from app.core.constants import SubstitutionType
+from app.core.config import settings
 from app.services.language_packs.factory import LanguagePackFactory
+# TMX-A6-2: emit qualified-supplier consumption into the v2 audit chain.
+from app.agents._audit_v2_emit import emit_v2_audit_event
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +110,7 @@ class CircuitBreaker:
             result = await func(*args, **kwargs)
             await self._record_success()
             return result
-        except Exception as e:
+        except Exception:
             await self._record_failure()
             raise
     
@@ -260,7 +261,18 @@ class TranslationEngine:
             reset_timeout=config.circuit_breaker_reset_seconds
         )
         self._semaphore = asyncio.Semaphore(config.max_concurrent_batches)
-        # Feature 5: Token usage accumulators
+        # Feature 5: Token usage accumulators (reset per-document, see
+        # _reset_usage_counters — the engine is a process singleton).
+        self._reset_usage_counters()
+
+    def _reset_usage_counters(self) -> None:
+        """TMX-A6-2: zero the per-document token accumulators.
+
+        ``get_engine`` is a process singleton, so without a per-document reset
+        these accumulate across jobs — and since A6-2 writes the derived cost
+        into the immutable audit chain, an inflated count is a regulatory
+        defect (A3/A6), not a cosmetic glitch. See worksheet TMX-A6-2 stage 6.
+        """
         self._total_input_tokens = 0
         self._total_output_tokens = 0
 
@@ -276,7 +288,11 @@ class TranslationEngine:
         Returns (translated_segments, quality_report).
         """
         start_time = time.time()
-        
+
+        # TMX-A6-2: reset token accumulators so this document's recorded
+        # consumption (and audit-chain cost evidence) excludes prior jobs.
+        self._reset_usage_counters()
+
         # 0. Init Progress
         progress = ProgressTracker(
             db_service=self.db_service,
@@ -311,30 +327,31 @@ class TranslationEngine:
         duration = time.time() - start_time
         await self._update_document_status(doc_id, progress.stats)
 
-        # Feature 5: Persist token usage and cost. Cost telemetry must never
-        # break translation (A3 applies to regulated *content* paths, not best-
-        # effort metrics) — the whole block is wrapped, including the pricing
-        # lookup, so a non-numeric token count (e.g. a mocked LLM response in
-        # tests) can't abort the pipeline before the quality gate runs.
+        # Feature 5 + TMX-A6-2: build qualified-supplier consumption telemetry
+        # and persist it. Cost telemetry must never break translation (A3
+        # applies to regulated *content* paths, not best-effort metrics) — the
+        # whole block is wrapped, including the pricing lookup, so a non-numeric
+        # token count (e.g. a mocked LLM response in tests) can't abort the
+        # pipeline before the quality gate runs.
+        usage = None
         try:
-            total_tokens = self._total_input_tokens + self._total_output_tokens
-            # TMX-PRICING-1: route through the canonical pricing table (single
-            # source of truth). The engine bills LLM drafting at the gpt-4o-mini
-            # tier; see app/core/model_pricing.py.
-            from app.core.model_pricing import cost_for
-            estimated_cost = cost_for(
-                "gpt-4o-mini", self._total_input_tokens, self._total_output_tokens
+            usage = self._build_usage(settings.default_gpt_model)
+            self.db_service.update_document_cost(
+                doc_id, usage["total_tokens"], usage["estimated_cost_usd"]
             )
-            self.db_service.update_document_cost(doc_id, total_tokens, round(estimated_cost, 6))
         except Exception as e:
             logger.warning(f"Failed to persist cost metrics: {e}")
 
         # Re-assemble results
         all_units = sorted(tm_units + llm_units, key=lambda u: u.order_index)
         result_segments = [u.to_update_dict() for u in all_units]
-        
+
         report = self._build_quality_report(all_units, progress.stats, duration)
-        
+        # TMX-A6-2: surface usage on the report so the LangGraph node can emit
+        # an LLM_USAGE_RECORDED audit event AND the dashboard reads one source.
+        if usage is not None:
+            report["usage"] = usage
+
         return result_segments, report
 
     def _prepare_segment_units(self, segments: List[Dict[str, Any]]) -> List[SegmentUnit]:
@@ -650,6 +667,34 @@ class TranslationEngine:
         except Exception as e:
             logger.error(f"Failed to update document status: {e}")
     
+    def _build_usage(self, model: str) -> dict:
+        """TMX-A6-2: qualified-supplier consumption record (A6).
+
+        ``model`` is the supplier model of record (provenance); cost is computed
+        at the engine's billing tier (gpt-4o-mini, per Feature 5) via the
+        canonical pricing table, so ``pricing_model`` is recorded alongside to
+        keep the two unambiguous. An unregistered tier raises (A3) and the
+        caller's wrapper skips the event — never a wrong silent cost. This is the
+        consumption evidence A6 needs in the chain, distinct from the start-of-job
+        JobConfigSnapshot (TMX-3202) which structurally cannot hold response tokens.
+        """
+        from app.core.model_pricing import cost_for
+
+        in_tok = int(self._total_input_tokens)
+        out_tok = int(self._total_output_tokens)
+        pricing_model = "gpt-4o-mini"
+        estimated_cost = cost_for(pricing_model, in_tok, out_tok)
+        return {
+            "model": model,
+            "pricing_model": pricing_model,
+            "input_tokens": in_tok,
+            "output_tokens": out_tok,
+            "total_tokens": in_tok + out_tok,
+            "estimated_cost_usd": round(estimated_cost, 6),
+            "currency": "USD",
+            "pricing_source": "app.core.model_pricing",
+        }
+
     def _build_quality_report(
         self,
         units: List[SegmentUnit],
@@ -721,11 +766,29 @@ async def translation_engine_node(state: dict) -> dict:
                 seg.update(result_map[seg['segment_id']])
         
         state['quality_report'] = quality_report
-        
+
+        # TMX-A6-2: record qualified-supplier consumption (A6) into the
+        # immutable v2 audit chain (A1) — model, token usage, table-derived
+        # cost. Wrapped + swallowed: telemetry must never block a translation
+        # (A3 metrics carve-out, same contract as _audit_v2_emit Phase 1).
+        usage = quality_report.get('usage')
+        job_id = state.get('job_id')
+        if usage and job_id:
+            try:
+                emit_v2_audit_event(
+                    job_id=job_id,
+                    event_type="LLM_USAGE_RECORDED",
+                    actor_id=None,
+                    actor_kind="agent",
+                    payload={**usage, "_actor_node": "translator"},
+                )
+            except Exception as e:  # noqa: BLE001 — telemetry never blocks translation (A3)
+                logger.warning(f"Failed to emit LLM_USAGE_RECORDED audit event: {e}")
+
         logger.info(f"[Engine Node] Complete: {quality_report.get('status')}")
-        
+
     except Exception as e:
         logger.error(f"[Engine Node] Failed: {e}")
         state['error'] = str(e)
-    
+
     return state

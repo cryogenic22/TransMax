@@ -178,13 +178,18 @@ RX_PRINT_IN_APP = re.compile(r"^\s*print\s*\(", re.MULTILINE)
 # `Any` annotations
 RX_ANY = re.compile(r":\s*Any\b|->\s*Any\b|\bList\[Any\]|\bDict\[[^,]+,\s*Any\]|\bOptional\[Any\]")
 
-# Deferred-work markers without an issue link `(#NNN)` per the quality-gate config.
+# Deferred-work markers without an issue link. A marker is "linked" (and so
+# NOT counted) when immediately followed by either a GitHub-style `(#NNN)` ref
+# OR this repo's canonical `(TMX-XXXX)` ticket convention (see CLAUDE.md
+# "Commits: reference ticket ID" + the TMX-AUDIT-RATCHET-TODO-SWEEP loop, which
+# annotates real TODOs with TMX ids). Before this exemption the meter counted
+# every `TODO(TMX-3211)` as bare, contradicting the documented convention.
 # Keyword list is constructed (not inlined) so this meter does not trip itself —
 # without this trick the regex source line would itself match the regex, inflating
 # the count by 1 per keyword and turning the metric into a self-referential mess.
 _TODO_KEYWORDS = ("T" + "ODO", "FIX" + "ME", "X" + "XX", "HA" + "CK", "B" + "UG")
 RX_TODO_BARE = re.compile(
-    r"\b(?:" + "|".join(_TODO_KEYWORDS) + r")(?!\s*\(#\d+\))",
+    r"\b(?:" + "|".join(_TODO_KEYWORDS) + r")(?!\s*\((?:#\d+|TMX-[\w-]+)\))",
     re.IGNORECASE,
 )
 

@@ -2,11 +2,9 @@ from typing import TypedDict, List, Dict, Any, Optional
 from datetime import datetime, timezone
 import json
 import logging
-import uuid # For audit logging
 
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import SystemMessage, HumanMessage
-from langchain_openai import ChatOpenAI
 
 from app.agents.prompts import PromptRegistry
 from app.services.language_packs.factory import LanguagePackFactory
@@ -83,7 +81,7 @@ class TransMaxState(TypedDict):
     # Reflexion (Sprint D)
     reverse_translation: Optional[str]
 
-def _build_config_snapshot(state: TransMaxState) -> Dict[str, Any]:
+def _build_config_snapshot(state: TransMaxState) -> dict:
     """Freeze the request + qualified-supplier telemetry for the audit chain.
 
     Per A6 (LLM = qualified supplier) the JobConfigSnapshot must record the
