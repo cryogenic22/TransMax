@@ -42,7 +42,7 @@ DOMAIN_TAG: bytes = b"transmax.audit.v1\0"
 # Closes review finding C-04: the v1 writer used the literal string
 # ``"GENESIS_HASH"`` which made the genesis hash a 13-byte ASCII string
 # while every other chain entry was a 64-char hex digest — a textbook
-# domain-separation bug.
+# domain-separation defect.
 GENESIS_HASH: bytes = b"\x00" * 32
 
 # Sentinel checks

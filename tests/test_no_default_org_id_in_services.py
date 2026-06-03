@@ -18,7 +18,7 @@ Anything else is a transitional marker that should have been removed when
 TMX-3012/3012b/3012c shipped. The mixin's ``before_insert`` listener already
 raises ``TenantContextMissing`` if no context is set (per A3 — no silent
 fallbacks), so the literal is redundant; keeping it MASKS a context-propagation
-bug rather than fixing one.
+defect rather than fixing one.
 """
 from __future__ import annotations
 

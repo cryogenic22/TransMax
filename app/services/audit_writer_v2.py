@@ -142,7 +142,7 @@ class AuditWriterV2:
 
     Closes C-04: the v1 writer used the literal string ``"GENESIS_HASH"``
     which made the genesis hash a 13-byte ASCII string while every other
-    chain entry was a 64-char hex digest — a textbook domain-separation bug.
+    chain entry was a 64-char hex digest — a textbook domain-separation defect.
     """
 
     _MAX_INTEGRITY_RETRIES: int = 5

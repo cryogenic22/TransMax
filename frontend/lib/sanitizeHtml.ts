@@ -126,7 +126,7 @@ export function sanitizeRichTextHtml(html: string): string {
   // inside <object>'s fallback subtree, where some parsers re-locate the
   // <embed> as a child of <object> rather than a sibling). The cost is
   // negligible (sanitise is microseconds on the small payloads we see), the
-  // safety win is "nested mutation XSS via known-buggy parsers".
+  // safety win is "nested mutation XSS via non-conforming parsers".
   const config = {
     ALLOWED_TAGS: [...ALLOWED_TAGS],
     ALLOWED_ATTR: [...ALLOWED_ATTR],

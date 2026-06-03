@@ -69,7 +69,7 @@ class QualityGateService:
         try:
             embeddings_model = OpenAIEmbeddings(api_key=settings.openai_api_key)
             # Embed both
-            # TODO: Batch this? For now, simple pair.
+            # TODO(TMX-AUDIT-QG-BATCH-EMBED): Batch this? For now, simple pair.
             vecs = embeddings_model.embed_documents([source_text, back_translation])
             v1 = np.array(vecs[0])
             v2 = np.array(vecs[1])

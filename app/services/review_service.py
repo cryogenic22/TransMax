@@ -27,7 +27,7 @@ class ReviewService:
         
         # For now, simplistic fetch: Get blocked segments for doc.
         # We need to look up doc_id from job_id.
-        # TODO: Add get_doc_id_from_job(job_id) to DB service. 
+        # TODO(TMX-AUDIT-DB-DOCID-LOOKUP): Add get_doc_id_from_job(job_id) to DB service.
         # Fallback: Assume the frontend passes doc_id for now or we query Job table.
         
         # We return a mocked structure if the DB query is complex, 
