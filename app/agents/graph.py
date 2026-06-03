@@ -7,7 +7,6 @@ from langgraph.graph import StateGraph, END
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from app.agents.prompts import PromptRegistry
-from app.services.language_packs.factory import LanguagePackFactory
 from app.services.tracing import traced
 from app.services.quality_gate import QualityGateService
 from app.services.db_service import DatabaseService
@@ -18,7 +17,6 @@ from app.services.resilience import get_resilience_service
 from app.services.json_parser import RobustParser
 from app.services.llm import get_llm
 from app.core.config import settings
-from app.core.constants import SubstitutionType
 from app.models.database import DocumentStatus, SegmentStatus
 from app.agents.nodes.reverse_translate import reverse_translate_node
 
@@ -264,135 +262,6 @@ async def compile_constraints(state: TransMaxState) -> TransMaxState:
 
 
 
-def _process_tm_matches(segments: List[Dict[str, Any]]) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-    """Separates segments into those needing translation and those with TM matches."""
-    to_translate = []
-    tm_updates = []
-    
-    for seg in segments:
-        if seg.get('tm_match') and seg['tm_match'].get('type') == SubstitutionType.TM_EXACT:
-            translation = seg['tm_match']['target']
-            seg['translated_text'] = translation
-            
-            tm_updates.append({
-                "segment_id": seg['segment_id'],
-                "translated_text": translation,
-                "status": SegmentStatus.TRANSLATED.value,
-                "translation_source": SubstitutionType.TM_EXACT.value,
-                "match_score": 1.0
-            })
-        else:
-            to_translate.append(seg)
-    return to_translate, tm_updates
-
-def _prepare_translation_payload(to_translate: List[Dict[str, Any]], all_segments: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Injects previous/next context for translation."""
-    seg_map = {s['segment_id']: i for i, s in enumerate(all_segments)}
-    input_segments = []
-    
-    for s in to_translate:
-        idx = seg_map.get(s['segment_id'])
-        payload = {
-            "id": s["segment_id"], 
-            "text": s["source_text"]
-        }
-        if idx is not None:
-             if idx > 0:
-                 payload["prev_context"] = all_segments[idx-1]['source_text']
-             if idx < len(all_segments) - 1:
-                 payload["next_context"] = all_segments[idx+1]['source_text']
-        input_segments.append(payload)
-    return input_segments
-
-def _build_translation_prompt(state: TransMaxState, input_segments: List[Dict[str, Any]]) -> list[Any]:
-    """Constructs the LLM prompt messages."""
-    prompt = PromptRegistry.load("translator")
-    # TMX-3204: resolve target-language pack instruction (mirrors translation_engine.py)
-    try:
-        pack = LanguagePackFactory.get_pack(state['target_language'])
-        lang_instruction = pack.prompt_instruction
-    except Exception:
-        lang_instruction = ""
-    user_content = prompt.user.replace(
-        "{{target_language}}", state['target_language']
-    ).replace(
-        "{{audience}}", "general"
-    ).replace(
-        "{{domain}}", "pharma"
-    ).replace(
-        "{{risk_level}}", "high"
-    ).replace(
-        "{{language_instruction}}", lang_instruction
-    ).replace(
-        "{{constraint_pack_json}}", json.dumps(state['constraint_pack'])
-    ).replace(
-        "{{segments_json}}", json.dumps(input_segments)
-    )
-    return [
-        SystemMessage(content=prompt.system),
-        HumanMessage(content=user_content)
-    ]
-
-async def draft_translate(state: TransMaxState) -> TransMaxState:
-    """
-    Calls the LLM to produce initial draft.
-    Updates the DB 'Segment' table immediately with results.
-    Respects TM Bypass for exact matches.
-    """
-    logger.info("Running Draft Translation...")
-    
-    # 1. Handle TM / Pre-computation
-    to_translate, tm_updates = _process_tm_matches(state['segments'])
-    logger.info(f"Segments to translate: {len(to_translate)}. Resolved by TM: {len(tm_updates)}")
-
-    if tm_updates:
-         get_db_service().update_segments_batch(tm_updates)
-         logger.info("Persisted TM Exact Matches.")
-    
-    if not to_translate:
-        return state
-
-    # 2. Prepare Payload
-    input_segments = _prepare_translation_payload(to_translate, state['segments'])
-    
-    # 3. Build Prompt
-    messages = _build_translation_prompt(state, input_segments)
-    
-    # 4. Execute LLM Call & Parse
-    try:
-        response = await get_resilience_service().resilient_llm_call(get_llm().ainvoke, messages)
-        data = RobustParser.parse(response.content)
-    except (ValueError, Exception) as e:
-         logger.error(f"Translation Error: {e}")
-         state['error'] = f"Translation/Parse Error: {e}"
-         return state
-
-    # 5. Process & Persist Results
-    draft_segments = data.get('segments', [])
-    draft_updates = []
-    
-    for draft in draft_segments:
-        seg_id = draft.get('segment_id') or draft.get('id')
-        trans_text = draft.get('target_text') or draft.get('translated_text')
-        
-        if seg_id and trans_text:
-            draft_updates.append({
-                "segment_id": seg_id,
-                "translated_text": trans_text,
-                "status": SegmentStatus.TRANSLATED.value,
-                "translation_source": "llm_draft_v1"
-            })
-            
-            # Update in-memory state
-            for s in state['segments']:
-                if s['segment_id'] == seg_id:
-                    s['translated_text'] = dict(draft).get('translated_text') or trans_text
-
-    if draft_updates:
-        get_db_service().update_segments_batch(draft_updates)
-        logger.info(f"Persisted {len(draft_updates)} drafted segments.")
-            
-    return state
 
 from app.core.defect_taxonomy import DefectSeverity, DefectCategory, is_critical
 
