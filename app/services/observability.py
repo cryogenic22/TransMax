@@ -2,6 +2,8 @@ import time
 from typing import Dict, Any
 import logging
 
+from app.core.model_pricing import cost_for
+
 logger = logging.getLogger(__name__)
 
 class ObservabilityService:
@@ -36,18 +38,14 @@ class ObservabilityService:
 
     @classmethod
     def estimate_cost(cls, model: str, input_tokens: int, output_tokens: int) -> float:
+        """Estimate cost via the canonical pricing registry (TMX-PRICING-1).
+
+        Pricing lives in `app/core/model_pricing.py` — the single source of
+        truth. Unknown models raise `UnknownModelError` rather than silently
+        defaulting to gpt-4o's rate (the old behaviour), so a recorded cost is
+        always for the model that actually ran (addendum A3).
         """
-        Estimate cost based on public pricing (e.g. GPT-4o).
-        """
-        # Placeholder pricing
-        pricing = {
-            "gpt-4o": {"in": 0.005 / 1000, "out": 0.015 / 1000},
-            "gpt-4o-mini": {"in": 0.00015 / 1000, "out": 0.0006 / 1000}
-        }
-        
-        rates = pricing.get(model, pricing["gpt-4o"]) # Default to heavy
-        cost = (input_tokens * rates["in"]) + (output_tokens * rates["out"])
-        return cost
+        return cost_for(model, input_tokens, output_tokens)
 
     @classmethod
     def get_metrics(cls) -> Dict[str, Any]:
