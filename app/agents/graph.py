@@ -394,7 +394,7 @@ async def draft_translate(state: TransMaxState) -> TransMaxState:
             
     return state
 
-from app.core.defect_taxonomy import DefectSeverity, DefectCategory
+from app.core.defect_taxonomy import DefectSeverity, DefectCategory, is_critical
 
 @traced("graph.node.gates")
 async def run_quality_gates(state: TransMaxState) -> TransMaxState:
@@ -555,7 +555,7 @@ async def refine_translation(state: TransMaxState) -> TransMaxState:
              # Enrich with specific violations for that segment
              # FILTER: Only include NON-CRITICAL violations for auto-fix
              # Critical violations must be handled by human (Safety Rule)
-             seg_violations = [v for v in violations if v['segment_id'] == seg['segment_id'] and v.get('severity') != 'critical']
+             seg_violations = [v for v in violations if v['segment_id'] == seg['segment_id'] and not is_critical(v.get('severity'))]
              
              if seg_violations:
                  to_refine.append({
