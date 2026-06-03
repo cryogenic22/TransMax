@@ -106,9 +106,9 @@ Red-team finding #1 fixed in-loop (reset method + regression test). Findings #2â
 - [x] Tests: full suite green (see status log); `tests/test_llm_usage_audit.py` 6/6
 - [x] Ruff: clean on all changed files (graph.py retains 2 pre-existing unfixable E402)
 - [x] Ratchet: `âœ“ all 17 metrics at or better than baseline` (no loosening)
-- [ ] Commit: <SHA>
-- [ ] Pushed to origin/main
-- [ ] `.context/active_tasks.md` updated
+- [x] Commit: `d072288`
+- [x] Pushed to origin/main (`735b662..d072288`)
+- [x] `.context/active_tasks.md` updated
 
 ### Spawned follow-ups
 - **TMX-A6-2a** â€” if a non-Python audit verifier is ever built, switch the hashed `estimated_cost_usd` to integer micro-USD (cross-language byte-exactness).
@@ -123,3 +123,4 @@ Red-team finding #1 fixed in-loop (reset method + regression test). Findings #2â
 | When (UTC) | From | To | Note |
 |---|---|---|---|
 | 2026-06-03T~17:30Z | â€” | `[Spec]` | Created; baseline 911 passed/0 failed confirmed green before start |
+| 2026-06-03T~20:35Z | `[Spec]` | `[Done]` | Shipped `d072288`; suite 917/0; ratchet 17/17; red-team singleton-reset bug fixed; A6 consumption now in the immutable chain |
