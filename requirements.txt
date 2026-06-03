@@ -9,7 +9,7 @@ python-multipart
 sqlalchemy
 psycopg2-binary
 alembic
-supabase>=2.3.0
+supabase>=2.30.1
 pgvector
 
 # Translation providers
