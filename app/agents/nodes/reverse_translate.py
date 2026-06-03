@@ -35,7 +35,15 @@ async def reverse_translate_node(state: Dict[str, Any]) -> Dict[str, Any]:
         print("No segments to reverse translate")
         return {"segments": segments}
         
-    llm = get_llm(task="review")  # TMX-ROUTER-2: back-translation = verification task
+    # TMX-ROUTER-5: cost-aware posture from consumption so far (translate +
+    # refine usage on the report). No-op unless routing + a budget are on.
+    from app.services.budget_guard import JobBudget, budget_posture
+    _u = state.get("quality_report", {}).get("usage", {}) or {}
+    _posture = budget_posture(
+        _u.get("total_tokens", 0), _u.get("estimated_cost_usd", 0.0), JobBudget.from_settings()
+    )
+
+    llm = get_llm(task="review", budget_posture=_posture)  # TMX-ROUTER-2: back-translation = verification
     semaphore = asyncio.Semaphore(CONCURRENCY_LIMIT)
     # TMX-A6-2b-reflexion: accumulate per-segment back-translation token usage.
     # asyncio is single-threaded so += across the gathered workers is safe.
@@ -129,7 +137,8 @@ async def reverse_translate_node(state: Dict[str, Any]) -> Dict[str, Any]:
     if job_id and (usage_acc["in"] or usage_acc["out"]):
         try:
             emit_usage_event(
-                job_id, resolve_model(task="review"), usage_acc["in"], usage_acc["out"],
+                job_id, resolve_model(task="review", budget_posture=_posture),
+                usage_acc["in"], usage_acc["out"],
                 actor_node="reflexion", extra={"pass": "reflexion"},
             )
         except Exception as e:  # noqa: BLE001 — telemetry never blocks the pipeline (A3)
