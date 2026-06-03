@@ -15,6 +15,7 @@ from typing import Optional
 
 from app.agents._audit_v2_emit import emit_v2_audit_event
 from app.agents.nodes.translation_engine import TranslationEngine
+from app.core.defect_taxonomy import DefectCategory
 from app.services.tracing import traced
 
 logger = logging.getLogger(__name__)
@@ -89,6 +90,31 @@ async def translation_engine_node(state: dict) -> dict:
                 )
             except Exception as e:  # noqa: BLE001 — audit signal never blocks the job (A3)
                 logger.warning(f"Failed to emit BUDGET_EXCEEDED audit event: {e}")
+
+        # TMX-INJ-1b: if the deterministic injection gate (TMX-INJ-1) flagged
+        # any source segment, record an INJECTION_DETECTED event in the
+        # immutable chain (A1) — an attempted hijack of the qualified-supplier
+        # call is security-relevant evidence, not just a quality violation.
+        injections = [
+            v for v in quality_report.get('violations', [])
+            if v.get('category') == DefectCategory.PROMPT_INJECTION.value
+        ]
+        if injections and job_id:
+            try:
+                emit_v2_audit_event(
+                    job_id=job_id,
+                    event_type="INJECTION_DETECTED",
+                    actor_id=None,
+                    actor_kind="agent",
+                    payload={
+                        "count": len(injections),
+                        "segment_ids": [v.get("segment_id") for v in injections][:50],
+                        "messages": [v.get("message") for v in injections][:50],
+                        "_actor_node": "translator",
+                    },
+                )
+            except Exception as e:  # noqa: BLE001 — audit signal never blocks the job (A3)
+                logger.warning(f"Failed to emit INJECTION_DETECTED audit event: {e}")
 
         logger.info(f"[Engine Node] Complete: {quality_report.get('status')}")
 
