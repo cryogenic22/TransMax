@@ -79,7 +79,7 @@ Filled if red team finds anything.
 
 ## 8. Deploy
 
-- [ ] Commit: <SHA>
+- [x] Commit: 7e0c81e
 - [ ] Pushed to `origin/main`
 - [ ] `.context/active_tasks.md` updated
 - [ ] Ratchet baseline written
