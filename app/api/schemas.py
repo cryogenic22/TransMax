@@ -3,7 +3,7 @@ Pydantic schemas for API request/response validation.
 """
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from enum import Enum
 
 
@@ -21,6 +21,7 @@ class SegmentStatus(str, Enum):
     TRANSLATED = "translated"
     EDITED = "edited"
     APPROVED = "approved"
+    BLOCKED = "blocked"
 
 
 # --- Document Schemas ---
@@ -51,9 +52,16 @@ class DocumentResponse(BaseModel):
     word_count: Optional[int]
     confidence_score: Optional[float]
     glossary_id: Optional[str] = None
+    total_tokens: Optional[int] = None
+    total_cost_usd: Optional[float] = None
     created_at: datetime
     updated_at: datetime
     segment_count: Optional[int] = None
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def normalize_status(cls, v: Any) -> str:
+        return v.lower() if isinstance(v, str) else v
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -76,7 +84,14 @@ class SegmentResponse(BaseModel):
     translated_text: Optional[str]
     confidence_score: Optional[float]
     status: SegmentStatus
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def normalize_status(cls, v: Any) -> str:
+        return v.lower() if isinstance(v, str) else v
     gate_results: Optional[Dict[str, Any]]
+    element_type: Optional[str] = None
+    element_meta: Optional[Dict[str, Any]] = None
     # Quality scoring fields from Reflexion
     validation_score: Optional[float] = None  # Semantic drift score from back-translation (0-100)
     reverse_translation: Optional[str] = None  # Back-translation text
