@@ -131,3 +131,40 @@ class AuditRecordResponse(BaseModel):
     full_payload: Optional[Dict[str, Any]] = None
     created_at: datetime
 
+
+class VerifyFinding(BaseModel):
+    """
+    TMX-3105: One defect surfaced by the v2 audit verifier.
+
+    Mirrors `app.services.audit_verifier_v2.EventReport`. Wire format is
+    stable: the regulator-facing reviewer reads `finding` as the
+    machine-stable classifier string and `detail` as human prose.
+    """
+    event_id: str
+    sequence_index: int
+    finding: str = Field(
+        ...,
+        description=(
+            "One of: ok, tampered_payload, tampered_event_hash, "
+            "broken_chain, sequence_gap, sequence_duplicate, "
+            "invalid_hash_length, genesis_violation."
+        ),
+    )
+    detail: Optional[str] = None
+
+
+class AuditVerificationResponse(BaseModel):
+    """
+    TMX-3105: Independent verification result for a v2 audit chain.
+
+    `ok` is true iff the verifier found zero defects across the chain.
+    A3-loud: a tampered chain returns `ok=False` with populated
+    `findings`, NEVER an empty findings list with `ok=True`.
+    """
+    ok: bool = Field(..., description="True iff zero defects detected.")
+    organization_id: str
+    job_id: str
+    event_count: int
+    ok_count: int
+    findings: List[VerifyFinding] = Field(default_factory=list)
+
