@@ -13,6 +13,7 @@ from app.services.quality_gate import QualityGateService
 from app.services.db_service import DatabaseService
 from app.services.audit_service import AuditService
 from app.agents._audit_v2_emit import emit_v2_audit_event as _emit_v2_audit_event
+from app.agents._config_snapshot import build_config_snapshot
 from app.services.resilience import get_resilience_service
 from app.services.json_parser import RobustParser
 from app.services.llm import get_llm
@@ -47,12 +48,6 @@ def get_audit_service():
         _audit_service = AuditService()
     return _audit_service
 
-# Agents whose prompts are pinned into the JobConfigSnapshot. The pipeline
-# drives translation through these three LLM-backed agents (translator drafts,
-# fixer repairs, reviewer scores), so a regulator asking "which exact prompt
-# produced this output?" (A8) must be able to resolve every one of them.
-_SNAPSHOT_PROMPT_AGENTS = ("translator", "fixer", "reviewer")
-
 class TransMaxState(TypedDict):
     """
     The state object flowing through the TransMax graph.
@@ -80,41 +75,6 @@ class TransMaxState(TypedDict):
     
     # Reflexion (Sprint D)
     reverse_translation: Optional[str]
-
-def _build_config_snapshot(state: TransMaxState) -> dict:
-    """Freeze the request + qualified-supplier telemetry for the audit chain.
-
-    Per A6 (LLM = qualified supplier) the JobConfigSnapshot must record the
-    REAL configured model and the EXACT prompt versions used, not placeholders.
-    Per A8 (pin every prompt to a version) each agent's prompt is captured by
-    its on-disk semver `version` plus its SHA-256 `content_hash`, so the snapshot
-    is reproducible: a later reader can re-resolve the same prompt and verify the
-    hash matches what ran.
-
-    The model is read from `settings.default_gpt_model` (the configured default),
-    replacing the prior hard-coded "gpt-4o" placeholder (TMX-3202 / known issue
-    graph.py:141). If the prompt registry cannot resolve an agent — a real
-    misconfiguration — we do NOT substitute a default (A3): we raise, so the job
-    fails loud rather than recording a snapshot that lies about provenance.
-    """
-    prompts: Dict[str, Dict[str, str]] = {}
-    for agent in _SNAPSHOT_PROMPT_AGENTS:
-        loaded = PromptRegistry.load(agent)
-        prompts[agent] = {
-            "version": loaded.version,
-            "content_hash": loaded.content_hash,
-        }
-
-    return {
-        "request": {
-            k: v for k, v in state.items()
-            if k in ["doc_id", "target_language", "job_id"]
-        },
-        "system": {
-            "model": settings.default_gpt_model,
-            "prompts": prompts,
-        },
-    }
 
 # ---------------------------------------------------------
 # NODES
@@ -194,7 +154,7 @@ async def validate_request(state: TransMaxState) -> TransMaxState:
             # Freeze the request + the REAL qualified-supplier telemetry: the
             # configured model and the pinned prompt versions + content hashes
             # (A6 / A8). See _build_config_snapshot for the provenance contract.
-            config_snapshot = _build_config_snapshot(state)
+            config_snapshot = build_config_snapshot(state)
             audit_svc.capture_config_snapshot(state['job_id'], config_snapshot)
 
             # 2b. TMX-3110 Phase 1: also emit to v2 chain.
@@ -629,9 +589,14 @@ async def refine_translation(state: TransMaxState) -> TransMaxState:
         SystemMessage(content=fixer_prompt.system),
         HumanMessage(content=user_content)
     ]
-    
+
+    ref_in = ref_out = 0
     try:
         response = await get_resilience_service().resilient_llm_call(get_llm().ainvoke, messages)
+        # TMX-A6-2b: capture the refinement call's tokens before any parse/DB
+        # work so the consumption is recorded even if downstream steps fail.
+        from app.services.llm_usage import extract_token_usage
+        ref_in, ref_out = extract_token_usage(response)
         data = RobustParser.parse(response.content)
         
         # Helper to find list
@@ -661,7 +626,22 @@ async def refine_translation(state: TransMaxState) -> TransMaxState:
     except Exception as e:
         logger.error(f"Refinement failed: {e}")
         # If refinement fails, we proceed. The Gate will verify again (or next step).
-        
+
+    # TMX-A6-2b: record the refinement pass's qualified-supplier consumption in
+    # the immutable chain (A6/A1). Per-job total = sum of all usage events
+    # (translate + each refinement). A3-wrapped: never blocks the pipeline.
+    job_id = state.get('job_id')
+    if job_id and (ref_in or ref_out):
+        try:
+            from app.services.llm_usage import emit_usage_event
+            emit_usage_event(
+                job_id, settings.default_gpt_model, ref_in, ref_out,
+                actor_node="refiner",
+                extra={"pass": "refinement", "iteration": state.get('iteration_count')},
+            )
+        except Exception as e:  # noqa: BLE001 — telemetry never blocks the pipeline (A3)
+            logger.warning(f"Failed to emit refinement LLM_USAGE_RECORDED: {e}")
+
     return state
 
 def decide_next_step(state: TransMaxState):

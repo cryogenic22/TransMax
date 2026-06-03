@@ -640,17 +640,11 @@ class TranslationEngine:
             timeout=self.config.llm_timeout_seconds
         )
 
-        # Feature 5: Capture token usage
-        try:
-            token_usage = getattr(response, 'response_metadata', {}).get('token_usage', {})
-            if token_usage:
-                self._total_input_tokens += token_usage.get('prompt_tokens', 0)
-                self._total_output_tokens += token_usage.get('completion_tokens', 0)
-            elif hasattr(response, 'usage_metadata') and response.usage_metadata:
-                self._total_input_tokens += getattr(response.usage_metadata, 'input_tokens', 0)
-                self._total_output_tokens += getattr(response.usage_metadata, 'output_tokens', 0)
-        except Exception:
-            pass  # Don't fail translation over metrics
+        # Feature 5 + TMX-A6-2b: capture token usage via the shared extractor.
+        from app.services.llm_usage import extract_token_usage
+        in_tok, out_tok = extract_token_usage(response)
+        self._total_input_tokens += in_tok
+        self._total_output_tokens += out_tok
 
         # TMX-BUDGET-1: trip the per-job budget after accounting this call's
         # tokens, so any not-yet-started batch can skip its LLM call.
@@ -727,32 +721,12 @@ class TranslationEngine:
             logger.error(f"Failed to update document status: {e}")
     
     def _build_usage(self, model: str) -> dict:
-        """TMX-A6-2: qualified-supplier consumption record (A6).
-
-        ``model`` is the supplier model of record (provenance); cost is computed
-        at the engine's billing tier (gpt-4o-mini, per Feature 5) via the
-        canonical pricing table, so ``pricing_model`` is recorded alongside to
-        keep the two unambiguous. An unregistered tier raises (A3) and the
-        caller's wrapper skips the event — never a wrong silent cost. This is the
-        consumption evidence A6 needs in the chain, distinct from the start-of-job
-        JobConfigSnapshot (TMX-3202) which structurally cannot hold response tokens.
-        """
-        from app.core.model_pricing import cost_for
-
-        in_tok = int(self._total_input_tokens)
-        out_tok = int(self._total_output_tokens)
-        pricing_model = "gpt-4o-mini"
-        estimated_cost = cost_for(pricing_model, in_tok, out_tok)
-        return {
-            "model": model,
-            "pricing_model": pricing_model,
-            "input_tokens": in_tok,
-            "output_tokens": out_tok,
-            "total_tokens": in_tok + out_tok,
-            "estimated_cost_usd": round(estimated_cost, 6),
-            "currency": "USD",
-            "pricing_source": "app.core.model_pricing",
-        }
+        """TMX-A6-2: qualified-supplier consumption record (A6) for this
+        document's translate pass. The canonical shape + cost derivation live
+        in ``app/services/llm_usage.build_usage_record`` so the engine and the
+        graph refiner (TMX-A6-2b) emit identical records."""
+        from app.services.llm_usage import build_usage_record
+        return build_usage_record(model, self._total_input_tokens, self._total_output_tokens)
 
     def _build_quality_report(
         self,
