@@ -15,8 +15,7 @@ from app.agents._audit_v2_emit import emit_v2_audit_event as _emit_v2_audit_even
 from app.agents._config_snapshot import build_config_snapshot
 from app.services.resilience import get_resilience_service
 from app.services.json_parser import RobustParser
-from app.services.llm import get_llm
-from app.core.config import settings
+from app.services.llm import get_llm, resolve_model
 from app.models.database import DocumentStatus, SegmentStatus
 from app.agents.nodes.reverse_translate import reverse_translate_node
 
@@ -461,7 +460,7 @@ async def refine_translation(state: TransMaxState) -> TransMaxState:
 
     ref_in = ref_out = 0
     try:
-        response = await get_resilience_service().resilient_llm_call(get_llm().ainvoke, messages)
+        response = await get_resilience_service().resilient_llm_call(get_llm(task="refine").ainvoke, messages)
         # TMX-A6-2b: capture the refinement call's tokens before any parse/DB
         # work so the consumption is recorded even if downstream steps fail.
         from app.services.llm_usage import extract_token_usage
@@ -504,7 +503,7 @@ async def refine_translation(state: TransMaxState) -> TransMaxState:
         try:
             from app.services.llm_usage import emit_usage_event
             emit_usage_event(
-                job_id, settings.default_gpt_model, ref_in, ref_out,
+                job_id, resolve_model(task="refine"), ref_in, ref_out,
                 actor_node="refiner",
                 extra={"pass": "refinement", "iteration": state.get('iteration_count')},
             )

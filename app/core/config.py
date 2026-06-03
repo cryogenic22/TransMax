@@ -87,6 +87,12 @@ class Settings(BaseSettings):
     enable_real_pdf_parsing: bool = True  # Enabled for demo
     enable_live_llm_inference: bool = True
 
+    # TMX-ROUTER-2: opt-in LLM router. When False (default) every task uses
+    # default_gpt_model (current behaviour). When True, get_llm(task, ...)
+    # selects a model per task/complexity via app/core/model_registry. Keep OFF
+    # until the model registry matches the models the deployment's key can use.
+    enable_llm_router: bool = False
+
     # Digitization Service
     digitization_service_url: str = "http://localhost:8000/api/v1"
 

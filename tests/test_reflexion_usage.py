@@ -72,7 +72,7 @@ async def test_reflexion_emits_aggregated_usage_event(fresh_engine_for_db, monke
     _seed_org_and_job(core_db, ORG, job_id)
     _audit_v2_emit.reset_writer_singleton_for_test()
 
-    monkeypatch.setattr(rt, "get_llm", lambda: _FakeLLM())
+    monkeypatch.setattr(rt, "get_llm", lambda *a, **k: _FakeLLM())
 
     state = {
         "job_id": job_id,
@@ -112,7 +112,7 @@ async def test_reflexion_no_tokens_no_event(fresh_engine_for_db, monkeypatch):
             r.response_metadata = {}
             return r
 
-    monkeypatch.setattr(rt, "get_llm", lambda: _ZeroLLM())
+    monkeypatch.setattr(rt, "get_llm", lambda *a, **k: _ZeroLLM())
 
     state = {
         "job_id": job_id, "target_language": "es", "source_language": "en",

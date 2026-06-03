@@ -39,7 +39,7 @@ from enum import Enum
 
 from langchain_core.messages import SystemMessage, HumanMessage
 
-from app.services.llm import get_llm
+from app.services.llm import get_llm, resolve_model
 from app.services.json_parser import RobustParser
 from app.services.quality_gate import QualityGateService
 from app.services.db_service import DatabaseService
@@ -254,7 +254,11 @@ class TranslationEngine:
         self.config = config
         self.quality_gate = QualityGateService()
         self.db_service = DatabaseService()
-        self.llm = get_llm()
+        # TMX-ROUTER-2: request the model for the TRANSLATE task (routed when
+        # enable_llm_router is on; else default_gpt_model). _model is the id
+        # recorded in the usage telemetry (A6 provenance).
+        self.llm = get_llm(task="translate")
+        self._model = resolve_model(task="translate")
         self._circuit_breaker = CircuitBreaker(
             threshold=config.circuit_breaker_threshold,
             reset_timeout=config.circuit_breaker_reset_seconds
@@ -367,7 +371,7 @@ class TranslationEngine:
         # pipeline before the quality gate runs.
         usage = None
         try:
-            usage = self._build_usage(settings.default_gpt_model)
+            usage = self._build_usage(self._model)
             self.db_service.update_document_cost(
                 doc_id, usage["total_tokens"], usage["estimated_cost_usd"]
             )
