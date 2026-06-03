@@ -128,6 +128,21 @@ def init_db():
 
     _seed_default_org()
 
+    # TMX-DEPLOY-1: on Postgres (the production-like deployments), refuse to
+    # boot on a drifted schema. create_all creates missing tables but never
+    # ALTERs existing ones to add new columns, so a persisted DB silently serves
+    # 500s on every query that names a new column (the 2026-06 Railway
+    # incident). Fail loud at boot instead. We gate on the DIALECT — not app_env
+    # — so it engages on Railway Postgres regardless of how AUTH/APP_ENV are set,
+    # while SQLite dev/test (incl. the known-stale committed transmax.db) is
+    # skipped. ALLOW_SCHEMA_DRIFT=1 downgrades the raise to a CRITICAL log
+    # (emergency boot while a reseed/migration is prepared).
+    if engine.dialect.name == "postgresql":
+        from app.core.schema_guard import assert_schema_current
+        assert_schema_current(
+            engine, allow_drift=os.getenv("ALLOW_SCHEMA_DRIFT") == "1"
+        )
+
 
 def _seed_default_org() -> None:
     """Seed the system default-org row (TMX-3010).
