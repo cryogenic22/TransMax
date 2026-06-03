@@ -458,9 +458,20 @@ async def refine_translation(state: TransMaxState) -> TransMaxState:
         HumanMessage(content=user_content)
     ]
 
+    # TMX-ROUTER-5: cost-aware posture from the consumption so far (the
+    # translate pass's usage). When the job is near its budget the router
+    # downgrades the refine model tier. No-op unless routing + a budget are on.
+    from app.services.budget_guard import JobBudget, budget_posture as _budget_posture
+    _u = state.get('quality_report', {}).get('usage', {}) or {}
+    _posture = _budget_posture(
+        _u.get('total_tokens', 0), _u.get('estimated_cost_usd', 0.0), JobBudget.from_settings()
+    )
+
     ref_in = ref_out = 0
     try:
-        response = await get_resilience_service().resilient_llm_call(get_llm(task="refine").ainvoke, messages)
+        response = await get_resilience_service().resilient_llm_call(
+            get_llm(task="refine", budget_posture=_posture).ainvoke, messages
+        )
         # TMX-A6-2b: capture the refinement call's tokens before any parse/DB
         # work so the consumption is recorded even if downstream steps fail.
         from app.services.llm_usage import extract_token_usage
@@ -503,7 +514,7 @@ async def refine_translation(state: TransMaxState) -> TransMaxState:
         try:
             from app.services.llm_usage import emit_usage_event
             emit_usage_event(
-                job_id, resolve_model(task="refine"), ref_in, ref_out,
+                job_id, resolve_model(task="refine", budget_posture=_posture), ref_in, ref_out,
                 actor_node="refiner",
                 extra={"pass": "refinement", "iteration": state.get('iteration_count')},
             )

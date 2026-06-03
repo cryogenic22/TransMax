@@ -15,19 +15,25 @@ from app.core.config import settings
 _llm_cache: dict = {}
 
 
-def resolve_model(task=None, complexity="medium") -> str:
+def resolve_model(task=None, complexity="medium", budget_posture="normal") -> str:
     """Resolve the model id for a task.
 
     Routes via the capability registry only when a task is given AND
     `enable_llm_router` is set; otherwise returns `default_gpt_model`. The
-    chosen id is what the usage telemetry records (A6 provenance)."""
+    chosen id is what the usage telemetry records (A6 provenance).
+    ``budget_posture`` ("normal"/"constrained") lets a job nearing its budget
+    downgrade the tier (TMX-ROUTER-5)."""
     if task and getattr(settings, "enable_llm_router", False):
         from app.core.model_registry import select_model
-        return select_model(task, complexity, default_model=settings.default_gpt_model)
+        return select_model(
+            task, complexity,
+            budget_posture=budget_posture,
+            default_model=settings.default_gpt_model,
+        )
     return settings.default_gpt_model
 
 
-def get_llm(task=None, complexity="medium"):
+def get_llm(task=None, complexity="medium", budget_posture="normal"):
     """Return an LLM instance for ``task`` (routed when enable_llm_router is on).
 
     Cached per resolved model. In non-live mode returns a single deterministic
@@ -42,7 +48,7 @@ def get_llm(task=None, complexity="medium"):
             ]))
         return _llm_cache["__fake__"]
 
-    model = resolve_model(task, complexity)
+    model = resolve_model(task, complexity, budget_posture)
     if model not in _llm_cache:
         _llm_cache[model] = ChatOpenAI(
             model=model,

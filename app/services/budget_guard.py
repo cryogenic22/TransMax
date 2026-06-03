@@ -37,6 +37,15 @@ class JobBudget:
         """True iff at least one limit is set."""
         return self.max_tokens is not None or self.max_cost_usd is not None
 
+    @classmethod
+    def from_settings(cls) -> "JobBudget":
+        """Build the per-job budget from the global settings (opt-in limits)."""
+        from app.core.config import settings
+        return cls(
+            max_tokens=getattr(settings, "max_tokens_per_job", None),
+            max_cost_usd=getattr(settings, "max_cost_usd_per_job", None),
+        )
+
     def is_exceeded(self, tokens: int, cost_usd: float) -> bool:
         """Whether ``tokens``/``cost_usd`` consumed so far exceed this budget.
 
@@ -49,3 +58,25 @@ class JobBudget:
         if self.max_cost_usd is not None and cost_usd > self.max_cost_usd:
             return True
         return False
+
+
+def budget_posture(
+    tokens_used: int,
+    cost_used_usd: float,
+    budget: JobBudget,
+    threshold: float = 0.8,
+) -> str:
+    """Router cost-posture for a job's consumption so far (TMX-ROUTER-5).
+
+    Returns ``"constrained"`` once consumption reaches ``threshold`` (default
+    80%) of either configured limit — the LLM router downgrades the model tier
+    one step in that case (cost-aware selection). A disabled budget is always
+    ``"normal"``, so this is a no-op until per-job budgets are configured.
+    """
+    if not budget.is_enabled:
+        return "normal"
+    if budget.max_tokens is not None and tokens_used >= threshold * budget.max_tokens:
+        return "constrained"
+    if budget.max_cost_usd is not None and cost_used_usd >= threshold * budget.max_cost_usd:
+        return "constrained"
+    return "normal"
