@@ -8,9 +8,8 @@ from unittest.mock import MagicMock, patch
 # Fix Path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app.agents.graph import compile_constraints, draft_translate, TransMaxState
+from app.agents.graph import compile_constraints
 from app.models.models import TMSegment
-from app.models.database import Segment
 
 # --- Rigorous Mock DB ---
 class MockQuery:
@@ -103,42 +102,28 @@ async def test_graph_tm_bypass():
         assert state['segments'][0].get('tm_match') is not None
         assert state['segments'][0]['tm_match']['target'] == "Bonjour"
         assert state['segments'][1].get('tm_match') is None
-        
-        # 3. Request Mocks for LLM
-        with patch("app.agents.graph.get_llm") as mock_get_llm:
-            mock_llm_obj = MagicMock()
-            mock_get_llm.return_value = mock_llm_obj
-            
-            with patch("app.services.resilience.ResilienceService.resilient_llm_call") as mock_resilience:
-                # Mock LLM Response for 'World'
-                async def mock_invoke(*args, **kwargs):
-                    return MagicMock(content='```json\n{"segments": [{"id": "2", "target_text": "Monde"}]}\n```')
-                
-                mock_resilience.side_effect = mock_invoke
-                # Or just mock the return value if not checking args
-                
-                # 4. Run 'draft_translate'
-                state = await draft_translate(state)
-                
-                # VERIFY BYPASS: LLM should ONLY receive segment 2
-                # We check the arguments passed to llm.ainvoke (inside resilient call)
-                # ResilienceService.resilient_llm_call(llm.ainvoke, messages)
-                # We need to inspect 'messages'
-                
-                call_args = mock_resilience.call_args
-                # args[0] is function, args[1] is messages
-                messages = call_args[0][1] 
-                user_msg = messages[1].content
-                
-                # Crucial Assertions
-                assert '"text": "World"' in user_msg
-                assert '"text": "Hello"' not in user_msg, "Exact Match Segment leaked to LLM!"
-                
-                # Verify Final State
-                # Segment 1: From TM
-                assert state['segments'][0]['translated_text'] == "Bonjour"
-                # Segment 2: From LLM
-                assert state['segments'][1]['translated_text'] == "Monde"
+
+    # TMX-GRAPH-DEADCODE: TM-bypass is now verified against the LIVE production
+    # engine (translation_engine._separate_tm_matches), not the retired
+    # draft_translate node. The engine pre-fills TM-exact segments and routes
+    # only the rest to the LLM, so an exact match never reaches a model.
+    from app.agents.nodes.translation_engine import TranslationEngine
+
+    engine = TranslationEngine()
+    units = engine._prepare_segment_units(state['segments'])
+    tm_units, llm_units = engine._separate_tm_matches(units)
+
+    tm_ids = {u.segment_id for u in tm_units}
+    llm_ids = {u.segment_id for u in llm_units}
+
+    # Segment 1 (TM exact) bypasses the LLM: pre-filled, in tm_units, NOT in llm.
+    assert "1" in tm_ids, "TM exact match should bypass the LLM"
+    assert "1" not in llm_ids, "Exact Match Segment leaked to LLM!"
+    seg1 = next(u for u in tm_units if u.segment_id == "1")
+    assert seg1.translated_text == "Bonjour"
+
+    # Segment 2 (no match) must be routed to the LLM.
+    assert "2" in llm_ids, "Non-matched segment must go to the LLM"
 
 if __name__ == "__main__":
     asyncio.run(test_graph_tm_bypass())
