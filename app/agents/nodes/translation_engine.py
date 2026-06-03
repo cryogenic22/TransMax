@@ -44,13 +44,11 @@ from app.services.json_parser import RobustParser
 from app.services.quality_gate import QualityGateService
 from app.services.db_service import DatabaseService
 from app.agents.prompts import PromptRegistry
-from app.services.tracing import traced
 from app.models.database import SegmentStatus, DocumentStatus
 from app.core.constants import SubstitutionType
 from app.core.config import settings
 from app.services.language_packs.factory import LanguagePackFactory
-# TMX-A6-2: emit qualified-supplier consumption into the v2 audit chain.
-from app.agents._audit_v2_emit import emit_v2_audit_event
+from app.services.budget_guard import JobBudget
 
 logger = logging.getLogger(__name__)
 
@@ -261,12 +259,15 @@ class TranslationEngine:
             reset_timeout=config.circuit_breaker_reset_seconds
         )
         self._semaphore = asyncio.Semaphore(config.max_concurrent_batches)
+        # TMX-BUDGET-1: per-job budget (opt-in; disabled by default). Re-read
+        # from settings per document in translate_document.
+        self._job_budget = JobBudget()
         # Feature 5: Token usage accumulators (reset per-document, see
         # _reset_usage_counters — the engine is a process singleton).
         self._reset_usage_counters()
 
     def _reset_usage_counters(self) -> None:
-        """TMX-A6-2: zero the per-document token accumulators.
+        """TMX-A6-2: zero the per-document token accumulators (+ budget flag).
 
         ``get_engine`` is a process singleton, so without a per-document reset
         these accumulate across jobs — and since A6-2 writes the derived cost
@@ -275,6 +276,31 @@ class TranslationEngine:
         """
         self._total_input_tokens = 0
         self._total_output_tokens = 0
+        # TMX-BUDGET-1: monotonic per-document trip flag.
+        self._budget_exceeded = False
+
+    def _current_cost_usd(self) -> float:
+        """Cost of consumption so far, at the engine's billing tier (TMX-PRICING-1)."""
+        from app.core.model_pricing import cost_for
+        return cost_for("gpt-4o-mini", int(self._total_input_tokens), int(self._total_output_tokens))
+
+    def _maybe_trip_budget(self) -> None:
+        """TMX-BUDGET-1: trip the per-job budget flag once consumption exceeds
+        the configured ceiling. Monotonic + best-effort — a metrics/pricing
+        hiccup must never abort translation (A3 metrics carve-out)."""
+        if self._budget_exceeded or not self._job_budget.is_enabled:
+            return
+        try:
+            tokens = int(self._total_input_tokens) + int(self._total_output_tokens)
+            if self._job_budget.is_exceeded(tokens, self._current_cost_usd()):
+                self._budget_exceeded = True
+                logger.warning(
+                    "[Engine] Per-job budget exceeded (tokens=%s, limits: tokens=%s cost=%s) "
+                    "— remaining batches will be BLOCKED (TMX-BUDGET-1)",
+                    tokens, self._job_budget.max_tokens, self._job_budget.max_cost_usd,
+                )
+        except Exception as e:  # noqa: BLE001 — budget eval never blocks translation (A3)
+            logger.warning(f"Budget evaluation failed (ignored): {e}")
 
     async def translate_document(
         self,
@@ -292,6 +318,11 @@ class TranslationEngine:
         # TMX-A6-2: reset token accumulators so this document's recorded
         # consumption (and audit-chain cost evidence) excludes prior jobs.
         self._reset_usage_counters()
+        # TMX-BUDGET-1: read the per-job budget for this document (opt-in).
+        self._job_budget = JobBudget(
+            max_tokens=settings.max_tokens_per_job,
+            max_cost_usd=settings.max_cost_usd_per_job,
+        )
 
         # 0. Init Progress
         progress = ProgressTracker(
@@ -351,6 +382,16 @@ class TranslationEngine:
         # an LLM_USAGE_RECORDED audit event AND the dashboard reads one source.
         if usage is not None:
             report["usage"] = usage
+        # TMX-BUDGET-1: surface a budget breach so the node can emit a
+        # BUDGET_EXCEEDED audit event (A1) and the report carries the signal.
+        if self._budget_exceeded:
+            report["budget"] = {
+                "exceeded": True,
+                "limit_tokens": self._job_budget.max_tokens,
+                "limit_cost_usd": self._job_budget.max_cost_usd,
+                "tokens_used": int(self._total_input_tokens) + int(self._total_output_tokens),
+                "cost_used_usd": round(self._current_cost_usd(), 6),
+            }
 
         return result_segments, report
 
@@ -450,7 +491,21 @@ class TranslationEngine:
         progress: ProgressTracker
     ):
         """Process a single batch with semaphore, retry, and circuit breaker."""
-        
+
+        # TMX-BUDGET-1: if the per-job budget has already tripped, skip this
+        # batch's LLM call entirely — block its segments LOUDLY (A3) rather
+        # than keep spending. This caps overspend to the wave already in flight.
+        if self._budget_exceeded:
+            for unit in batch:
+                unit.state = SegmentState.BLOCKED
+                unit.error_message = "budget_exceeded"
+            await progress.update(SegmentState.BLOCKED, len(batch))
+            logger.warning(
+                f"[Batch {batch_idx}] Skipped — per-job budget exceeded; "
+                f"{len(batch)} segment(s) BLOCKED (TMX-BUDGET-1)"
+            )
+            return
+
         async with self._semaphore:  # Limit concurrent LLM calls
             for attempt in range(self.config.max_retries + 1):
                 try:
@@ -597,6 +652,10 @@ class TranslationEngine:
         except Exception:
             pass  # Don't fail translation over metrics
 
+        # TMX-BUDGET-1: trip the per-job budget after accounting this call's
+        # tokens, so any not-yet-started batch can skip its LLM call.
+        self._maybe_trip_budget()
+
         # Parse response
         data = RobustParser.parse(response.content)
         
@@ -722,73 +781,5 @@ class TranslationEngine:
         }
 
 
-# ============================================================================
-# SINGLETON & LANGGRAPH NODE
-# ============================================================================
-
-_engine: Optional[TranslationEngine] = None
-
-def get_engine() -> TranslationEngine:
-    global _engine
-    if not _engine:
-        _engine = TranslationEngine()
-    return _engine
-
-
-@traced("graph.node.translate")
-async def translation_engine_node(state: dict) -> dict:
-    """
-    LangGraph node that uses the TranslationEngine.
-    Drop-in replacement for draft_translate.
-    """
-    logger.info("=== TRANSLATION ENGINE NODE ===")
-    
-    segments = state.get('segments', [])
-    if not segments:
-        logger.warning("No segments to translate")
-        return state
-    
-    engine = get_engine()
-    
-    try:
-        result_segments, quality_report = await engine.translate_document(
-            doc_id=state['doc_id'],
-            segments=segments,
-            target_language=state['target_language'],
-            constraint_pack=state.get('constraint_pack', {})
-        )
-        
-        # Update state with results
-        # Merge translations back into state segments
-        result_map = {s['segment_id']: s for s in result_segments}
-        for seg in state['segments']:
-            if seg['segment_id'] in result_map:
-                seg.update(result_map[seg['segment_id']])
-        
-        state['quality_report'] = quality_report
-
-        # TMX-A6-2: record qualified-supplier consumption (A6) into the
-        # immutable v2 audit chain (A1) — model, token usage, table-derived
-        # cost. Wrapped + swallowed: telemetry must never block a translation
-        # (A3 metrics carve-out, same contract as _audit_v2_emit Phase 1).
-        usage = quality_report.get('usage')
-        job_id = state.get('job_id')
-        if usage and job_id:
-            try:
-                emit_v2_audit_event(
-                    job_id=job_id,
-                    event_type="LLM_USAGE_RECORDED",
-                    actor_id=None,
-                    actor_kind="agent",
-                    payload={**usage, "_actor_node": "translator"},
-                )
-            except Exception as e:  # noqa: BLE001 — telemetry never blocks translation (A3)
-                logger.warning(f"Failed to emit LLM_USAGE_RECORDED audit event: {e}")
-
-        logger.info(f"[Engine Node] Complete: {quality_report.get('status')}")
-
-    except Exception as e:
-        logger.error(f"[Engine Node] Failed: {e}")
-        state['error'] = str(e)
-
-    return state
+# The LangGraph node adapter (get_engine / translation_engine_node) lives in
+# app/agents/nodes/translation_engine_node.py — engine first, surface second.

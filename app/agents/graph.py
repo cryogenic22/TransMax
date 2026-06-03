@@ -744,7 +744,7 @@ async def finalize_job(state: TransMaxState) -> TransMaxState:
 # ---------------------------------------------------------
 
 # Import the production-grade translation engine
-from app.agents.nodes.translation_engine import translation_engine_node
+from app.agents.nodes.translation_engine_node import translation_engine_node
 
 workflow = StateGraph(TransMaxState)
 

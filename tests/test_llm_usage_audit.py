@@ -157,7 +157,7 @@ def test_engine_resets_usage_counters_between_documents():
 async def test_node_emits_usage_event_into_chain(fresh_engine_for_db, monkeypatch):
     """AC-1/AC-2: translate node leaves exactly one LLM_USAGE_RECORDED event
     carrying the usage payload in the v2 chain."""
-    import app.agents.nodes.translation_engine as te
+    import app.agents.nodes.translation_engine_node as te
     from app.agents import _audit_v2_emit
     from app.core.tenant_context import org_context
 
@@ -199,7 +199,7 @@ async def test_node_emits_usage_event_into_chain(fresh_engine_for_db, monkeypatc
 
 async def test_node_without_job_id_emits_nothing(fresh_engine_for_db, monkeypatch):
     """AC-6: ad-hoc invocation without job_id emits no event and raises nothing."""
-    import app.agents.nodes.translation_engine as te
+    import app.agents.nodes.translation_engine_node as te
     from app.agents import _audit_v2_emit
     from app.core.tenant_context import org_context
 
@@ -226,7 +226,7 @@ async def test_node_survives_emit_failure(fresh_engine_for_db, monkeypatch):
     """AC-5: if the audit emit raises at the node boundary, the translate node
     still returns successfully and the quality report is intact (A3 metrics
     carve-out — telemetry must never block a translation)."""
-    import app.agents.nodes.translation_engine as te
+    import app.agents.nodes.translation_engine_node as te
     from app.agents import _audit_v2_emit
     from app.core.tenant_context import org_context
 
