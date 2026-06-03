@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.core.database import get_db
+from app.core.model_pricing import cost_for
 from app.models.database import Document, Segment, DeletionRecord, DocumentStatus, SegmentStatus
 from app.api.schemas import (
     DocumentUpdate, DocumentResponse, DocumentListResponse,
@@ -368,9 +369,13 @@ async def estimate_translation(
     est_output_tokens = int(word_count * 1.5)
     estimated_total_tokens = est_input_tokens + est_output_tokens
 
-    # Cost: gpt-4o-mini pricing ($0.15/1M input, $0.60/1M output)
+    # Cost: priced via the canonical registry (single source of truth,
+    # TMX-PRICING-1). The model priced here is the model reported below — they
+    # are the same constant so a recorded estimate can never be for a
+    # different model than the one named in the response (A3).
+    estimate_model = "gpt-4o-mini"
     estimated_cost_usd = round(
-        (est_input_tokens * 0.00000015) + (est_output_tokens * 0.0000006), 6
+        cost_for(estimate_model, est_input_tokens, est_output_tokens), 6
     )
 
     # Time estimate: ~3s per batch (concurrent), ~1s per reverse call (batched)
@@ -388,7 +393,7 @@ async def estimate_translation(
         "estimated_total_tokens": estimated_total_tokens,
         "estimated_cost_usd": estimated_cost_usd,
         "estimated_seconds": estimated_seconds,
-        "model": "gpt-4o-mini",
+        "model": estimate_model,
     }
 
 
