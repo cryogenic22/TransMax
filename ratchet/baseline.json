@@ -1,0 +1,43 @@
+{
+  "$schema": "ratchet/schema.json",
+  "description": "Monotonic-improvement baseline. Every metric is either 'bad' (direction: down \u2014 current must be <= baseline) or 'good' (direction: up \u2014 current must be >= baseline). Update only via `python scripts/ratchet.py update` and PR review.",
+  "directions": {
+    "backend.any_annotations": "down",
+    "backend.bare_except": "down",
+    "backend.mega_files_800": "down",
+    "backend.placeholder_strings": "down",
+    "backend.print_in_app": "down",
+    "backend.todo_without_issue": "down",
+    "backend.type_ignore": "down",
+    "frontend.any_annotations": "down",
+    "frontend.as_any": "down",
+    "frontend.console_log": "down",
+    "frontend.ts_ignore": "down",
+    "frontend.ts_nocheck": "down",
+    "hygiene.committed_db_files": "down",
+    "hygiene.committed_log_files": "down",
+    "hygiene.committed_pyc_files": "down",
+    "tests.files": "up",
+    "tests.functions": "up"
+  },
+  "metrics": {
+    "backend.any_annotations": 252,
+    "backend.bare_except": 4,
+    "backend.mega_files_800": 2,
+    "backend.placeholder_strings": 1,
+    "backend.print_in_app": 41,
+    "backend.todo_without_issue": 3,
+    "backend.type_ignore": 3,
+    "frontend.any_annotations": 1,
+    "frontend.as_any": 0,
+    "frontend.console_log": 0,
+    "frontend.ts_ignore": 0,
+    "frontend.ts_nocheck": 0,
+    "hygiene.committed_db_files": 3,
+    "hygiene.committed_log_files": 18,
+    "hygiene.committed_pyc_files": 3,
+    "tests.files": 129,
+    "tests.functions": 850
+  },
+  "note": "TMX-AUDIT-RATCHET-TODO-SWEEP: resolved 9 self-references in scripts/ratchet.py, reworded 4 narrative 'bug'/'buggy' false-positives in audit_writer_v2, _audit_canonical, test_no_default_org_id_in_services, sanitizeHtml.ts, and annotated 3 real TODOs with TMX-3211 (graph.py iteration_count hack), TMX-AUDIT-QG-BATCH-EMBED (quality_gate.py embedding batching), TMX-AUDIT-DB-DOCID-LOOKUP (review_service.py get_doc_id_from_job). Baseline tightened 16->3."
+}

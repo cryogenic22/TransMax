@@ -1,0 +1,67 @@
+# Ratchet — monotonic-improvement quality gate.
+# Re-measures every tracked metric on every PR and main push;
+# fails if any metric regressed since the baseline.
+#
+# Baseline lives at ratchet/baseline.json. Update via PR with
+# `python scripts/ratchet.py update`.
+name: ratchet
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ratchet-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Ratchet check (no metric may regress)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Ratchet status (always shown)
+        run: python scripts/ratchet.py status
+
+      - name: Ratchet check (fails on regression)
+        run: python scripts/ratchet.py check
+
+      - name: Comment on PR with current ratchet status
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            let output;
+            try {
+              output = execSync('python scripts/ratchet.py status', { encoding: 'utf8' });
+            } catch (e) {
+              output = e.stdout || e.message;
+            }
+            const body = [
+              '### Ratchet status',
+              '',
+              '```',
+              output.trim(),
+              '```',
+              '',
+              '_The ratchet is the monotonic-improvement gate. Every metric is either "down" (lower is better) or "up" (higher is better). Regression on any metric fails this job. Baseline lives at `ratchet/baseline.json`._'
+            ].join('\n');
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });

@@ -36,6 +36,10 @@ uploads/
 !requirements.txt
 !README.txt
 
+# Claude Code transient session state (commands/skills may be shared; these are not)
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+
 # Testing
 .pytest_cache/
 .coverage

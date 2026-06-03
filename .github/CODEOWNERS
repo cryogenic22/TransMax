@@ -1,0 +1,97 @@
+# TransMax CODEOWNERS — bootstrapped 2026-05-01 per v3.0 plan TMX-3009.
+#
+# These rules are consumed by GitHub to suggest reviewers automatically.
+# Every PR touching protected paths needs a code-owner approval.
+# Pod assignments come from research/v3_pilot_ready_release_plan.md §2.1.
+#
+# Update this file when ownership changes. Branch-protection rules
+# (see docs/branch_protection.md) make CODEOWNERS approval mandatory
+# for protected paths.
+
+# ── Default fallback ─────────────────────────────────────────────────────────
+# Anything not matched explicitly: the Programme Lead reviews.
+*                                       @kapilpant
+
+# ── Auth & Tenancy pod (E1) ──────────────────────────────────────────────────
+/app/auth/                              @kapilpant
+/app/core/config.py                     @kapilpant
+/app/api/auth.py                        @kapilpant
+/frontend/lib/auth.tsx                  @kapilpant
+/frontend/lib/permissions.ts            @kapilpant
+
+# ── Audit & Validation pod (E2, E3) ──────────────────────────────────────────
+/app/services/audit_service.py          @kapilpant
+/app/services/evidence_service.py       @kapilpant
+/app/api/v1/audit.py                    @kapilpant
+/validation/                            @kapilpant
+/scripts/verify_audit_chain.py          @kapilpant
+
+# ── Document Pipeline pod (E4, E5) ───────────────────────────────────────────
+/app/services/docx_ingestion.py         @kapilpant
+/app/services/docx_utils.py             @kapilpant
+/app/services/document_export.py        @kapilpant
+/app/services/pdf_ingestion.py          @kapilpant
+/app/services/pdf_service.py            @kapilpant
+/app/services/pii_service.py            @kapilpant
+
+# ── Quality & Regulatory pod (E6) ────────────────────────────────────────────
+/app/services/quality_gate.py           @kapilpant
+/app/core/defect_taxonomy.py            @kapilpant
+/app/core/regulatory_profiles.py        @kapilpant
+/app/core/profile_resolver.py           @kapilpant
+/app/core/scoring_config.py             @kapilpant
+/app/services/language_packs/           @kapilpant
+/tests/evals/                           @kapilpant
+
+# ── Agent & AI pod (E7) ──────────────────────────────────────────────────────
+/app/agents/                            @kapilpant
+/app/services/llm.py                    @kapilpant
+/app/services/learning_service.py       @kapilpant
+/app/services/confidence_service.py     @kapilpant
+
+# ── Reviewer Frontend pod (E8) ───────────────────────────────────────────────
+/frontend/app/                          @kapilpant
+/frontend/components/                   @kapilpant
+/frontend/hooks/                        @kapilpant
+
+# ── Platform & Observability pod (E9) ────────────────────────────────────────
+/app/services/observability.py          @kapilpant
+/app/services/resilience.py             @kapilpant
+/app/services/queue_service.py          @kapilpant
+/Dockerfile                             @kapilpant
+/docker-compose.yml                     @kapilpant
+/scripts/ratchet.py                     @kapilpant
+/ratchet/                               @kapilpant
+
+# ── Pilot/GTM pod (E10) ──────────────────────────────────────────────────────
+/SECURITY.md                            @kapilpant
+/docs/incident_response.md              @kapilpant
+/docs/privacy_notice.md                 @kapilpant
+/compliance/                            @kapilpant
+
+# ── Strategic / planning docs ────────────────────────────────────────────────
+# These need the Programme Lead's explicit sign-off.
+/research/                              @kapilpant
+/parking_lot/                           @kapilpant
+/.context/                              @kapilpant
+/COLLABORATION.md                       @kapilpant
+/CLAUDE.md                              @kapilpant
+/AGENTS.md                              @kapilpant
+
+# ── Quality-gate kit (vendored upstream from KP_SDLC) ────────────────────────
+# Edits should go upstream first; only path-of-least-resistance hotfixes here.
+/quality-gate/                          @kapilpant
+/.harness/                              @kapilpant
+/.claude/skills/                        @kapilpant
+/.claude/commands/                      @kapilpant
+
+# ── CI / build infra ─────────────────────────────────────────────────────────
+/.github/                               @kapilpant
+/.pre-commit-config.yaml                @kapilpant
+/pyproject.toml                         @kapilpant
+/requirements.txt                       @kapilpant
+/frontend/package.json                  @kapilpant
+/frontend/package-lock.json             @kapilpant
+/frontend/tsconfig.json                 @kapilpant
+/frontend/eslint.config.mjs             @kapilpant
+/frontend/tailwind.config.ts            @kapilpant

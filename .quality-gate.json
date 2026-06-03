@@ -1,0 +1,96 @@
+{
+  "$schema": "quality-gate/schema.json",
+  "_note": "TransMax repo-level quality-gate overrides. Defaults live in quality-gate/quality-gate.config.json — do not edit those.",
+  "packs": ["core", "python", "web", "security", "ai_engineering"],
+  "paths": {
+    "include": ["app", "frontend/app", "frontend/components", "frontend/hooks", "frontend/lib", "scripts", "tests"],
+    "extensions": [".py", ".ts", ".tsx", ".js", ".jsx"],
+    "exclude": [
+      "**/node_modules/**",
+      "**/.next/**",
+      "**/__pycache__/**",
+      "**/.pytest_cache/**",
+      "**/.venv/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/.quality-reports/**",
+      "**/coverage/**",
+      "alembic/versions/**",
+      "tests/data/**"
+    ]
+  },
+  "prs": {
+    "enabled": true,
+    "min_score": 85,
+    "error_weight": 10,
+    "warning_weight": 2
+  },
+  "rules": {
+    "file_size": {
+      "enabled": true,
+      "severity": "error",
+      "max_lines": 800,
+      "warning_lines": 500,
+      "exceptions": [
+        "app/agents/graph.py",
+        "app/agents/nodes/translation_engine.py",
+        "app/services/document_export.py",
+        "frontend/lib/api.ts"
+      ]
+    },
+    "function_size": {
+      "enabled": true,
+      "severity": "warning",
+      "max_lines": 80,
+      "warning_lines": 50
+    },
+    "no_todo_fixme": {
+      "enabled": true,
+      "severity": "warning",
+      "patterns": ["TODO", "FIXME", "XXX", "HACK", "BUG"],
+      "allow_with_issue": true,
+      "issue_pattern": "(TODO|FIXME)\\s*\\((TMX-\\d+|#\\d+)\\)"
+    },
+    "no_debug_statements": {
+      "enabled": true,
+      "severity": "warning",
+      "exceptions": ["console.error", "console.info", "console.warn", "logger."]
+    },
+    "no_type_escape": {
+      "enabled": true,
+      "severity": "warning",
+      "patterns": {"typescript": ["@ts-ignore", "@ts-nocheck"], "python": ["# type: ignore"]},
+      "allowed_python_type_ignore_codes": ["import-not-found"]
+    },
+    "no_silent_catch": {
+      "enabled": true,
+      "severity": "error",
+      "patterns": {
+        "python": ["except.*:\\s*pass", "except Exception:\\s*pass", "except:\\s*pass"]
+      }
+    },
+    "no_hardcoded_secrets": {
+      "enabled": true,
+      "severity": "error"
+    }
+  },
+  "evals": {
+    "enabled": true,
+    "datasets_path": "tests/evals/data",
+    "baseline_path": "tests/evals/baseline.json",
+    "thresholds": {
+      "min_accuracy": 0.85,
+      "regression_tolerance": 0.02,
+      "max_latency_p99_ms": 1000
+    },
+    "executor": {
+      "type": "python_callable",
+      "callable": "tests.evals.runner:main"
+    }
+  },
+  "thresholds": {
+    "error_count": 0,
+    "warning_count": 250,
+    "_warning_count_note": "Warning budget tracked separately by ratchet; this is a soft cap to surface unusual spikes."
+  }
+}
