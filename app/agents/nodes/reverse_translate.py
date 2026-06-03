@@ -1,10 +1,15 @@
 import asyncio
-from typing import Dict, Any, List, Optional
+import logging
+from typing import Dict, Any, Optional
 from langchain_core.messages import SystemMessage, HumanMessage
 from app.services.llm import get_llm
 from app.services.db_service import get_db_service
 from app.services.quality_gate import get_quality_gate_service
 from app.services.tracing import traced
+from app.services.llm_usage import extract_token_usage, emit_usage_event
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 CONCURRENCY_LIMIT = 10
 
@@ -33,6 +38,9 @@ async def reverse_translate_node(state: Dict[str, Any]) -> Dict[str, Any]:
         
     llm = get_llm()
     semaphore = asyncio.Semaphore(CONCURRENCY_LIMIT)
+    # TMX-A6-2b-reflexion: accumulate per-segment back-translation token usage.
+    # asyncio is single-threaded so += across the gathered workers is safe.
+    usage_acc = {"in": 0, "out": 0}
     
     system_msg = SystemMessage(content=f"""You are a strict linguistic auditor performing back-translation verification.
     Translate the following {target_lang} text back into {source_lang}.
@@ -56,6 +64,10 @@ async def reverse_translate_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 user_msg = HumanMessage(content=f"Text: {trans_text}")
                 # Use ainvoke for async
                 response = await llm.ainvoke([system_msg, user_msg])
+                # TMX-A6-2b-reflexion: account this back-translation call's tokens.
+                _i, _o = extract_token_usage(response)
+                usage_acc["in"] += _i
+                usage_acc["out"] += _o
                 reverse_text = response.content.strip()
                 
                 # Update In-Memory
@@ -110,6 +122,19 @@ async def reverse_translate_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 
         except Exception as e:
             print(f"Reflexion Persistence Failed: {e}")
+
+    # TMX-A6-2b-reflexion: record the reflexion pass's qualified-supplier
+    # consumption in the immutable chain (A6/A1), summed across all segments.
+    # Per-job total = translate + refine + reflexion usage events. A3-wrapped.
+    job_id = state.get('job_id')
+    if job_id and (usage_acc["in"] or usage_acc["out"]):
+        try:
+            emit_usage_event(
+                job_id, settings.default_gpt_model, usage_acc["in"], usage_acc["out"],
+                actor_node="reflexion", extra={"pass": "reflexion"},
+            )
+        except Exception as e:  # noqa: BLE001 — telemetry never blocks the pipeline (A3)
+            logger.warning(f"Failed to emit reflexion LLM_USAGE_RECORDED: {e}")
 
     return {"segments": segments}
 
