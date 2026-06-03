@@ -20,7 +20,27 @@ legitimate clinical content.
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
+
+# Zero-width / invisible characters used to break up trigger phrases
+# ("i<zwsp>gnore previous instructions"). Stripped before matching.
+_ZERO_WIDTH = dict.fromkeys(map(ord, "​‌‍⁠﻿"), None)
+
+
+def _normalize(text: str) -> str:
+    """Fold obfuscation before matching (TMX-INJ-1a).
+
+    NFKC collapses full-width / compatibility forms (e.g. fullwidth latin used
+    to dodge ASCII patterns); zero-width chars are removed; whitespace runs are
+    collapsed to single spaces. We scan the normalized form — the original is
+    untouched, and normalizing benign text never CREATES an injection phrase,
+    so this raises recall without hurting precision.
+    """
+    t = unicodedata.normalize("NFKC", text)
+    t = t.translate(_ZERO_WIDTH)
+    t = re.sub(r"\s+", " ", t)
+    return t
 
 # Each entry: (label, compiled pattern). Patterns are case-insensitive and
 # anchored to injection phrasing / role-markup, deliberately high-precision.
@@ -39,6 +59,10 @@ _PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("override_directive", re.compile(r"override\s+(?:your\s+|the\s+|all\s+)?(?:previous\s+)?(?:instructions?|settings?|rules?|safety|guardrails?)", re.I)),
     ("jailbreak", re.compile(r"\bjailbreak\b", re.I)),
     ("prompt_injection_literal", re.compile(r"prompt\s+injection", re.I)),
+    # TMX-INJ-1a — additional high-precision vectors.
+    ("begin_response_with", re.compile(r"begin\s+your\s+(?:response|answer|reply|output)\s+with", re.I)),
+    ("you_must_output", re.compile(r"you\s+must\s+(?:output|respond|reply|say|write|return)\b", re.I)),
+    ("translate_as_literal", re.compile(r"translate\s+(?:this|it|the\s+\w+)\s+as\s+[\"']", re.I)),
 )
 
 
@@ -54,9 +78,14 @@ class InjectionScanner:
     """Stateless scanner. Reusable; holds no per-call state."""
 
     def scan(self, text: str) -> list[InjectionFinding]:
-        """Return all injection findings in ``text`` (empty list ⇒ clean)."""
+        """Return all injection findings in ``text`` (empty list ⇒ clean).
+
+        Input is normalized first (TMX-INJ-1a) to defeat zero-width / full-width
+        obfuscation of trigger phrases.
+        """
         if not text:
             return []
+        text = _normalize(text)
         findings: list[InjectionFinding] = []
         for label, pattern in _PATTERNS:
             m = pattern.search(text)
