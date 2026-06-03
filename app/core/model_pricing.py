@@ -46,6 +46,13 @@ class ModelPricing:
 # `settings.default_*_model` and in audit snapshots. Add new models here and
 # NOWHERE else.
 #
+# TMX-PRICING-1a: gpt-4-turbo-preview is the configured `settings.default_gpt_model`
+# and is recorded as the model-of-record in the audit snapshot + A6-2 usage; it
+# MUST be priceable or cost_for(default_gpt_model) raises. Registered at the
+# confirmed public GPT-4 Turbo rate ($10/$30 per 1M). gpt-4-turbo has no
+# published cached-input discount, so cached == input (conservative — never
+# under-bills, A3).
+#
 # TODO(TMX-PRICING-1a): register gpt-4.1 and the Claude tier (Opus/Sonnet/
 # Haiku) once their published per-1M rates are confirmed. Until then, callers
 # requesting those models get a loud UnknownModelError rather than a wrong
@@ -60,6 +67,11 @@ _PRICING: dict[str, ModelPricing] = {
         input_per_1m=0.15,
         output_per_1m=0.60,
         cached_input_per_1m=0.075,
+    ),
+    "gpt-4-turbo-preview": ModelPricing(
+        input_per_1m=10.00,
+        output_per_1m=30.00,
+        cached_input_per_1m=10.00,
     ),
 }
 
