@@ -757,6 +757,13 @@ class TranslationEngine:
         from app.services.review_flags import needs_review_segment_ids
         needs_review = needs_review_segment_ids(units)
 
+        # TMX-TM-2: surface translation-memory REUSE so users see which segments
+        # were served from TM (bypassing the LLM), not re-translated.
+        tm_reused = [
+            u.segment_id for u in units
+            if u.translation_source == SubstitutionType.TM_EXACT.value
+        ]
+
         return {
             "status": "PASSED" if progress.failed == 0 and progress.blocked == 0 else "REVIEW_REQUIRED",
             "metrics": progress.to_dict(),
@@ -764,6 +771,8 @@ class TranslationEngine:
             "violations": all_violations,
             "needs_review_segments": needs_review,
             "needs_review_count": len(needs_review),
+            "tm_reused_segments": tm_reused,
+            "tm_reused_count": len(tm_reused),
             "throughput_segments_per_second": round(len(units) / duration, 2) if duration > 0 else 0
         }
 
