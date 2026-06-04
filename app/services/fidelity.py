@@ -97,6 +97,24 @@ def compare_structure(source: dict, output: dict) -> FidelityReport:
     )
 
 
+# The structural "skeleton" — dimensions a faithful text-replacement export
+# must NEVER lose. (bold/italic run counts can legitimately shift when text is
+# redistributed across runs, so they are not gate-failing — only the skeleton.)
+_SKELETON_DIMS = ("tables", "images", "headings")
+
+
+def structural_loss(source: dict, output: dict) -> list[str]:
+    """Skeleton dimensions where the output has FEWER than the source.
+
+    Empty list ⇒ no structural loss. Used by the export fail-loud gate; ignores
+    bold/italic counts (which a correct translation may shift)."""
+    return [
+        f"{d}: {source.get(d, 0)} → {output.get(d, 0)}"
+        for d in _SKELETON_DIMS
+        if int(output.get(d, 0)) < int(source.get(d, 0))
+    ]
+
+
 class FidelityError(RuntimeError):
     """Raised by the fail-loud gate when an export lost source structure."""
 
