@@ -29,8 +29,31 @@ def resolve_model(task=None, complexity="medium", budget_posture="normal") -> st
             task, complexity,
             budget_posture=budget_posture,
             default_model=settings.default_gpt_model,
+            policy_overrides=_tenant_policy_overrides(),
         )
     return settings.default_gpt_model
+
+
+def _tenant_policy_overrides() -> dict:
+    """Best-effort fetch of the current tenant's routing overrides (TMX-ROUTER-3).
+
+    Returns ``{}`` on any error / no tenant context — routing then falls back to
+    the default policy. (A per-call DB read; caching is TMX-ROUTER-3b.)
+    """
+    try:
+        from app.core.tenant_context import current_org_id
+        org_id = current_org_id()
+        if not org_id:
+            return {}
+        from app.core.database import SessionLocal
+        from app.services.routing_policy_service import get_policy_overrides
+        db = SessionLocal()
+        try:
+            return get_policy_overrides(org_id, db)
+        finally:
+            db.close()
+    except Exception:  # noqa: BLE001 — policy lookup never blocks model resolution
+        return {}
 
 
 def get_llm(task=None, complexity="medium", budget_posture="normal"):

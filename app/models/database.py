@@ -244,6 +244,34 @@ def drop_tables(engine):
     Base.metadata.drop_all(engine)
 
 
+class RoutingPolicy(SoftDeleteMixin, Base):
+    """Per-tenant LLM routing policy override (TMX-ROUTER-3).
+
+    One row per organization. ``overrides`` maps ``"task:complexity"`` →
+    tier-name strings and overlays the default policy in
+    ``app/core/model_registry``. The LLM router (``resolve_model``) consults it
+    only when this row is ``enabled`` AND the global ``enable_llm_router`` flag
+    is on. Edited solely via the RBAC-gated, audited routing_policy_service
+    (and the ROUTER-4 UI) — never written from request handlers directly.
+    """
+    __tablename__ = "routing_policies"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(
+        GUID, ForeignKey("organizations.id"), nullable=False, unique=True, index=True
+    )
+    overrides = Column(JSON, nullable=False, default=dict)
+    enabled = Column(Boolean, nullable=False, default=False)
+    updated_by = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+
 # --- Backward Compatibility Re-exports ---
 # Legacy db_service.py imports these from here. Re-export from core.database.
 from app.core.database import engine, SessionLocal, get_db_session

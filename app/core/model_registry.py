@@ -132,6 +132,7 @@ def select_model(
     *,
     budget_posture: str = "normal",
     default_model: str = "gpt-4o-mini",
+    policy_overrides: dict | None = None,
 ) -> str:
     """Pick the model id for a task.
 
@@ -142,6 +143,8 @@ def select_model(
             (e.g. a job nearing its TMX-BUDGET-1 ceiling) the tier is downgraded
             one step to save cost.
         default_model: fallback if the resolved tier has no registered model.
+        policy_overrides: optional per-tenant ``"task:complexity" -> tier``
+            map (TMX-ROUTER-3) that overlays the default ``_POLICY``.
 
     Returns:
         A model id guaranteed to be in the pricing registry (costable).
@@ -149,7 +152,14 @@ def select_model(
     task = _coerce(task, Task)
     complexity = _coerce(complexity, Complexity)
 
-    tier = _POLICY.get((task, complexity), ModelTier.BALANCED)
+    tier: ModelTier | None = None
+    if policy_overrides:
+        override = policy_overrides.get(f"{task.value}:{complexity.value}")
+        if override in {t.value for t in ModelTier}:
+            tier = ModelTier(override)
+    if tier is None:
+        tier = _POLICY.get((task, complexity), ModelTier.BALANCED)
+
     if budget_posture == "constrained":
         tier = _downgrade(tier)
 
