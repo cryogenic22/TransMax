@@ -132,7 +132,10 @@ async def create_document(
         file_path=file_path,
         file_type=file_ext.replace(".", ""),
         word_count=total_words,
-        page_count=len(blocks) if file_ext == ".pdf" else 1 # Rough proxy
+        # TMX-PAGECOUNT-1: real PDF page count (pypdf), not the block/segment
+        # count (which showed e.g. 316 "pages" for a 13-page PDF). DOCX has no
+        # fixed page count without rendering, so it stays 1.
+        page_count=ingest_service.count_pages(file_path) if file_ext == ".pdf" else 1
     )
     
     db.add(doc)

@@ -88,6 +88,21 @@ class PDFService:
         except Exception as e:
             raise RuntimeError(f"Failed to extract PDF with fallback: {e}")
 
+    def count_pages(self, file_path: str) -> int:
+        """Real page count of a PDF (TMX-PAGECOUNT-1).
+
+        The upload UI previously showed the block/segment count as the page
+        count (e.g. 316 "pages" for a 13-page PDF) because it used len(blocks).
+        This reads the actual page count via pypdf. Falls back to 1 on error —
+        never reports a segment count as pages.
+        """
+        try:
+            import pypdf
+            with open(file_path, "rb") as fh:
+                return max(1, len(pypdf.PdfReader(fh).pages))
+        except Exception:
+            return 1
+
     def _split_sentences(self, text: str, language: str = "en") -> List[str]:
         """Split text into sentences via the shared abbreviation-aware segmenter.
 
