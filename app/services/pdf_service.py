@@ -88,25 +88,18 @@ class PDFService:
         except Exception as e:
             raise RuntimeError(f"Failed to extract PDF with fallback: {e}")
 
-    def _split_sentences(self, text: str) -> List[str]:
+    def _split_sentences(self, text: str, language: str = "en") -> List[str]:
+        """Split text into sentences via the shared abbreviation-aware segmenter.
+
+        TMX-3801: previously a naive `(?<=[.!?])\\s+(?=[A-Z0-9])` regex that
+        shattered author bylines and credentials ("Fernando P. Polack, M.D.,
+        Stephen J. Thomas, M.D.") into junk fragments — the root cause of the
+        flattened NEJM manuscript translation. Now delegates to the same
+        segmenter the rest of the pipeline uses, so PDF ingestion gets the
+        same abbreviation/initial handling as every other input.
         """
-        Splits text into sentences using simple heuristics (Regex).
-        Handles common abbreviations (e.g., Dr., mg., etc.) naively.
-        """
-        import re
-        
-        # 1. Replace newlines with spaces to handle wrap-around
+        from app.services.segmenter import get_segmenter
+
         text = text.replace("\n", " ")
-        
-        # 2. Split by punctuation (.!?) followed by space or end of string
-        # Lookbehind could be used to avoid splitting on 'No.' or 'mg.'
-        # For now, simple split is better than huge blocks
-        
-        # Split on .!? followed by a space and an uppercase letter (heuristic)
-        # re.split returns the delimiters too if captured in (), need to flatten
-        
-        pattern = r'(?<=[.!?])\s+(?=[A-Z0-9])'
-        segments = re.split(pattern, text)
-        
-        return [s.strip() for s in segments if s.strip()]
+        return get_segmenter(language).segment(text)
 
