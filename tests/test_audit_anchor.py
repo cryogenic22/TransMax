@@ -422,7 +422,14 @@ def test_anchor_round_trip_five_events(fresh_db, tmp_path):
         for i in range(5)
     ]
 
-    today = events[0].event_ts_utc.astimezone(timezone.utc).date()
+    # FIDELITY-0: event_ts_utc round-trips NAIVE from SQLite (the tz is dropped),
+    # but the value IS UTC. Treat it as UTC — `.astimezone()` on a naive value
+    # would (wrongly) assume LOCAL time and shift the day near the UTC/local
+    # midnight boundary, asking for the wrong day's anchor (a midnight flake).
+    _ts = events[0].event_ts_utc
+    if _ts.tzinfo is None:
+        _ts = _ts.replace(tzinfo=timezone.utc)
+    today = _ts.astimezone(timezone.utc).date()
 
     store = _make_local_store(tmp_path)
     builder = _make_builder(core_db, store)
