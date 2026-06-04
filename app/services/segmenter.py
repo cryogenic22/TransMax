@@ -37,7 +37,17 @@ class SegmenterError(ValueError):
 # treated as sentence boundary even when followed by uppercase.
 # ("Dr. Smith said hi." -> 1 sentence, not 2.)
 _TITLE_ABBREVS: frozenset[str] = frozenset({
-    "Dr", "Mr", "Mrs", "Ms", "Prof", "St",
+    "Dr", "Drs", "Mr", "Mrs", "Ms", "Prof", "St", "Sr", "Jr",
+})
+
+# Academic / professional credentials (TMX-3801). Author bylines in scientific
+# manuscripts are dense with these ("Fernando P. Polack, M.D., Stephen J.
+# Thomas, M.D., ..."); the trailing dot must not shatter the byline. Stored
+# without the trailing dot — `_word_before` returns the token incl. interior
+# dots (e.g. "M.D").
+_CREDENTIAL_ABBREVS: frozenset[str] = frozenset({
+    "M.D", "Ph.D", "D.M", "B.Sc", "M.Sc", "M.P.H", "D.O", "R.N",
+    "M.S", "M.A", "B.A", "D.D.S", "Pharm.D", "M.B.A", "D.Phil",
 })
 
 # Abbreviations whose dot may or may not end a sentence. Heuristic: if the
@@ -50,11 +60,11 @@ _CONTEXTUAL_ABBREVS: frozenset[str] = frozenset({
     "i.v", "i.m", "p.o", "s.c", "b.i.d", "t.i.d", "q.i.d", "q.d", "qhs",
     "mg", "mcg", "kg", "mL", "ml", "L", "g",
     "Co", "Inc", "Ltd", "Corp",
-    "No", "vol", "Vol", "ed", "Ed",
+    "No", "Nr", "vol", "Vol", "ed", "Ed", "Rd", "pp", "al", "Fig", "Eq", "Ref",
 })
 
 # All abbreviations (case-sensitive) — keys for the WORD-BEFORE lookup.
-_ALL_ABBREVS: frozenset[str] = _TITLE_ABBREVS | _CONTEXTUAL_ABBREVS
+_ALL_ABBREVS: frozenset[str] = _TITLE_ABBREVS | _CONTEXTUAL_ABBREVS | _CREDENTIAL_ABBREVS
 
 
 # Candidate sentence-boundary regex: terminator(s) followed by whitespace.
@@ -125,8 +135,14 @@ class RegexSegmenter(BaseSegmenter):
             word = _word_before(text, cand_end)
             stripped = _strip_trailing_terminator(word)
 
+            # TMX-3801: a single uppercase letter before the dot is a personal
+            # INITIAL ("Fernando P. Polack", "401 N. Middletown Rd."), never a
+            # sentence boundary — even though the next word is capitalized.
+            if len(stripped) == 1 and stripped.isalpha() and stripped.isupper():
+                continue
+
             is_title = stripped in _TITLE_ABBREVS
-            is_contextual = stripped in _CONTEXTUAL_ABBREVS
+            is_contextual = stripped in _CONTEXTUAL_ABBREVS or stripped in _CREDENTIAL_ABBREVS
 
             if is_title:
                 # Titles never terminate a sentence even before a capitalized name.
