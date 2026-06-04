@@ -1,13 +1,13 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional
 import asyncio
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from app.services.quality_gate import get_quality_gate_service
 from app.services.llm import get_llm
 from app.services.db_service import DatabaseService
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from tenacity import retry, stop_after_attempt, wait_exponential
 from app.auth.providers import AuthenticatedIdentity
 from app.auth.dependencies import get_current_user
 
@@ -87,8 +87,7 @@ async def back_translate(request: BackTranslateRequest, user: AuthenticatedIdent
     Back-Translation Verifier: Translates back to English & calculates drift.
     """
     llm = get_llm()
-    gate_service = get_quality_gate_service()
-    
+
     # 1. Back Translate to English
     if request.target_language.lower() == "auto":
         system_msg = SystemMessage(content="Translate the following text back into English. Detect the source language automatically. Return ONLY the translation.")
@@ -262,7 +261,7 @@ Ensure all text is covered.""")
             def strip_html(html_str):
                 try:
                     return BeautifulSoup(html_str, "html.parser").get_text()
-                except:
+                except Exception:
                     return html_str
 
             scoring_src = strip_html(request.text) if is_html else request.text
@@ -331,7 +330,7 @@ async def translation_matrix(request: MatrixRequest, user: AuthenticatedIdentity
         try:
             res = await llm.ainvoke([system_msg, user_msg])
             return lang_code, res.content.strip()
-        except:
+        except Exception:
             return lang_code, "Error"
 
     # Limit concurrency

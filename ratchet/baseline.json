@@ -21,8 +21,8 @@
     "tests.functions": "up"
   },
   "metrics": {
-    "backend.any_annotations": 252,
-    "backend.bare_except": 4,
+    "backend.any_annotations": 245,
+    "backend.bare_except": 2,
     "backend.mega_files_800": 2,
     "backend.placeholder_strings": 1,
     "backend.print_in_app": 41,
@@ -36,8 +36,8 @@
     "hygiene.committed_db_files": 3,
     "hygiene.committed_log_files": 18,
     "hygiene.committed_pyc_files": 3,
-    "tests.files": 129,
-    "tests.functions": 850
+    "tests.files": 151,
+    "tests.functions": 961
   },
-  "note": "TMX-AUDIT-RATCHET-TODO-SWEEP: resolved 9 self-references in scripts/ratchet.py, reworded 4 narrative 'bug'/'buggy' false-positives in audit_writer_v2, _audit_canonical, test_no_default_org_id_in_services, sanitizeHtml.ts, and annotated 3 real TODOs with TMX-3211 (graph.py iteration_count hack), TMX-AUDIT-QG-BATCH-EMBED (quality_gate.py embedding batching), TMX-AUDIT-DB-DOCID-LOOKUP (review_service.py get_doc_id_from_job). Baseline tightened 16->3."
+  "note": "TMX-TOOLS-LINT: bare_except 4->2 (fixed app/api/tools.py); tests up"
 }
