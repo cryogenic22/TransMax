@@ -18,13 +18,21 @@ from app.services.docx_utils import (
 class DocumentExportService:
     """Exports translated documents preserving original formatting."""
 
-    def export_docx(self, original_path: str, segments: List[dict], force_new: bool = False) -> io.BytesIO:
+    def export_docx(self, original_path: str, segments: List[dict], force_new: bool = False,
+                    enforce_fidelity: bool = True) -> io.BytesIO:
         """
         Open the original DOCX from disk, replace each element's text with the
         translated segment while preserving formatting. Traversal order matches ingestion.
         Falls back to creating a fresh DOCX if original not found or force_new=True.
+
+        TMX-FIDELITY-GATE: on the DOCX round-trip path, the output's structural
+        skeleton (tables/figures/headings) is compared to the original and a
+        ``FidelityError`` is raised if any were dropped — a faithful
+        text-replacement can never lose them, so a loss means an export defect.
+        Fail loud (A3) rather than ship a structurally degraded document.
         """
         from docx import Document as DocxDocument
+        from app.services.fidelity import FidelityError, structural_loss, structure_fingerprint
 
         # Build lookups for content-based matching and sequential fallback
         translation_map = {}  # order_index -> translated_text
@@ -38,6 +46,8 @@ class DocumentExportService:
 
         if not force_new and original_path and os.path.exists(original_path):
             doc = DocxDocument(original_path)
+            # TMX-FIDELITY-GATE: snapshot the source skeleton before mutation.
+            src_fp = structure_fingerprint(doc)
             idx = [1]  # mutable counter; order_index starts at 1
 
             # 1. Body — paragraphs and tables interleaved in document order
@@ -57,6 +67,17 @@ class DocumentExportService:
 
             # 6. Text boxes
             self._export_text_boxes(doc, idx, content_map, translation_map)
+
+            # TMX-FIDELITY-GATE: refuse to ship if the round-trip dropped any
+            # structural skeleton element (tables/figures/headings).
+            if enforce_fidelity:
+                lost = structural_loss(src_fp, structure_fingerprint(doc))
+                if lost:
+                    raise FidelityError(
+                        "DOCX export dropped source structure: "
+                        + "; ".join(lost)
+                        + " — refusing to ship a degraded document (TMX-FIDELITY-GATE)."
+                    )
         else:
             # Fallback: create a fresh DOCX
             doc = DocxDocument()
