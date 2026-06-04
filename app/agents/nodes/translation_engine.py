@@ -751,11 +751,19 @@ class TranslationEngine:
                     **v
                 })
         
+        # TMX-CONF-1: point reviewers at exact segments needing attention
+        # (any with a gate violation OR a confidence below threshold) instead
+        # of an aggregate PASS that hides per-segment issues.
+        from app.services.review_flags import needs_review_segment_ids
+        needs_review = needs_review_segment_ids(units)
+
         return {
             "status": "PASSED" if progress.failed == 0 and progress.blocked == 0 else "REVIEW_REQUIRED",
             "metrics": progress.to_dict(),
             "duration_seconds": round(duration, 2),
             "violations": all_violations,
+            "needs_review_segments": needs_review,
+            "needs_review_count": len(needs_review),
             "throughput_segments_per_second": round(len(units) / duration, 2) if duration > 0 else 0
         }
 

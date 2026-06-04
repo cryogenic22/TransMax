@@ -281,18 +281,22 @@ Ensure all text is covered.""")
             confidence_score = score_result.final_score
             score_breakdown = score_result.components
             score_band = score_result.band
-            
-            # Generate Recommendations
-            if score_band == "Low":
-                recommendations.append("Low confidence detected. Human review strongly recommended.")
-            if any(v['category'] == 'Glossary' for v in violations):
-                recommendations.append("Potential glossary inconsistencies found.")
+
+            # TMX-CONF-1: surface concrete issues from ALL violations + the
+            # confidence score (not just band=="Low"/Glossary), so the response
+            # points the user at real problems instead of reading "all OK".
+            from app.services.review_flags import summarize_issues
+            summary = summarize_issues(violations, confidence_score, score_band)
+            issues = summary["issues"]
+            needs_review = summary["needs_review"]
+            review_note = summary["note"]
+            recommendations = [i["message"] for i in issues]
             if "formula" in scoring_src.lower() or "=" in scoring_src:
-                 recommendations.append("Source contains formulas/math. Verify precision.")
+                recommendations.append("Source contains formulas/math. Verify precision.")
 
         except Exception as e:
             # Log error but return translation
-            print(f"Scoring failed: {e}") 
+            print(f"Scoring failed: {e}")
 
         return {
             "translated_text": translated_text,
@@ -300,6 +304,9 @@ Ensure all text is covered.""")
             "confidence": confidence_score,
             "score_breakdown": score_breakdown,
             "score_band": score_band,
+            "needs_review": needs_review if 'needs_review' in locals() else True,
+            "issues": issues if 'issues' in locals() else [],
+            "review_note": review_note if 'review_note' in locals() else "",
             "recommendations": recommendations if 'recommendations' in locals() else []
         }
     except Exception as e:
