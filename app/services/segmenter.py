@@ -96,6 +96,57 @@ def _strip_trailing_terminator(word: str) -> str:
     return word.rstrip(".!?")
 
 
+# TMX-OMIT-2: cap segment length so an over-long block (e.g. a 1500-char author
+# list with no sentence boundaries) is not fed WHOLE to the LLM, which truncates
+# it and silently drops content. Generous threshold — normal prose sentences are
+# far shorter, so only pathologically-long segments are sub-split.
+MAX_SEGMENT_CHARS = 1000
+_CLAUSE_RE = re.compile(r"(?<=[;,:])\s+")
+
+
+def _hard_wrap(text: str, max_chars: int) -> List[str]:
+    """Last-resort wrap on whitespace at <= max_chars (no clause boundary left)."""
+    out: List[str] = []
+    buf = ""
+    for w in text.split():
+        if buf and len(buf) + 1 + len(w) > max_chars:
+            out.append(buf)
+            buf = w
+        else:
+            buf = (buf + " " + w).strip()
+    if buf:
+        out.append(buf)
+    return out or [text]
+
+
+def _split_long(s: str, max_chars: int) -> List[str]:
+    """Split an over-long segment on clause boundaries (`; , :`), then hard-wrap."""
+    parts: List[str] = []
+    buf = ""
+    for chunk in _CLAUSE_RE.split(s):
+        if buf and len(buf) + 1 + len(chunk) > max_chars:
+            parts.append(buf)
+            buf = ""
+        if len(chunk) > max_chars:
+            if buf:
+                parts.append(buf)
+                buf = ""
+            parts.extend(_hard_wrap(chunk, max_chars))
+        else:
+            buf = (buf + " " + chunk).strip()
+    if buf:
+        parts.append(buf)
+    return parts
+
+
+def _cap_length(sentences: List[str], max_chars: int = MAX_SEGMENT_CHARS) -> List[str]:
+    """Sub-split any sentence longer than ``max_chars`` (TMX-OMIT-2)."""
+    out: List[str] = []
+    for s in sentences:
+        out.extend([s] if len(s) <= max_chars else _split_long(s, max_chars))
+    return out
+
+
 class BaseSegmenter(ABC):
     """Abstract sentence segmenter."""
 
@@ -158,7 +209,7 @@ class RegexSegmenter(BaseSegmenter):
             boundaries.append(cand_after)
 
         if not boundaries:
-            return [text.strip()] if text.strip() else []
+            return _cap_length([text.strip()]) if text.strip() else []
 
         sentences: List[str] = []
         last = 0
@@ -170,7 +221,8 @@ class RegexSegmenter(BaseSegmenter):
         tail = text[last:].strip()
         if tail:
             sentences.append(tail)
-        return sentences
+        # TMX-OMIT-2: sub-split any over-long sentence before it reaches the LLM.
+        return _cap_length(sentences)
 
 
 class NaiveSplitSegmenter(BaseSegmenter):
