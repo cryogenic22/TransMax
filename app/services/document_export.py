@@ -79,11 +79,26 @@ class DocumentExportService:
                         + " — refusing to ship a degraded document (TMX-FIDELITY-GATE)."
                     )
         else:
-            # Fallback: create a fresh DOCX
+            # Fallback: build a fresh DOCX (PDF input — no DOCX to round-trip).
+            # TMX-3712-RECON-headings: apply real heading styles from the
+            # element_type the ingester recorded (unstructured tags Title/Header/
+            # etc.), instead of flattening every block to Normal. This is what
+            # made the NEJM manuscript come back with no title/section structure.
             doc = DocxDocument()
-            for seg in segments:
+            ordered = sorted(segments, key=lambda s: s.get("order_index", 0))
+            seen_title = False
+            for seg in ordered:
                 text = seg.get("translated_text") or seg.get("source_text", "")
-                doc.add_paragraph(text)
+                if not text:
+                    continue
+                etype = (seg.get("element_type") or "").lower()
+                if etype in ("title", "headline") and not seen_title:
+                    doc.add_heading(text, level=0)  # document title
+                    seen_title = True
+                elif etype in ("title", "header", "sectionheader", "section-header", "headline", "heading"):
+                    doc.add_heading(text, level=1)  # section heading
+                else:
+                    doc.add_paragraph(text)
 
         buffer = io.BytesIO()
         doc.save(buffer)
