@@ -47,6 +47,10 @@ class Permission(str, Enum):
     USERS_MANAGE = "users:manage"
     SYSTEM_ADMIN = "system:admin"
 
+    # LLM routing config (TMX-ROUTER-3) — who may edit the per-tenant model
+    # routing policy.
+    ROUTING_CONFIGURE = "routing:configure"
+
 
 class UserRole(str, Enum):
     ADMIN = "admin"
@@ -69,6 +73,7 @@ ROLE_PERMISSIONS: Dict[UserRole, Set[Permission]] = {
         Permission.REVIEW_APPROVE, Permission.REVIEW_REJECT,
         Permission.KNOWLEDGE_READ, Permission.KNOWLEDGE_MANAGE,
         Permission.RULE_APPROVE,  # TMX-3045: PMs may sign rule promotions.
+        Permission.ROUTING_CONFIGURE,  # TMX-ROUTER-3: PMs may edit routing policy.
         Permission.AUDIT_READ, Permission.AUDIT_EXPORT,
         Permission.TOOLS_USE, Permission.USERS_READ,
     },
