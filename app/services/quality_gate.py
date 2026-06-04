@@ -1,7 +1,6 @@
 
 import threading
 from typing import Dict, List, Any, Optional
-from dataclasses import asdict
 from app.core.defect_taxonomy import TaxonomyService, Defect, DefectSeverity, DefectCategory
 import re
 
@@ -137,8 +136,8 @@ class QualityGateService:
             # 1. Unit Verification (Critical)
             if "mg" in source_text and "mg" not in target_text:
                  defects.append(self._create_defect(
-                     DefectCategory.UNIT_MISMATCH, 
-                     f"Unit mismatch: 'mg' missing in target."
+                     DefectCategory.UNIT_MISMATCH,
+                     "Unit mismatch: 'mg' missing in target."
                  ))
             
             # 4. GCHK-006: Ghost-Number Check (Critical)
@@ -150,8 +149,6 @@ class QualityGateService:
             num_pattern = r'\b\d+(?:[\.,]\d+)?\b'
             
             src_nums = re.findall(num_pattern, source_text)
-            tgt_nums = re.findall(num_pattern, target_text)
-            
             # Convert to sets for "presence" check (GCHK-006 says "count" but presence is distinct check)
             # GCHK-006 Spec: "Integer count differs... indicative of dropped numbers"
             # We check if every number in Source exists in Target.
@@ -241,6 +238,9 @@ class QualityGateService:
 
         # 7b. Prompt-Injection Source Scan (TMX-INJ-1, Critical input-safety)
         defects.extend(self.check_prompt_injection(source_text))
+
+        # 7c. Coverage / gross-omission gate (TMX-OMIT-1, Critical completeness)
+        defects.extend(self.check_coverage(source_text, target_text))
 
         # 8. Regulatory Profile Checks (if profile_id is provided)
         if profile_id:
@@ -451,6 +451,12 @@ class QualityGateService:
             if pack:
                 self._lang_packs[lang_code] = pack
             return pack
+
+    def check_coverage(self, source_text: str, target_text: str) -> List[Defect]:
+        """TMX-OMIT-1: gross-omission gate (logic in app/services/coverage_check)."""
+        from app.services.coverage_check import coverage_issue
+        msg = coverage_issue(source_text, target_text)
+        return [self._create_defect(DefectCategory.OMISSION, msg)] if msg else []
 
     def check_prompt_injection(self, source_text: str) -> List[Defect]:
         """TMX-INJ-1: flag prompt-injection / instruction-override attempts in

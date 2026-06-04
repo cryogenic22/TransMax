@@ -80,6 +80,9 @@ class TaxonomyService:
         if "injection" in message_lower: # TMX-INJ-1: embedded prompt-injection in source
             return DefectSeverity.CRITICAL
 
+        if "omission" in message_lower or "untranslated" in message_lower: # TMX-OMIT-1: gross content drop
+            return DefectSeverity.CRITICAL
+
         if "contraindication" in message_lower:
             return DefectSeverity.CRITICAL
 
