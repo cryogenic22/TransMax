@@ -1,6 +1,6 @@
 # TMX-FEEDBACK-1 — In-app feedback: backend (model + API + audit trail)
 
-**State**: `[WIP]`
+**State**: `[Done]` — `085aa94` on origin/main
 **Owner**: Platform & Observability
 **Sprint**: 2 (feedback-loop initiative)
 **Started**: 2026-06-04
@@ -86,10 +86,11 @@ No code-behaviour findings from red team. Only the pre-existing `database.py` li
 
 ## 8. Deploy
 
-- [ ] Commit: <SHA> — **NOT YET COMMITTED**
-- [ ] Pushed to origin/main (auto-deploys to Railway) — **HOLD for Kapil go-ahead** per session contract
-- [ ] `.context/active_tasks.md` updated
-- [ ] Final hygiene pass on `database.py` ruff debt before staging
+- [x] Commit: `085aa94` (bundled with TMX-FEEDBACK-2)
+- [x] Pushed to origin/main (auto-deploys to Railway) — authorized by Kapil ("push 1+2 together")
+- [x] `.context/active_tasks.md` updated
+- [x] Final hygiene pass on `database.py` ruff debt before staging (dropped unused Enum import, renamed shadowing param)
+- [x] All gates validated manually (no pre-commit hooks installed in this clone): ruff/ruff-format clean, ratchet 17/17 (no loosening), quality-gate pass, 11 backend tests green
 
 **G3 completion check**: backend ACs all proven green by tests. The user-visible capability (submit feedback from UI) is not exercisable until TMX-FEEDBACK-2 (widget) ships — but the API contract it depends on is complete and tested. Status stays `[WIP — pending push]`, not `[Done]`, until the SHA is on origin/main (push hygiene rule).
 

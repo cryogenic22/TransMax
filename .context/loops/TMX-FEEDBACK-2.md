@@ -1,6 +1,6 @@
 # TMX-FEEDBACK-2 — In-app feedback widget (frontend)
 
-**State**: `[WIP — pending push]`
+**State**: `[Done]` — `085aa94` on origin/main
 **Owner**: Reviewer Frontend
 **Sprint**: 2 (feedback-loop initiative)
 **Started**: 2026-06-05
@@ -73,10 +73,10 @@ Removed a `@ts-expect-error` (custom ring-color prop) in favour of a Tailwind ri
 
 ## 8. Deploy
 
-- [ ] Commit: <SHA> (bundled with TMX-FEEDBACK-1)
-- [ ] `next build` green
-- [ ] Pushed to origin/main → Railway frontend auto-deploys
-- [ ] `.context/active_tasks.md` updated
+- [x] Commit: `085aa94` (bundled with TMX-FEEDBACK-1)
+- [x] `next build` green (13 routes generated)
+- [x] Pushed to origin/main → Railway frontend auto-deploys
+- [x] `.context/active_tasks.md` updated
 
 ---
 
