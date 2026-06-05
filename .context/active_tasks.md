@@ -15,8 +15,8 @@ Replicates market_zero's in-app feedback loop, adapted to TransMax's 8-stage loo
 
 | Ticket | Title | Owner | Status | Notes |
 |---|---|---|---|---|
-| TMX-FEEDBACK-1 | Backend: `Feedback` model + Alembic + `/api/feedback` routes (auth-adaptive, tenant-scoped, soft-delete) | Platform & Observability | **[WIP — pending push]** | 11 tests green; ruff clean; see `.context/loops/TMX-FEEDBACK-1.md` |
-| TMX-FEEDBACK-2 | Frontend: feedback widget (Next.js, TMX tokens, sonner) mounted globally | Reviewer Frontend | **[WIP — pending push]** | typecheck/lint/vitest(111) + `next build` green; see `.context/loops/TMX-FEEDBACK-2.md` |
+| TMX-FEEDBACK-1 | Backend: `Feedback` model + Alembic + `/api/feedback` routes (auth-adaptive, tenant-scoped, soft-delete) | Platform & Observability | **[Done]** `085aa94` | 11 tests green; on origin/main → Railway deploying; see `.context/loops/TMX-FEEDBACK-1.md` |
+| TMX-FEEDBACK-2 | Frontend: feedback widget (Next.js, TMX tokens, sonner) mounted globally | Reviewer Frontend | **[Done]** `085aa94` | typecheck/lint/vitest(111) + `next build` green; on origin/main → Railway deploying; see `.context/loops/TMX-FEEDBACK-2.md` |
 | TMX-FEEDBACK-3 | Automation: `/triage-feedback`, `/process-feedback`, `/feedback-cron` slash commands + `sync.sh` + trackers, reversibility-gated deploy | Platform & Observability | **[READY]** | repo-only (Claude-harness artifacts; not deployed) |
 | TMX-FEEDBACK-4 | Wire the `/schedule` remote routine to run `/feedback-cron` | Platform & Observability | **[READY]** | depends on FEEDBACK-3 |
 | TMX-AUTH-WALL | Pilot login wall + seeded demo account/org (flip `AUTH_MODE=jwt`) | Auth & Tenancy | **[BLOCKED — needs Kapil]** | **one-way** — changes live auth; explicit go-ahead before push |
