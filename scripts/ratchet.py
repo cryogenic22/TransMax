@@ -39,8 +39,12 @@ from typing import Literal
 
 # Force UTF-8 stdout/stderr so the glyphs below render on Windows cp1252.
 if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", line_buffering=True)
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", line_buffering=True)
+    sys.stdout = io.TextIOWrapper(
+        sys.stdout.buffer, encoding="utf-8", line_buffering=True
+    )
+    sys.stderr = io.TextIOWrapper(
+        sys.stderr.buffer, encoding="utf-8", line_buffering=True
+    )
 
 # ── Layout ──────────────────────────────────────────────────────────────
 
@@ -51,7 +55,12 @@ BASELINE_PATH = REPO_ROOT / "ratchet" / "baseline.json"
 BACKEND_ROOTS = ("app", "scripts", "tests", "transmax_sdk", "transmax_mcp")
 
 # Directories scanned for frontend metrics
-FRONTEND_ROOTS = ("frontend/app", "frontend/components", "frontend/hooks", "frontend/lib")
+FRONTEND_ROOTS = (
+    "frontend/app",
+    "frontend/components",
+    "frontend/hooks",
+    "frontend/lib",
+)
 
 # Globs we always exclude from any scan
 EXCLUDES = (
@@ -124,7 +133,9 @@ def _read(path: Path) -> str:
 # ── Measurement primitives ──────────────────────────────────────────────
 
 
-def _count_pattern(roots: Iterable[str], suffixes: tuple[str, ...], pattern: re.Pattern[str]) -> int:
+def _count_pattern(
+    roots: Iterable[str], suffixes: tuple[str, ...], pattern: re.Pattern[str]
+) -> int:
     total = 0
     for f in _iter_files(roots, suffixes):
         total += len(pattern.findall(_read(f)))
@@ -140,7 +151,9 @@ def _count_files_matching(globs: Iterable[str]) -> int:
     return len(seen)
 
 
-def _count_files_by_size(roots: Iterable[str], suffixes: tuple[str, ...], min_lines: int) -> int:
+def _count_files_by_size(
+    roots: Iterable[str], suffixes: tuple[str, ...], min_lines: int
+) -> int:
     total = 0
     for f in _iter_files(roots, suffixes):
         try:
@@ -161,13 +174,17 @@ def _count_test_functions() -> int:
 
 
 def _count_test_files() -> int:
-    return sum(1 for f in _iter_files(("tests",), (".py",)) if f.name.startswith("test_"))
+    return sum(
+        1 for f in _iter_files(("tests",), (".py",)) if f.name.startswith("test_")
+    )
 
 
 # ── Backend regex metrics ───────────────────────────────────────────────
 
 # Match `# type: ignore` but allow `# type: ignore[import-not-found]` (legitimate per quality-gate config).
-RX_TYPE_IGNORE = re.compile(r"#\s*type:\s*ignore(?!\[import-not-found\])", re.IGNORECASE)
+RX_TYPE_IGNORE = re.compile(
+    r"#\s*type:\s*ignore(?!\[import-not-found\])", re.IGNORECASE
+)
 
 # Bare `except:` (no exception class). The negative lookahead avoids matching `except SpecificError:`.
 RX_BARE_EXCEPT = re.compile(r"^\s*except\s*:", re.MULTILINE)
@@ -176,7 +193,9 @@ RX_BARE_EXCEPT = re.compile(r"^\s*except\s*:", re.MULTILINE)
 RX_PRINT_IN_APP = re.compile(r"^\s*print\s*\(", re.MULTILINE)
 
 # `Any` annotations
-RX_ANY = re.compile(r":\s*Any\b|->\s*Any\b|\bList\[Any\]|\bDict\[[^,]+,\s*Any\]|\bOptional\[Any\]")
+RX_ANY = re.compile(
+    r":\s*Any\b|->\s*Any\b|\bList\[Any\]|\bDict\[[^,]+,\s*Any\]|\bOptional\[Any\]"
+)
 
 # Deferred-work markers without an issue link. A marker is "linked" (and so
 # NOT counted) when immediately followed by either a GitHub-style `(#NNN)` ref
@@ -188,9 +207,21 @@ RX_ANY = re.compile(r":\s*Any\b|->\s*Any\b|\bList\[Any\]|\bDict\[[^,]+,\s*Any\]|
 # without this trick the regex source line would itself match the regex, inflating
 # the count by 1 per keyword and turning the metric into a self-referential mess.
 _TODO_KEYWORDS = ("T" + "ODO", "FIX" + "ME", "X" + "XX", "HA" + "CK", "B" + "UG")
+# The first four markers match case-insensitively. The last marker (the
+# caps-only B-U-G) is matched case-SENSITIVELY: genuine deferred-work markers
+# are written in capitals, whereas the lowercase domain word "bug" — e.g. the
+# feedback "bug" category in app/api/feedback.py — is ordinary vocabulary, not
+# deferred work, and must not inflate this meter (TMX-FEEDBACK-1). Keywords stay
+# concatenated, and this comment avoids spelling the markers out, so the meter
+# never matches its own source.
+_TODO_CI = _TODO_KEYWORDS[:-1]  # case-insensitive markers
+_TODO_CS = _TODO_KEYWORDS[-1:]  # case-sensitive marker(s)
 RX_TODO_BARE = re.compile(
-    r"\b(?:" + "|".join(_TODO_KEYWORDS) + r")(?!\s*\((?:#\d+|TMX-[\w-]+)\))",
-    re.IGNORECASE,
+    r"\b(?:(?i:"
+    + "|".join(_TODO_CI)
+    + r")|"
+    + "|".join(_TODO_CS)
+    + r")(?!\s*\((?:#\d+|TMX-[\w-]+)\))",
 )
 
 # Placeholder strings the May 2026 review flagged — should reach 0.
@@ -248,7 +279,11 @@ METRICS: list[Metric] = [
         f"backend.{_TODO_KEYWORDS[0].lower()}_without_issue",
         "down",
         "Deferred-work markers (see _TODO_KEYWORDS) without an issue link `(#NNN)`.",
-        lambda: _count_pattern(BACKEND_ROOTS + ("frontend/app", "frontend/components", "frontend/lib"), (".py", ".ts", ".tsx", ".js", ".jsx"), RX_TODO_BARE),
+        lambda: _count_pattern(
+            BACKEND_ROOTS + ("frontend/app", "frontend/components", "frontend/lib"),
+            (".py", ".ts", ".tsx", ".js", ".jsx"),
+            RX_TODO_BARE,
+        ),
     ),
     Metric(
         "backend.placeholder_strings",
@@ -358,7 +393,9 @@ def write_baseline(measurements: dict[str, int], note: str | None = None) -> Non
         "metrics": measurements,
         "note": note or "",
     }
-    BASELINE_PATH.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    BASELINE_PATH.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
 
 
 # ── Commands ────────────────────────────────────────────────────────────
@@ -377,7 +414,9 @@ def cmd_status(_args: argparse.Namespace) -> int:
     baseline = load_baseline()
     current = measure_all()
     name_w = max(len(m.name) for m in METRICS)
-    print(f"{'metric':<{name_w}}  {'dir':>4}  {'baseline':>10}  {'current':>10}  status")
+    print(
+        f"{'metric':<{name_w}}  {'dir':>4}  {'baseline':>10}  {'current':>10}  status"
+    )
     print("-" * (name_w + 50))
     any_red = False
     for m in METRICS:
@@ -404,14 +443,19 @@ def cmd_status(_args: argparse.Namespace) -> int:
         print(f"{m.name:<{name_w}}  {m.direction:>4}  {b!s:>10}  {c!s:>10}  {status}")
     print()
     if any_red:
-        print("Some metrics regressed. Run `python scripts/ratchet.py check` for the failure summary.")
+        print(
+            "Some metrics regressed. Run `python scripts/ratchet.py check` for the failure summary."
+        )
     return 0
 
 
 def cmd_check(_args: argparse.Namespace) -> int:
     baseline = load_baseline()
     if not baseline:
-        print("error: no baseline at ratchet/baseline.json. Run `python scripts/ratchet.py update`.", file=sys.stderr)
+        print(
+            "error: no baseline at ratchet/baseline.json. Run `python scripts/ratchet.py update`.",
+            file=sys.stderr,
+        )
         return 2
     current = measure_all()
     failures: list[str] = []
@@ -467,8 +511,12 @@ def cmd_update(args: argparse.Namespace) -> int:
             for line in loosening:
                 print(f"  ⚠ {line}")
             print()
-            print("If this loosening is intentional (e.g. you removed a generated file from the repo,")
-            print("inflating a count temporarily), pass --force AND describe why in --note.")
+            print(
+                "If this loosening is intentional (e.g. you removed a generated file from the repo,"
+            )
+            print(
+                "inflating a count temporarily), pass --force AND describe why in --note."
+            )
             return 1
     note = args.note or ""
     write_baseline(current, note=note)
@@ -484,7 +532,9 @@ def cmd_update(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("status", help="Show current vs baseline as a table.")
@@ -492,8 +542,16 @@ def main() -> int:
     sub.add_parser("measure", help="Print current measurements as JSON.")
 
     p_update = sub.add_parser("update", help="Write new baseline (PR-reviewed).")
-    p_update.add_argument("--force", action="store_true", help="Allow loosening (regressions in baseline).")
-    p_update.add_argument("--note", default="", help="One-line note describing why the baseline was updated.")
+    p_update.add_argument(
+        "--force",
+        action="store_true",
+        help="Allow loosening (regressions in baseline).",
+    )
+    p_update.add_argument(
+        "--note",
+        default="",
+        help="One-line note describing why the baseline was updated.",
+    )
 
     args = parser.parse_args()
     handlers = {

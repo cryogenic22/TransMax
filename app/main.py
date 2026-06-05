@@ -35,6 +35,7 @@ _extra_origins = os.getenv("CORS_ORIGINS", "")
 if _extra_origins:
     CORS_ORIGINS.extend([o.strip() for o in _extra_origins.split(",") if o.strip()])
 
+
 class ObservabilityMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         start_time = ObservabilityService.start_timer()
@@ -75,6 +76,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
             clear_org(token)
         return response
 
+
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
@@ -103,6 +105,7 @@ app.add_middleware(
     expose_headers=["X-Processing-Time-Ms"],
 )
 
+
 # Global exception handler to ensure CORS headers on error responses
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -120,6 +123,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         headers=headers,
     )
 
+
 # Auth router (always mounted; endpoints self-gate based on AUTH_MODE)
 app.include_router(auth_router)
 
@@ -131,20 +135,31 @@ app.include_router(documents_router)
 app.include_router(segments_router)
 
 # TMX-010: Prime Time API v1
-app.include_router(translations_v1_router, prefix="/api/v1/translations", tags=["translations"])
+app.include_router(
+    translations_v1_router, prefix="/api/v1/translations", tags=["translations"]
+)
 app.include_router(audit_v1_router, prefix="/api/v1/audit", tags=["audit"])
 
 # Translation Toolkit (Tools)
-from app.api.tools import router as tools_router
+from app.api.tools import router as tools_router  # noqa: E402  (router import beside its registration)
+
 app.include_router(tools_router, prefix="/api/tools", tags=["tools"])
 
 # Knowledge / Trust Center
-from app.api.knowledge import router as knowledge_router
+from app.api.knowledge import router as knowledge_router  # noqa: E402  (router import beside its registration)
+
 app.include_router(knowledge_router, prefix="/api/knowledge", tags=["knowledge"])
 
+# TMX-FEEDBACK-1: in-app user feedback intake (prefix declared on the router)
+from app.api.feedback import router as feedback_router  # noqa: E402  (router import beside its registration)
+
+app.include_router(feedback_router)
+
 # Dashboard Stats
-from app.api.dashboard import router as dashboard_router
+from app.api.dashboard import router as dashboard_router  # noqa: E402  (router import beside its registration)
+
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -155,9 +170,10 @@ async def startup_event():
         from app.models.auth import User  # noqa: F401 — registers model with Base
         from app.models.database import Base
         from app.core.database import engine
+
         Base.metadata.create_all(bind=engine)
+
 
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "TransMax Pharma Translation", "version": "2.0"}
-
