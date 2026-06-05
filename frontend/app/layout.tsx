@@ -3,6 +3,8 @@ import "./globals.css";
 import "./landing.css";
 import { AuthProvider } from "@/lib/auth";
 import { Toaster } from "sonner";
+import FeedbackButton from "@/components/feedback/FeedbackButton";
+import FeedbackWidget from "@/components/feedback/FeedbackWidget";
 
 export const metadata: Metadata = {
   title: "TransMax — Auditable AI translation for regulated pharma",
@@ -26,6 +28,8 @@ export default function RootLayout({
       <body className="antialiased font-sans bg-background text-foreground">
         <AuthProvider>
           {children}
+          <FeedbackButton />
+          <FeedbackWidget />
           <Toaster position="top-right" richColors />
         </AuthProvider>
       </body>

@@ -9,6 +9,20 @@ This file replaces the legacy ticket list (Tickets 10-23) which were Phase 1-3 h
 
 ---
 
+## Feedback-loop initiative (in-app issue → triage → auto-deploy) — started 2026-06-04
+
+Replicates market_zero's in-app feedback loop, adapted to TransMax's 8-stage loop + reversibility gates. Users submit bug/issue/enhancement/feature reports from the UI; a `/schedule` cron triages and (for two-way Auto-fix-safe items) runs the loop and auto-deploys; one-way/risky fixes land on a `feedback/<id>` branch and are surfaced to Kapil. Everything logged.
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-FEEDBACK-1 | Backend: `Feedback` model + Alembic + `/api/feedback` routes (auth-adaptive, tenant-scoped, soft-delete) | Platform & Observability | **[WIP — pending push]** | 11 tests green; ruff clean; see `.context/loops/TMX-FEEDBACK-1.md` |
+| TMX-FEEDBACK-2 | Frontend: feedback widget (Next.js, TMX tokens, sonner) mounted globally | Reviewer Frontend | **[WIP — pending push]** | typecheck/lint/vitest(111) + `next build` green; see `.context/loops/TMX-FEEDBACK-2.md` |
+| TMX-FEEDBACK-3 | Automation: `/triage-feedback`, `/process-feedback`, `/feedback-cron` slash commands + `sync.sh` + trackers, reversibility-gated deploy | Platform & Observability | **[READY]** | repo-only (Claude-harness artifacts; not deployed) |
+| TMX-FEEDBACK-4 | Wire the `/schedule` remote routine to run `/feedback-cron` | Platform & Observability | **[READY]** | depends on FEEDBACK-3 |
+| TMX-AUTH-WALL | Pilot login wall + seeded demo account/org (flip `AUTH_MODE=jwt`) | Auth & Tenancy | **[BLOCKED — needs Kapil]** | **one-way** — changes live auth; explicit go-ahead before push |
+
+---
+
 ## Sprint 0 — "Stop the Bleeding" (week 0; in progress)
 
 The non-negotiable list. Day-1 work; no sprint-planning needed.
