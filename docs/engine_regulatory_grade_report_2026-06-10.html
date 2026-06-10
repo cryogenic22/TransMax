@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>TransMax — Translation Engine Regulatory-Grade Report · 2026-06-10</title>
+<style>
+  :root{
+    --brand:#1d4ed8; --brand-2:#0e7490; --ink:#0f172a; --muted:#64748b;
+    --line:#e2e8f0; --bg:#f8fafc; --card:#ffffff;
+    --ok:#15803d; --ok-bg:#f0fdf4; --warn:#b45309; --warn-bg:#fffbeb;
+    --bad:#b91c1c; --bad-bg:#fef2f2; --info:#1e40af; --info-bg:#eff6ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1020px;margin:0 auto;padding:32px 22px 80px}
+  header.hero{background:linear-gradient(120deg,var(--brand),var(--brand-2));color:#fff;
+    border-radius:16px;padding:30px 32px;box-shadow:0 10px 30px rgba(29,78,216,.18)}
+  header.hero h1{margin:0 0 6px;font-size:25px;letter-spacing:-.2px}
+  header.hero p{margin:2px 0;opacity:.95}
+  .pill{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);
+    padding:3px 10px;border-radius:999px;font-size:12px;margin-right:6px}
+  h2{font-size:19px;margin:34px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+  h3{font-size:16px;margin:20px 0 8px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0;
+    box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .stat .n{font-size:26px;font-weight:700;letter-spacing:-.5px}
+  .stat .l{color:var(--muted);font-size:13px;margin-top:2px}
+  .badge{display:inline-block;padding:2px 9px;border-radius:6px;font-size:12px;font-weight:600;white-space:nowrap}
+  .b-ok{background:var(--ok-bg);color:var(--ok)} .b-warn{background:var(--warn-bg);color:var(--warn)}
+  .b-bad{background:var(--bad-bg);color:var(--bad)} .b-info{background:var(--info-bg);color:var(--info)}
+  table{width:100%;border-collapse:collapse;margin:8px 0;font-size:14px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--bg);font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+  code{background:#f1f5f9;border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:12.5px;
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  .mono{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+  ul{margin:6px 0 6px 2px;padding-left:20px} li{margin:4px 0}
+  .callout{border-left:4px solid var(--info);background:var(--info-bg);border-radius:0 10px 10px 0;padding:12px 16px;margin:12px 0}
+  .callout.warn{border-color:var(--warn);background:var(--warn-bg)}
+  .callout.ok{border-color:var(--ok);background:var(--ok-bg)}
+  .small{color:var(--muted);font-size:12.5px}
+  footer{margin-top:40px;color:var(--muted);font-size:12.5px;text-align:center}
+  .flow{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;background:#0f172a;color:#e2e8f0;
+    padding:14px 16px;border-radius:10px;overflow-x:auto;line-height:1.7}
+  .flow .hot{color:#fca5a5} .flow .new{color:#86efac}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>Translation Engine — Regulatory-Grade Assurance Report</h1>
+  <p>End-to-end fidelity + compliance pass, with gap-closure loops</p>
+  <p style="margin-top:12px">
+    <span class="pill">2026-06-10</span>
+    <span class="pill">branch: main</span>
+    <span class="pill">shipped: 5f04b44</span>
+    <span class="pill">1085 tests passing</span>
+  </p>
+</header>
+
+<h2>1 · Executive summary</h2>
+<div class="card">
+  <p>The translation engine was exercised end-to-end and audited against a genuine regulatory-grade
+  bar (GxP / EU Annex&nbsp;11 / EU&nbsp;AI&nbsp;Act technical documentation). <strong>The engine is in
+  materially stronger shape than expected:</strong> structural fidelity, the deterministic quality gate,
+  back-translation verification, and the audit chain are all <em>wired into the production paths</em>, not
+  just unit-tested in isolation.</p>
+  <p>Three real gaps remained. Two were closed this session via dedicated 8-stage loops (shipped in
+  <code>5f04b44</code>); one is a measured follow-up. No regressions: the full backend suite is
+  <strong>1085&nbsp;passed / 2&nbsp;skipped / 0&nbsp;failed</strong> and the ratchet holds at 17/17.</p>
+  <div class="grid" style="margin-top:8px">
+    <div class="stat"><div class="n" style="color:var(--ok)">1085</div><div class="l">backend tests passing (0 failed)</div></div>
+    <div class="stat"><div class="n" style="color:var(--ok)">18</div><div class="l">fidelity tests green (e2e export path)</div></div>
+    <div class="stat"><div class="n" style="color:var(--ok)">2</div><div class="l">gap-closure loops shipped</div></div>
+    <div class="stat"><div class="n" style="color:var(--brand)">17/17</div><div class="l">ratchet metrics at/above baseline</div></div>
+  </div>
+</div>
+
+<h2>2 · E2E verification — what was run</h2>
+<div class="card">
+  <table>
+    <tr><th>Suite</th><th>What it proves</th><th>Result</th></tr>
+    <tr><td class="mono">tests/evals/fidelity/</td>
+        <td>Identity round-trip through <code>DocumentExportService</code> preserves tables/figures/headings/runs;
+            comparator flags the NEJM loss mode (13 tables&rarr;0) with a low score.</td>
+        <td><span class="badge b-ok">PASS</span></td></tr>
+    <tr><td class="mono">test_docx_roundtrip / fidelity_gate / recon_headings</td>
+        <td>DOCX export styles map; fail-loud structural gate; PDF heading styles from element_type.</td>
+        <td><span class="badge b-ok">18 PASS</span></td></tr>
+    <tr><td class="mono">tests/evals/ critical_safety</td>
+        <td>Canonical vs. tampered golden cases — quality gate must catch every injected CRITICAL defect and raise none on clean text.</td>
+        <td><span class="badge b-ok">11 PASS</span></td></tr>
+    <tr><td class="mono">smoke_e2e / terminology_e2e / parallel_reflexion / sprint6_safety / audit_timestamps</td>
+        <td>Whole-pipeline smoke, terminology lock, parallel back-translation, safety, audit timestamps.</td>
+        <td><span class="badge b-ok">30 PASS</span></td></tr>
+    <tr><td class="mono">full suite</td><td>Whole backend, post-change regression sweep.</td>
+        <td><span class="badge b-ok">1085 PASS / 2 skip</span></td></tr>
+  </table>
+  <p class="small">DB rebuilt locally before running to avoid the known <code>transmax.db</code> stale-schema false-reds (CLAUDE.md).</p>
+</div>
+
+<h3>The production pipeline is genuinely wired</h3>
+<div class="card">
+  <div class="flow">
+validate &rarr; load_segments &rarr; constraints &rarr; translate &rarr; <span class="hot">gates(quality)</span> &rarr; refine &orarr; <span class="hot">reflexion(back-translate)</span> &rarr; <span class="hot">finalize</span> &rarr; END
+                                                         &uarr; deterministic defect gate     &uarr; semantic-drift score      &uarr; audit event + <span class="new">real output_hash</span>
+  </div>
+  <ul>
+    <li><strong>Quality gate</strong> runs per segment via <code>check_segment</code> — numeric / unit / negation / ghost-number / glossary / forbidden-term / PII / complexity / gross-omission / date-format, with a CRITICAL&middot;MAJOR&middot;MINOR taxonomy (A2 deterministic, not in the LLM prompt).</li>
+    <li><strong>Structural-fidelity gate</strong> guards <code>DocumentExportService.export</code> (<code>enforce_fidelity=True</code>) — raises <code>FidelityError</code> rather than silently dropping structure (A3).</li>
+    <li><strong>Back-translation</strong> computes a real per-segment semantic-drift score (embedding cosine), persisted to the scorecard.</li>
+    <li><strong>Audit</strong> — quality scorecard and job-finalize events emit to the v2 chain.</li>
+  </ul>
+</div>
+
+<h2>3 · Regulatory-grade gap analysis</h2>
+<div class="card">
+  <table>
+    <tr><th>#</th><th>Gap</th><th>Severity</th><th>Disposition</th></tr>
+    <tr><td>G1</td>
+        <td><strong>Terminal audit <code>output_hash</code> was a literal <code>"placeholder_hash"</code></strong> — the audit chain's last link did not anchor the real artefact (A1).</td>
+        <td><span class="badge b-bad">High</span></td>
+        <td><span class="badge b-ok">Closed — TMX-3213</span></td></tr>
+    <tr><td>G2</td>
+        <td><strong>Back-translation drift was measured but never enforced</strong> — a badly-diverging job still finalized as <code>TRANSLATED</code>. Measuring without gating isn't regulatory grade.</td>
+        <td><span class="badge b-warn">Med-High</span></td>
+        <td><span class="badge b-ok">Closed — TMX-DRIFT-GATE</span></td></tr>
+    <tr><td>G3</td>
+        <td><code>print()</code> calls in the reflexion app module (convention: logger only) — minor entropy.</td>
+        <td><span class="badge b-info">Low</span></td>
+        <td><span class="badge b-ok">Closed (folded into DRIFT-GATE)</span></td></tr>
+    <tr><td>G4</td>
+        <td><code>calculate_semantic_drift</code> returns <code>0.0</code> on no-API-key — indistinguishable from a real catastrophic score (A3 silent-default smell).</td>
+        <td><span class="badge b-info">Low</span></td>
+        <td><span class="badge b-warn">Logged — TMX-DRIFT-SENTINEL</span></td></tr>
+    <tr><td>G5</td>
+        <td><code>iteration_count = 999</code> sentinel to break the refine loop (graph.py) — documented TODO; low regulatory impact (event still records).</td>
+        <td><span class="badge b-info">Low</span></td>
+        <td><span class="badge b-info">Pre-existing — TMX-3211</span></td></tr>
+  </table>
+  <div class="callout ok"><strong>Already fixed before this session</strong> (verified): the audit model placeholder
+  (now <code>resolve_model(...)</code>, TMX-3202) and the meaningless audit timestamp
+  (now <code>datetime.now(timezone.utc)</code>, TMX-3212).</div>
+</div>
+
+<h2>4 · Loops run this session</h2>
+
+<div class="card">
+  <h3>TMX-3213 — Real final <code>output_hash</code> in the JOB_FINALIZED audit event</h3>
+  <p class="small">Reversibility: <strong>two-way</strong> · Owner: Audit &amp; Validation · Worksheet: <code>.context/loops/TMX-3213.md</code></p>
+  <p>Added a pure, deterministic, order-stable SHA-256 over the ordered
+  <code>(order_index, segment_id, translated_text)</code> output (same idiom <code>audit_service</code> uses).
+  <code>finalize_job</code> now writes the real hash into <em>both</em> the legacy and v2 chain sinks. A static
+  guard fails if <code>"placeholder_hash"</code> ever returns under <code>app/</code>.</p>
+  <table>
+    <tr><th>Acceptance criterion</th><th>Status</th></tr>
+    <tr><td>Hash is hex-64, deterministic, order-stable, content-sensitive, total on empty</td><td><span class="badge b-ok">PASS</span></td></tr>
+    <tr><td>Both legacy <code>log_event</code> and v2 emit carry the same real hash</td><td><span class="badge b-ok">PASS</span></td></tr>
+    <tr><td>No <code>placeholder_hash</code> literal under <code>app/</code></td><td><span class="badge b-ok">PASS</span></td></tr>
+  </table>
+  <p class="small">Tests: <code>tests/test_finalize_output_hash.py</code> — 7 passed.</p>
+</div>
+
+<div class="card">
+  <h3>TMX-DRIFT-GATE — Back-translation drift becomes an enforced review gate</h3>
+  <p class="small">Reversibility: <strong>two-way</strong> · Owner: Agent &amp; AI + Quality · Worksheet: <code>.context/loops/TMX-DRIFT-GATE.md</code></p>
+  <p>New pure <code>assess_reflexion()</code> turns the measured per-segment fidelity score into a routing signal.
+  When a <em>genuinely-assessed</em> segment scores below the threshold (default 70/100),
+  <code>finalize_job</code> escalates <code>TRANSLATED &rarr; IN_REVIEW</code> (one-directional — never auto-passes,
+  never downgrades a held job) and records the reason in the audit payload.</p>
+  <div class="callout"><strong>Safety design:</strong> the <code>0.0</code> no-API-key sentinel and unscored
+  segments are excluded (<code>&gt; 0.0</code> required to count) so keyless / test jobs are not falsely held —
+  the gate fails toward human review only on a <em>real</em> signal (A3).</div>
+  <table>
+    <tr><th>Acceptance criterion</th><th>Status</th></tr>
+    <tr><td>Low assessed score &rarr; <code>review_required</code>; clean job unaffected; threshold boundary inclusive-pass</td><td><span class="badge b-ok">PASS</span></td></tr>
+    <tr><td><code>0.0</code> sentinel + <code>None</code> excluded from assessment</td><td><span class="badge b-ok">PASS</span></td></tr>
+    <tr><td><code>finalize_job</code> escalates PASS&rarr;HELD on drift, records reason; never downgrades</td><td><span class="badge b-ok">PASS</span></td></tr>
+    <tr><td>No <code>print()</code> remains in the reflexion node</td><td><span class="badge b-ok">PASS</span></td></tr>
+  </table>
+  <p class="small">Tests: <code>tests/test_drift_gate.py</code> — 6 passed. Also removed 7 <code>print()</code> calls (net entropy win).</p>
+</div>
+
+<h2>5 · Verification &amp; gates</h2>
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="n" style="color:var(--ok)">1085 / 0</div><div class="l">full suite passed / failed</div></div>
+    <div class="stat"><div class="n" style="color:var(--ok)">17/17</div><div class="l">ratchet — no baseline loosening</div></div>
+    <div class="stat"><div class="n" style="color:var(--ok)">clean</div><div class="l">ruff-check on changed files (no new errors)</div></div>
+    <div class="stat"><div class="n" style="color:var(--brand)">5f04b44</div><div class="l">shipped to origin/main</div></div>
+  </div>
+  <ul style="margin-top:10px">
+    <li><strong>Anti-bloat (G1 gate):</strong> both changes pass the five-test rubric on <em>trust</em> and <em>robustness</em> — they strengthen a visible audit signal and remove a fail-open path. No new dependency, no new table, no new route.</li>
+    <li><strong>Type discipline:</strong> new helpers use <code>Dict[str, object]</code> (not <code>Any</code>) so the <code>any_annotations</code> ratchet stays flat.</li>
+    <li><strong>Honest scope note:</strong> <code>app/agents/graph.py</code> carries <em>pre-existing</em> ruff E402 + format debt (single-quote style across the whole file). Deliberately <strong>not churned</strong> — reformatting would be unrelated noise. My added lines are lint-clean.</li>
+  </ul>
+</div>
+
+<h2>6 · Residual risk &amp; recommended follow-ups</h2>
+<div class="card">
+  <table>
+    <tr><th>Item</th><th>Why it matters</th><th>Suggested</th></tr>
+    <tr><td><strong>TMX-DRIFT-SENTINEL</strong> — make <code>calculate_semantic_drift</code> return <code>None</code> on no-key</td>
+        <td>Removes the <code>0.0</code> ambiguity so a genuine catastrophic-0 drift can also be gated (A3 — no silent default).</td>
+        <td>Small two-way loop</td></tr>
+    <tr><td><strong>Per-tenant drift threshold</strong></td>
+        <td>Pilot tenant may want a stricter/looser hold bar; currently a module constant.</td>
+        <td>Config, not branching</td></tr>
+    <tr><td><strong>Fidelity golden set on real-format docs</strong></td>
+        <td>Current golden corpus is a synthetic rich manuscript; add real SmPC/NEJM exports to harden the comparator.</td>
+        <td>Pipeline pod</td></tr>
+    <tr><td><strong>v2 audit chain hashing redesign (E2)</strong></td>
+        <td>output_hash now real, but the chain's domain-separated hashing + S3 Object-Lock anchor remain the path to <em>defensible</em> (vs. evidence-only) Part-11.</td>
+        <td>Epic E2 (existing)</td></tr>
+    <tr><td><strong>Worksheet drift cleanup</strong></td>
+        <td>Several fidelity worksheets (FIDELITY-GATE/EVAL, 3712, 3700/02/04/05) sit at <code>[Verify]</code>/"pending push" though their commits are on origin — close to <code>[Done]</code> to keep the audit chain honest.</td>
+        <td>Housekeeping</td></tr>
+  </table>
+  <div class="callout warn"><strong>Reminder (carried over):</strong> rotate the Railway Postgres password that was exposed in chat earlier.</div>
+</div>
+
+<footer>
+  TransMax · Translation-engine regulatory-grade report · generated 2026-06-10 ·
+  shipped commit <span class="mono">5f04b44</span> · loops <span class="mono">TMX-3213</span>, <span class="mono">TMX-DRIFT-GATE</span>
+</footer>
+
+</div>
+</body>
+</html>

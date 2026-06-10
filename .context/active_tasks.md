@@ -202,6 +202,7 @@ The 4-agent verify-audit on 2026-05-11 went RED on Agent 2 (pytest) with 53 reds
 
 ## Recently completed
 
+- **2026-06-10**: Engine regulatory-grade hardening batch — `5f04b44`. Full e2e/fidelity verification (1085 passed / 0 failed; fidelity 18; critical-safety 11) + two gap-closure loops: **TMX-3213** (real deterministic `output_hash` in the terminal JOB_FINALIZED audit event — closes the `placeholder_hash` known issue, A1) and **TMX-DRIFT-GATE** (back-translation semantic drift now *enforces* TRANSLATED→IN_REVIEW for human review, A2/A3; +7 `print()`→logger). Ratchet 17/17, no loosening. Report: `docs/engine_regulatory_grade_report_2026-06-10.html`. Spawned **TMX-DRIFT-SENTINEL** (`[READY]` — make `calculate_semantic_drift` return `None` on no-key so a genuine 0.0 drift can also be gated).
 - Phase 0 / pre-v3 work (the legacy backlog: Tickets 10-23) — all done before 2026-05-01; superseded by the v3.0 epic structure.
 - **2026-05-01**: v3.0 release plan written (`research/v3_pilot_ready_release_plan.md` Parts I + II + III). Signed off by Kapil. Parking lot at `parking_lot/deferred_features.md` registers all deferred features.
 - **2026-05-01**: KP_SDLC harness bootstrapped — `CLAUDE.md`, `AGENTS.md`, skills, slash commands, hooks, ADR templates, pre-commit, `scripts/{check,setup}.sh`.
