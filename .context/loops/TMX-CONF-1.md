@@ -1,6 +1,6 @@
 # TMX-CONF-1 — Per-segment confidence + needs-review surface
 
-**State**: `[Verify]`  ·  **Owner**: Quality & Regulatory  ·  **Sprint**: 2  ·  Fidelity step 3/3 (2026-06-04)
+**State**: `[Done]` — `8bb8ce6` on origin/main  ·  **Owner**: Quality & Regulatory  ·  **Sprint**: 2  ·  Fidelity step 3/3 (2026-06-04)
 **Reversibility**: `two-way`. **Blast radius**: `app/services/review_flags.py` (new), `app/api/tools.py` (universal_translate response), `app/agents/nodes/translation_engine.py` (doc quality_report).
 
 ## 1. Task

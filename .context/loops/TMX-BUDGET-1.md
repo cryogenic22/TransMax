@@ -1,6 +1,6 @@
 # TMX-BUDGET-1 — Per-job token/cost budget with cooperative fail-loud halt
 
-**State**: `[Spec]`
+**State**: `[Done]` — `0b8ca74` on origin/main
 **Owner**: Agent & AI
 **Sprint**: 2
 **Started**: 2026-06-03

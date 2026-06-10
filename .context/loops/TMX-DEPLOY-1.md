@@ -1,6 +1,6 @@
 # TMX-DEPLOY-1 — Deploy hardening: boot-time schema-drift guard + alembic heads merge
 
-**State**: `[Verify]`  ·  **Owner**: Platform & Observability  ·  **Sprint**: 2  ·  **Started/Closed**: 2026-06-03
+**State**: `[Done]` — `de63de2` on origin/main  ·  **Owner**: Platform & Observability  ·  **Sprint**: 2  ·  **Started/Closed**: 2026-06-03
 **Reversibility**: `two-way` — new read-only guard module + a startup call gated to Postgres + an empty alembic merge revision. Revertable.
 **Pre-mortem**: if the guard is wrong it could refuse a healthy boot — mitigated by (a) only flagging *missing model columns of existing tables* (unambiguous), (b) Postgres-only gating (SQLite dev/test unaffected), (c) `ALLOW_SCHEMA_DRIFT=1` escape hatch.
 **Blast radius**: `app/core/schema_guard.py` (new), `app/core/database.py` (`init_db` calls the guard on Postgres), `alembic/versions/` (+1 merge revision). No model/schema change.

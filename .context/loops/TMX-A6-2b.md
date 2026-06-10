@@ -1,6 +1,6 @@
 # TMX-A6-2b — Refinement-pass tokens in the usage telemetry
 
-**State**: `[Verify]`  ·  **Owner**: Agent & AI  ·  **Sprint**: 2  ·  **Started/Closed**: 2026-06-03
+**State**: `[Done]` — `b289646` on origin/main  ·  **Owner**: Agent & AI  ·  **Sprint**: 2  ·  **Started/Closed**: 2026-06-03
 **Reversibility**: `two-way` — new shared helper + a refiner emit + a DRY refactor of the engine. Revertable.
 **Pre-mortem**: if it fails, refinement tokens stay unrecorded — degrades to A6-2 behaviour (translate-pass only); never blocks the pipeline (A3-wrapped).
 **Blast radius**: `app/services/llm_usage.py` (new), `app/agents/graph.py` (refiner emit + config-snapshot extraction), `app/agents/nodes/translation_engine.py` (DRY delegation), `app/agents/_config_snapshot.py` (new, extracted).

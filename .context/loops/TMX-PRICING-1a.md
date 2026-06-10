@@ -1,6 +1,6 @@
 # TMX-PRICING-1a — Register the configured default model in the pricing registry
 
-**State**: `[Verify]`  ·  **Owner**: Platform  ·  **Sprint**: 2  ·  **Started/Closed**: 2026-06-03
+**State**: `[Done]` — `7b9daeb` on origin/main  ·  **Owner**: Platform  ·  **Sprint**: 2  ·  **Started/Closed**: 2026-06-03
 **Reversibility**: `two-way` — one additive dict entry. Revert by removing it.
 **Pre-mortem**: if wrong, the recorded cost for the default model would be inaccurate — mitigated by using the *confirmed public* GPT-4 Turbo rate ($10/$30 per 1M), not a guess (A3).
 **Blast radius**: `app/core/model_pricing.py` only (data). No code-path change.

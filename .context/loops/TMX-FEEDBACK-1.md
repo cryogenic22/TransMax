@@ -12,7 +12,7 @@
 **Loop-driven-dev gates**:
 - [x] **G1 Anti-bloat** — (a) net-new because there is no issue-intake surface today; (b) one router, <5 callers; (c) backend-only, no bundle impact; (d) reuses `TenantScopedMixin` + `SoftDeleteMixin` + `get_db` + `get_current_user` + `/api/*` router idiom; (e) ships with `tests/test_feedback_api.py` red-without-the-route.
 - [x] **G2 Reproduce-the-failure** — N/A (greenfield feature, not a reported failure).
-- [ ] **G3 Completion** — `curl -X POST /api/feedback` persists a row with `status=new`, scoped to the caller's org; `GET /api/feedback?status=new` returns it; `PATCH` transitions status; `DELETE` soft-deletes (no hard delete).
+- [x] **G3 Completion** — `curl -X POST /api/feedback` persists a row with `status=new`, scoped to the caller's org; `GET /api/feedback?status=new` returns it; `PATCH` transitions status; `DELETE` soft-deletes (no hard delete). **Verified live 2026-06-10** against `https://transmaxbackend.up.railway.app` — POST 200 (id `e6052f86…`), GET listed it, PATCH→triaged 200, DELETE 204, GET hid it (A9), 2nd DELETE 404, stats back to 0. Probe soft-deleted; no test data left.
 
 ---
 
@@ -102,3 +102,4 @@ No code-behaviour findings from red team. Only the pre-existing `database.py` li
 |---|---|---|---|
 | 2026-06-04 | — | `[Spec]` | Created |
 | 2026-06-04 | `[Spec]` | `[WIP]` | Design locked; implementing backend |
+| 2026-06-10 | `[Done]` | `[Done]` | Live E2E verification closed — POST/GET/PATCH/DELETE round-trip green on Railway; `feedback_entries` confirmed present (20 cols, 0 rows after probe cleanup). G3 checked. |

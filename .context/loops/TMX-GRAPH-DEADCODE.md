@@ -1,6 +1,6 @@
 # TMX-GRAPH-DEADCODE — Remove dead draft_translate path; migrate test_tm_bypass
 
-**State**: `[Verify]`  ·  **Owner**: Agent & AI  ·  **Sprint**: 2  ·  Loop 4/10 (2026-06-04 batch)
+**State**: `[Done]` — `e78b92d` on origin/main  ·  **Owner**: Agent & AI  ·  **Sprint**: 2  ·  Loop 4/10 (2026-06-04 batch)
 **Reversibility**: `two-way` (revert restores the functions). **Blast radius**: `app/agents/graph.py` (−130 lines), `tests/test_tm_bypass.py` (re-pointed to the engine).
 
 ## 1. Task

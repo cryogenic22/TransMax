@@ -1,6 +1,6 @@
 # TMX-ROUTER-1 — Model capability registry + select_model policy
 
-**State**: `[Verify]`  ·  **Owner**: Agent & AI  ·  **Sprint**: 2  ·  **Started/Closed**: 2026-06-03
+**State**: `[Done]` — `d46fb05` on origin/main  ·  **Owner**: Agent & AI  ·  **Sprint**: 2  ·  **Started/Closed**: 2026-06-03
 **Reversibility**: `two-way` — new pure module, nothing wired to it yet (ROUTER-2 integrates). Revert by deleting the file.
 **Pre-mortem**: if the policy/quality scores are wrong, the router would pick a sub-optimal model — but nothing calls it yet, and ROUTER-2 records the choice + reason in the audit chain so it's reviewable. No runtime impact this loop.
 **Blast radius**: `app/core/model_registry.py` (new) only. No behaviour change (not imported by app code yet).

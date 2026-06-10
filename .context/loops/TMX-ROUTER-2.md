@@ -1,6 +1,6 @@
 # TMX-ROUTER-2 — Wire the router into get_llm + record the model choice
 
-**State**: `[Verify]`  ·  **Owner**: Agent & AI  ·  **Sprint**: 2  ·  Loop 5/10 (2026-06-04 batch)
+**State**: `[Done]` — `dc7a3ef` on origin/main  ·  **Owner**: Agent & AI  ·  **Sprint**: 2  ·  Loop 5/10 (2026-06-04 batch)
 **Reversibility**: `two-way` — opt-in, **default-off** (`enable_llm_router=False`). When off, every task uses `default_gpt_model` (pre-router behaviour) ⇒ zero production change.
 **Pre-mortem**: if routing picked a model the deployment's key can't access, translate would 404 (the live Railway incident) — averted by the default-off flag: routing engages only when the operator confirms the registry matches available models.
 **Blast radius**: `app/core/config.py` (+flag), `app/services/llm.py` (rewrite: `resolve_model` + task-aware `get_llm` + per-model cache), `translation_engine.py` / `graph.py` (refine) / `reverse_translate.py` (each requests its task's model + records it in usage).

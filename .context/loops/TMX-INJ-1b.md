@@ -1,6 +1,6 @@
 # TMX-INJ-1b — INJECTION_DETECTED audit event
 
-**State**: `[Verify]`  ·  **Owner**: Quality & Regulatory  ·  **Sprint**: 2  ·  **Started/Closed**: 2026-06-03
+**State**: `[Done]` — `ce80f3c` on origin/main  ·  **Owner**: Quality & Regulatory  ·  **Sprint**: 2  ·  **Started/Closed**: 2026-06-03
 **Reversibility**: `two-way` — additive emit in the node. Revert by deleting the block.
 **Pre-mortem**: if it fails, an injection breach would be flagged as a quality violation but not chained — degrades to TMX-INJ-1 behaviour (still BLOCKED, just no dedicated audit event). A3-wrapped: never blocks the job.
 **Blast radius**: `app/agents/nodes/translation_engine_node.py` only. No schema.

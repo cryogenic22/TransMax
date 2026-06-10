@@ -12,7 +12,7 @@
 **Loop-driven-dev gates**:
 - [x] **G1 Anti-bloat** — net-new because there is no in-app issue-intake UI; reuses sonner, the cookie-token idiom from `lib/api.ts`, design tokens, and the root `<Toaster>` mount point; ships with vitest coverage.
 - [x] **G2 Reproduce-the-failure** — N/A (greenfield).
-- [ ] **G3 Completion** — clicking the floating button opens the widget; category→describe→priority→submit POSTs to `/api/feedback` and shows a success toast + feedback id; a backend failure surfaces an error toast + in-panel alert.
+- [x] **G3 Completion** — clicking the floating button opens the widget; category→describe→priority→submit POSTs to `/api/feedback` and shows a success toast + feedback id; a backend failure surfaces an error toast + in-panel alert. **Backend path verified live 2026-06-10** (the widget's `feedbackApi.submit` target `POST /api/feedback` returns 200 and persists on Railway — see TMX-FEEDBACK-1 G3). Widget rides the same `NEXT_PUBLIC_API_URL` the working app uses.
 
 ---
 
@@ -86,3 +86,4 @@ Removed a `@ts-expect-error` (custom ring-color prop) in favour of a Tailwind ri
 |---|---|---|---|
 | 2026-06-05 | — | `[Spec]` | Created |
 | 2026-06-05 | `[Spec]` | `[WIP — pending push]` | Built; typecheck/lint/vitest green; running `next build` before push |
+| 2026-06-10 | `[Done]` | `[Done]` | Backend submit path verified live on Railway (POST 200 + persist + soft-delete round-trip). Frontend redeployed from `085aa94`; widget hits the live backend via `NEXT_PUBLIC_API_URL`. G3 checked. |

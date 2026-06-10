@@ -1,6 +1,6 @@
 # TMX-TM-2 — Surface translation-memory reuse in the quality report
 
-**State**: `[Verify]`  ·  **Owner**: Quality & Regulatory  ·  **Sprint**: 2  ·  Batch-3 loop 7/10 (2026-06-04)
+**State**: `[Done]` — `2d2a800` on origin/main  ·  **Owner**: Quality & Regulatory  ·  **Sprint**: 2  ·  Batch-3 loop 7/10 (2026-06-04)
 **Reversibility**: `two-way`. **Blast radius**: `app/agents/nodes/translation_engine.py` (`_build_quality_report`).
 
 ## 1. Task
