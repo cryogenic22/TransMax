@@ -76,6 +76,9 @@ class TransMaxState(TypedDict):
     # TMX-DRIFT-GATE: back-translation fidelity review flags set by the reflexion node.
     reflexion_review_required: Optional[bool]
     reflexion_min_score: Optional[float]
+    # TMX-3211: explicit "stop refining, go straight to finalize" signal — replaces
+    # the old iteration_count=999 sentinel. Set on a safety regression during refine.
+    force_finalize: Optional[bool]
 
 # ---------------------------------------------------------
 # NODES
@@ -344,11 +347,11 @@ async def run_quality_gates(state: TransMaxState) -> TransMaxState:
                 # Actually, simply setting status to REVIEW_REQUIRED is enough, but we should ensure decide_next_step stops.
                 # If we are in loop, decide_next_step checks iterations < 3.
                 # If we set STATUS="REVIEW_REQUIRED", it continues if it < 3.
-                # We need to signal "STOP_ITERATING".
-                # TODO(TMX-3211): replace iteration_count=999 sentinel with an
-                # explicit force_finalize flag in QualityGateState. Crude but
-                # functional — listed in CLAUDE.md "Known issues".
-                state['iteration_count'] = 999
+                # TMX-3211: a safety regression during refinement must stop the
+                # loop and route straight to finalize. An explicit flag is read
+                # by decide_next_step — clearer + testable than overloading the
+                # iteration counter with a magic 999 sentinel.
+                state['force_finalize'] = True
 
         # Append current to history
         new_history_entry = {
@@ -536,7 +539,13 @@ def decide_next_step(state: TransMaxState):
     iterations = state.get('iteration_count', 0)
     
     logger.info(f"Decision Point: Status={status}, Iterations={iterations}")
-    
+
+    # TMX-3211: an explicit force_finalize (set on a safety regression during
+    # refine) short-circuits the refinement loop — no magic iteration sentinel.
+    if state.get('force_finalize'):
+        logger.info("force_finalize set — routing straight to finalize")
+        return "finalize"
+
     if status == "BLOCKED":
         # Critical Safety Failure -> End immediately (or Finalize with BLOCKED status)
         return "finalize" # Finalize will mark document done (but segments are blocked)

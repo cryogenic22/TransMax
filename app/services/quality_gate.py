@@ -270,7 +270,7 @@ class QualityGateService:
         ]
 
     def check_complexity(self, source: str) -> Optional[Defect]:
-        """
+        r"""
         Soft-mark high complexity segments for human review.
         Triggers if:
         - Latex math ($...$, \[...\])
