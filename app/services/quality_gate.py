@@ -1,8 +1,11 @@
 
+import logging
 import threading
 from typing import Dict, List, Any, Optional
 from app.core.defect_taxonomy import TaxonomyService, Defect, DefectSeverity, DefectCategory
 import re
+
+logger = logging.getLogger(__name__)
 
 class QualityGateService:
     """
@@ -52,19 +55,17 @@ class QualityGateService:
         self._lang_pack_lock = threading.Lock()
         self._lang_packs = {}
     
-    def calculate_semantic_drift(self, source_text: str, back_translation: str) -> float:
-        """
-        Calculates semantic similarity between Source and Back-Translation.
-        Returns a score 0-100 (100 = Identical Meaning).
-        Uses OpenAI Embeddings (Cosine Similarity).
-        """
+    def calculate_semantic_drift(self, source_text: str, back_translation: str) -> Optional[float]:
+        """Source↔back-translation similarity (0-100, 100=identical) via OpenAI embeddings;
+        ``None`` if uncomputable (no key / embed fail). TMX-DRIFT-SENTINEL (A3): None ≠ low score."""
         from langchain_openai import OpenAIEmbeddings
         from app.core.config import settings
         import numpy as np
-        
+
         if not settings.openai_api_key:
-            return 0.0
-            
+            logger.warning("Semantic-drift unavailable: no OpenAI API key configured")
+            return None
+
         try:
             embeddings_model = OpenAIEmbeddings(api_key=settings.openai_api_key)
             # Embed both
@@ -83,10 +84,10 @@ class QualityGateService:
             # Score = Similarity * 100
             score = max(0.0, min(100.0, similarity * 100))
             return float(score)
-            
+
         except Exception as e:
-            print(f"Drift Calc Failed: {e}")
-            return 0.0
+            logger.warning(f"Semantic-drift calculation failed: {e}")
+            return None
 
     def check_segment(self, source_text: str, target_text: str, constraints: Dict[str, Any], target_lang: str, source_lang: str = "en", profile_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
@@ -526,7 +527,7 @@ class QualityGateService:
             return True
             
         except Exception as e:
-            print(f"Governance Check Failed: {e}")
+            logger.warning(f"Governance check failed: {e}")
             return False
         finally:
             session.close()

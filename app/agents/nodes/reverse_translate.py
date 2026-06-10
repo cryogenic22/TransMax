@@ -24,18 +24,17 @@ def assess_reflexion(
     """Decide whether back-translation drift should hold the job for review.
 
     Only *genuinely assessed* scores count: ``validation_score`` must be
-    ``not None`` and ``> 0.0``. ``calculate_semantic_drift`` returns ``0.0`` when
-    there is no API key — indistinguishable from a real catastrophic score — so
-    holding every keyless job would be a false-positive flood (A3: don't hold on
-    a non-signal). See TMX-DRIFT-SENTINEL for the follow-up that makes the
-    method return ``None`` on no-key.
+    ``not None``. Since TMX-DRIFT-SENTINEL, ``calculate_semantic_drift`` returns
+    ``None`` (not ``0.0``) when it cannot compute (no API key / embed failure),
+    so ``None`` is the sole "no signal" sentinel and a genuine ``0.0`` now
+    correctly flags review (A3: hold on a real signal, skip a non-signal).
 
     Returns ``{review_required, min_score, n_assessed, n_below}``. Pure.
     """
     scores = [
         s.get("validation_score")
         for s in segments
-        if s.get("validation_score") is not None and s.get("validation_score") > 0.0
+        if s.get("validation_score") is not None
     ]
     if not scores:
         return {"review_required": False, "min_score": None, "n_assessed": 0, "n_below": 0}
