@@ -1,5 +1,6 @@
 from typing import TypedDict, List, Dict, Any, Optional
 from datetime import datetime, timezone
+import hashlib
 import json
 import logging
 
@@ -72,6 +73,9 @@ class TransMaxState(TypedDict):
     
     # Reflexion (Sprint D)
     reverse_translation: Optional[str]
+    # TMX-DRIFT-GATE: back-translation fidelity review flags set by the reflexion node.
+    reflexion_review_required: Optional[bool]
+    reflexion_min_score: Optional[float]
 
 # ---------------------------------------------------------
 # NODES
@@ -546,6 +550,34 @@ def decide_next_step(state: TransMaxState):
             
     return "finalize"
 
+def _compute_output_hash(segments: List[Dict[str, object]]) -> str:
+    """Deterministic SHA-256 over the ordered translated output (TMX-3213).
+
+    The terminal ``JOB_FINALIZED`` audit event must anchor the actual artefact
+    it certifies, not a placeholder (CLAUDE.md A1 — the audit chain's last link
+    must be evidential). We canonicalise the ordered
+    ``(order_index, segment_id, translated_text)`` triples and hash them with the
+    same idiom ``audit_service`` already uses (sha256 over ``sort_keys`` JSON),
+    so the hash is order-stable and reproducible from the stored segments.
+
+    Pure + total: a zero-segment job hashes the empty canonical form rather than
+    raising.
+    """
+    triples = sorted(
+        (
+            (s.get("order_index", idx), str(s.get("segment_id", "")), s.get("translated_text") or "")
+            for idx, s in enumerate(segments)
+        ),
+        key=lambda t: (t[0], t[1]),
+    )
+    canonical = json.dumps(
+        [{"order": o, "id": sid, "text": text} for o, sid, text in triples],
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 @traced("graph.node.finalize")
 async def finalize_job(state: TransMaxState) -> TransMaxState:
     """
@@ -561,6 +593,16 @@ async def finalize_job(state: TransMaxState) -> TransMaxState:
     if status in ["BLOCKED", "REVIEW_REQUIRED"]:
         # If there are blocked segments or unresolved issues, send to REVIEW
         final_status = DocumentStatus.IN_REVIEW
+
+    # TMX-DRIFT-GATE: low back-translation fidelity holds the job for a human
+    # even when the deterministic gates passed. One-directional (only escalates
+    # TRANSLATED -> IN_REVIEW, never downgrades a held status) — A3 fail-toward-review.
+    if state.get('reflexion_review_required') and final_status == DocumentStatus.TRANSLATED:
+        logger.info(
+            "Reflexion drift gate: holding job for review "
+            f"(min back-translation score {state.get('reflexion_min_score')})"
+        )
+        final_status = DocumentStatus.IN_REVIEW
         
     try:
         get_db_service().update_document_status(state['doc_id'], final_status.value)
@@ -575,8 +617,13 @@ async def finalize_job(state: TransMaxState) -> TransMaxState:
             final_payload = {
                 "final_status": str(final_status),
                 "decision": "PASS" if final_status == DocumentStatus.TRANSLATED else "HELD",
-                "output_hash": "placeholder_hash"
+                "output_hash": _compute_output_hash(state.get('segments', [])),
             }
+            # TMX-DRIFT-GATE: record why the job was held when back-translation
+            # fidelity triggered the review escalation (audit-visible reason).
+            if state.get('reflexion_review_required'):
+                final_payload["reflexion_review_required"] = True
+                final_payload["reflexion_min_score"] = state.get('reflexion_min_score')
             get_audit_service().log_event(state['audit_id'], "JOB_FINALIZED", final_payload)
             logger.info(f"Finalized Audit Trail {state['audit_id']}")
 

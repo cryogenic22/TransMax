@@ -12,6 +12,42 @@ logger = logging.getLogger(__name__)
 
 CONCURRENCY_LIMIT = 10
 
+# TMX-DRIFT-GATE: a back-translation fidelity score (0-100, 100=identical) below
+# this threshold holds the job for human review. Module constant for now — one
+# edit away from per-tenant config later.
+REFLEXION_REVIEW_THRESHOLD = 70.0
+
+
+def assess_reflexion(
+    segments: list[Dict[str, object]], threshold: float = REFLEXION_REVIEW_THRESHOLD
+) -> Dict[str, object]:
+    """Decide whether back-translation drift should hold the job for review.
+
+    Only *genuinely assessed* scores count: ``validation_score`` must be
+    ``not None`` and ``> 0.0``. ``calculate_semantic_drift`` returns ``0.0`` when
+    there is no API key — indistinguishable from a real catastrophic score — so
+    holding every keyless job would be a false-positive flood (A3: don't hold on
+    a non-signal). See TMX-DRIFT-SENTINEL for the follow-up that makes the
+    method return ``None`` on no-key.
+
+    Returns ``{review_required, min_score, n_assessed, n_below}``. Pure.
+    """
+    scores = [
+        s.get("validation_score")
+        for s in segments
+        if s.get("validation_score") is not None and s.get("validation_score") > 0.0
+    ]
+    if not scores:
+        return {"review_required": False, "min_score": None, "n_assessed": 0, "n_below": 0}
+    min_score = min(scores)
+    n_below = sum(1 for sc in scores if sc < threshold)
+    return {
+        "review_required": n_below > 0,
+        "min_score": min_score,
+        "n_assessed": len(scores),
+        "n_below": n_below,
+    }
+
 @traced("graph.node.reflexion")
 async def reverse_translate_node(state: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -24,16 +60,20 @@ async def reverse_translate_node(state: Dict[str, Any]) -> Dict[str, Any]:
     2. Comparing back-translation to original English
     3. Computing semantic drift score
     """
-    print("--- REVERSE TRANSLATE NODE (PARALLEL) ---")
-    
+    logger.info("Reverse-translate node (parallel) starting")
+
     # Use correct state variable names that match TransMaxState
     target_lang = state.get("target_language", "de")  # The language we translated to (e.g., German)
     source_lang = state.get("source_language", "en")  # Back-translate to actual source language
-    
+
     segments = state.get("segments", [])
     if not segments:
-        print("No segments to reverse translate")
-        return {"segments": segments}
+        logger.info("No segments to reverse translate")
+        return {
+            "segments": segments,
+            "reflexion_review_required": False,
+            "reflexion_min_score": None,
+        }
         
     # TMX-ROUTER-5: cost-aware posture from consumption so far (translate +
     # refine usage on the report). No-op unless routing + a budget are on.
@@ -89,7 +129,7 @@ async def reverse_translate_node(state: Dict[str, Any]) -> Dict[str, Any]:
                         validation_score = gate_svc.calculate_semantic_drift(source_text, reverse_text)
                         seg['validation_score'] = validation_score
                     except Exception as e:
-                        print(f"Drift calculation failed for {seg.get('segment_id')}: {e}")
+                        logger.warning(f"Drift calculation failed for {seg.get('segment_id')}: {e}")
                 
                 return {
                     "segment_id": seg['segment_id'],
@@ -97,7 +137,7 @@ async def reverse_translate_node(state: Dict[str, Any]) -> Dict[str, Any]:
                     "validation_score": validation_score
                 }
             except Exception as e:
-                print(f"Reverse Translation Failed for {seg.get('segment_id')}: {e}")
+                logger.warning(f"Reverse translation failed for {seg.get('segment_id')}: {e}")
                 return None
 
     # Gather all tasks
@@ -112,23 +152,26 @@ async def reverse_translate_node(state: Dict[str, Any]) -> Dict[str, Any]:
             # 1. Update Segments Batch with reverse_translation AND validation_score
             db = get_db_service()
             db.update_segments_batch(updates)
-            print(f"Persisted {len(updates)} reverse translations with validation scores.")
-            
+            logger.info(f"Persisted {len(updates)} reverse translations with validation scores")
+
             # 2. Compute Aggregate Drift Score from calculated scores
             scores = [u.get('validation_score') for u in updates if u.get('validation_score') is not None]
             avg_drift = sum(scores) / len(scores) if scores else 0
-            
-            print(f"--- Global Semantic Drift Score: {avg_drift:.2f} ---")
-            print(f"    Segments with score >= 90: {len([s for s in scores if s >= 90])}")
-            print(f"    Segments with score 70-90: {len([s for s in scores if 70 <= s < 90])}")
-            print(f"    Segments with score < 70:  {len([s for s in scores if s < 70])}")
-            
+
+            logger.info(
+                "Global back-translation fidelity: avg=%.2f  (>=90:%d  70-90:%d  <70:%d)",
+                avg_drift,
+                len([s for s in scores if s >= 90]),
+                len([s for s in scores if 70 <= s < 90]),
+                len([s for s in scores if s < 70]),
+            )
+
             # 3. Update Scorecard
             if state.get('job_id'):
                 db.update_quality_scorecard_metric(state['job_id'], {"drift_score": int(avg_drift)})
-                
+
         except Exception as e:
-            print(f"Reflexion Persistence Failed: {e}")
+            logger.warning(f"Reflexion persistence failed: {e}")
 
     # TMX-A6-2b-reflexion: record the reflexion pass's qualified-supplier
     # consumption in the immutable chain (A6/A1), summed across all segments.
@@ -144,5 +187,17 @@ async def reverse_translate_node(state: Dict[str, Any]) -> Dict[str, Any]:
         except Exception as e:  # noqa: BLE001 — telemetry never blocks the pipeline (A3)
             logger.warning(f"Failed to emit reflexion LLM_USAGE_RECORDED: {e}")
 
-    return {"segments": segments}
+    # TMX-DRIFT-GATE: turn the measured per-segment fidelity into a routing
+    # signal finalize_job can act on (A2 deterministic gate, A3 fail-toward-review).
+    gate = assess_reflexion(segments)
+    if gate["review_required"]:
+        logger.info(
+            "Reflexion drift gate tripped: %d/%d segment(s) below %.0f (min=%.2f) -> review",
+            gate["n_below"], gate["n_assessed"], REFLEXION_REVIEW_THRESHOLD, gate["min_score"],
+        )
+    return {
+        "segments": segments,
+        "reflexion_review_required": gate["review_required"],
+        "reflexion_min_score": gate["min_score"],
+    }
 
