@@ -1,6 +1,6 @@
 # TMX-DRIFT-SENTINEL — semantic-drift returns None (not 0.0) when unavailable
 
-**State**: `[Done — pending SHA record]`
+**State**: `[Done]` — `a987c3d` on origin/main
 **Owner**: Quality & Regulatory + Agent & AI
 **Sprint**: 2 (engine-to-regulatory-grade batch)
 **Started**: 2026-06-11
@@ -58,9 +58,9 @@ Ratchet 17/17 — print_in_app dropped (2 more prints removed); mega_files_800 h
 Trimmed the new docstring to keep `quality_gate.py` at 799 lines (it was a pre-existing 798 near-miss; the ratchet correctly flags it as a split candidate, deferred to TMX-3400). `Optional[float]` return — no new `Any`.
 
 ## 8. Deploy
-- [ ] Commit: `<pending>`
-- [ ] Pushed to origin/main (Railway auto-deploys)
-- [ ] SHA recorded here + in `.context/active_tasks.md`
+- [x] Commit: `a987c3d`
+- [x] Pushed to origin/main (Railway auto-deploys) — two-way-safe auto-deploy
+- [x] SHA recorded here + in `.context/active_tasks.md`
 
 ---
 ## Status log

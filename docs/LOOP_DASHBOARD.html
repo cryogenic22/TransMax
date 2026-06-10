@@ -77,7 +77,7 @@
 <header><div class="wrap">
   <h1>TransMax — <span class="a">v3.0 Pilot-Ready</span> Delivery Dashboard</h1>
   <div class="sub">Live status board for the auditable pharma-translation engine · epics → pods → loops · paired with <code>.context/active_tasks.md</code> + <code>.context/loops/*.md</code> (the text source of truth)</div>
-  <div class="updated">⟳ Last updated: <b id="upd"></b> · after TMX-3213 + DRIFT-GATE · <b>full suite: 1085 green</b> · <b>ratchet 17/17</b> · this dashboard is refreshed every few iterations</div>
+  <div class="updated">⟳ Last updated: <b id="upd"></b> · after DRIFT-SENTINEL + worksheet-drift reconciliation · <b>full suite: 1088 green</b> · <b>drift audit: 0</b> · <b>ratchet 17/17</b> · this dashboard is refreshed every few iterations</div>
 </div></header>
 
 <div class="wrap">
@@ -122,11 +122,11 @@ const DATA = {
   updated: "2026-06-11",
   kpis: [
     {n:"~41%", l:"v3.0 epics (est., SP-weighted)", cls:"info"},
-    {n:"64/94", l:"loops shipped", cls:"good"},
-    {n:"1085", l:"backend tests green (0 failed)", cls:"good"},
+    {n:"93/95", l:"loops shipped (measured)", cls:"good"},
+    {n:"1088", l:"backend tests green (0 failed)", cls:"good"},
+    {n:"0", l:"worksheet drift (audit clean)", cls:"good"},
     {n:"17/17", l:"ratchet metrics ≥ baseline", cls:"good"},
-    {n:"11 / 8", l:"epics / pods", cls:"gold"},
-    {n:"6", l:"tracked debt items", cls:"warn"},
+    {n:"5", l:"tracked debt items", cls:"warn"},
   ],
   // status: done | mid | pend
   timeline: [
@@ -185,12 +185,12 @@ const DATA = {
     {pn:"Pilot / GTM", pd:"E10"},
   ],
   focus: {
-    title: "Sprint 2 — translation engine to regulatory grade",
-    body: "Just shipped: real terminal audit output_hash (TMX-3213) + back-translation drift now enforces human review (TMX-DRIFT-GATE). Engine verified e2e: fidelity 18, critical-safety 11, full suite 1085 — all green. See <code>docs/engine_regulatory_grade_report_2026-06-10.html</code>.",
+    title: "Sprint 2 — engine maturity + program-state integrity",
+    body: "Just shipped: real terminal audit output_hash (TMX-3213), back-translation drift enforces review (TMX-DRIFT-GATE), drift now honest about 'unavailable' (TMX-DRIFT-SENTINEL), and a 28-worksheet drift reconciliation — the audit chain between worksheet claims and origin is clean (0 stale). Full suite 1088 green.",
     next: [
-      "TMX-DRIFT-SENTINEL — make semantic-drift return None (not 0.0) on no-key so a genuine 0-drift can also gate",
-      "Close stale fidelity worksheets ([Verify] → [Done]) so the audit chain matches origin",
+      "Deeper MEASURED epic burndown — reconcile all 122 planned tickets vs shipped loops to replace the SP-weighted estimates with real per-epic %",
       "E2 core: begin the cryptographic audit ledger v2 (the path from evidence-only to defensible Part-11)",
+      "Pick the next feature-maturity loop from the highest-value in-flight epic (E4 fidelity round-trip or E6 QRD/term-lock)",
     ],
   },
   risks: [
@@ -199,10 +199,12 @@ const DATA = {
     {item:"Railway Postgres password exposed in chat", sev:"open", txt:"Rotate in the Railway dashboard. Carried over from the deploy session."},
     {item:"transmax.db committed + lags every migration", sev:"deb", txt:"TMX-3002 — Kapil-gated git-rm. Rebuild locally so tests use the fresh schema; never commit the rebuilt file."},
     {item:"PII service is regex-only", sev:"deb", txt:"TMX-3805 — replace with Microsoft Presidio (E5). Tracked."},
-    {item:"Back-translation drift 0.0 no-key sentinel", sev:"deb", txt:"TMX-DRIFT-SENTINEL — excluded from gating today; make the method return None on no-key. New, logged."},
+    {item:"quality_gate.py is a thread-unsafe lazy singleton at 799 lines", sev:"deb", txt:"TMX-3400 (C-08) — make it instance-based; the file is a split candidate the ratchet flags. Deferred deliberately."},
     {item:"Live Railway DB built by create_all, not Alembic", sev:"mit", txt:"TMX-DEPLOY-MIGRATE — new tables appear automatically; column adds to existing tables would silently drift. Watched."},
   ],
   log: [
+    {d:"2026-06-11", t:"<b>TMX-DRIFT-SENTINEL</b> — semantic-drift returns None (not 0.0) when uncomputable, so the gate holds on a genuine 0 and skips a non-signal (A3). 1088 tests. <code>a987c3d</code>"},
+    {d:"2026-06-11", t:"<b>Worksheet-drift reconciliation</b> — 28 stale-state worksheets flipped to [Done] + SHA; drift audit clean (OK 92, 0 stale). Tier-0 entropy fix. <code>cd29c52</code>"},
     {d:"2026-06-10", t:"<b>TMX-3213 + DRIFT-GATE</b> — real terminal audit output_hash + back-translation drift enforces TRANSLATED→IN_REVIEW. 1085 tests, ratchet 17/17. <code>5f04b44</code>"},
     {d:"2026-06-09", t:"<b>TMX-FEEDBACK-1/2</b> — in-app feedback intake (backend API + widget), verified live on Railway. <code>085aa94</code>"},
     {d:"2026-06-08", t:"<b>TMX-TM-2</b> — surface translation-memory reuse in the quality report. <code>2d2a800</code>"},
