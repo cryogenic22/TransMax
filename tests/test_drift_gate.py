@@ -41,14 +41,14 @@ def test_assess_clean_job_not_held() -> None:
     assert out["min_score"] == 91.0
 
 
-def test_assess_excludes_zero_sentinel_and_none() -> None:
-    # 0.0 == no-API-key sentinel; None == not computed. Neither is a real signal,
-    # so a job made only of these must NOT be held (A3: don't hold on a non-signal).
+def test_assess_excludes_none_but_zero_gates() -> None:
+    # Since TMX-DRIFT-SENTINEL, `None` is the sole "unavailable" sentinel and is
+    # excluded; a real `0.0` is a catastrophic score that MUST gate.
     segs = [{"validation_score": 0.0}, {"validation_score": None}, {"foo": "bar"}]
     out = assess_reflexion(segs)
-    assert out["review_required"] is False
-    assert out["n_assessed"] == 0
-    assert out["min_score"] is None
+    assert out["review_required"] is True   # the genuine 0.0 holds the job
+    assert out["n_assessed"] == 1           # only the 0.0 is a real signal
+    assert out["min_score"] == 0.0
 
 
 def test_assess_boundary_threshold_inclusive_pass() -> None:
