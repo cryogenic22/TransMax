@@ -1,6 +1,6 @@
 # TMX-AUDIT-RATCHET-TODO-SWEEP — Sweep stray TODOs to restore monotonic ratchet floor
 
-**State**: `[WIP]`
+**State**: `[Done]` — `7e0c81e` on origin/main
 **Owner**: Platform & Observability (ratchet steward)
 **Sprint**: corrective
 **Started**: 2026-05-13

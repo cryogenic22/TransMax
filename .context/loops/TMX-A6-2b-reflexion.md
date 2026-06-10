@@ -1,6 +1,6 @@
 # TMX-A6-2b-reflexion — Reflexion-pass tokens in usage telemetry
 
-**State**: `[Verify]`  ·  **Owner**: Agent & AI  ·  **Sprint**: 2  ·  Loop 2/10 (2026-06-04 batch)
+**State**: `[Done]` — `9939930` on origin/main  ·  **Owner**: Agent & AI  ·  **Sprint**: 2  ·  Loop 2/10 (2026-06-04 batch)
 **Reversibility**: `two-way` — accumulate tokens + one emit in the reflexion node. Revertable.
 **Blast radius**: `app/agents/nodes/reverse_translate.py` only. No schema.
 

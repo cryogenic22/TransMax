@@ -1,6 +1,6 @@
 # TMX-ROUTER-5 — Cost-aware routing (budget posture into model selection)
 
-**State**: `[Verify]`  ·  **Owner**: Agent & AI  ·  **Sprint**: 2  ·  Loop 6/10 (2026-06-04 batch)
+**State**: `[Done]` — `cce85a5` on origin/main  ·  **Owner**: Agent & AI  ·  **Sprint**: 2  ·  Loop 6/10 (2026-06-04 batch)
 **Reversibility**: `two-way`. No-op unless `enable_llm_router` AND a per-job budget are configured.
 **Blast radius**: `app/services/budget_guard.py` (+`budget_posture`, `JobBudget.from_settings`), `app/services/llm.py` (`resolve_model`/`get_llm` accept `budget_posture`), `app/agents/graph.py` (refine), `app/agents/nodes/reverse_translate.py` (reflexion).
 

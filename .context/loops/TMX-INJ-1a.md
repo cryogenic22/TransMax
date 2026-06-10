@@ -1,6 +1,6 @@
 # TMX-INJ-1a — Injection-scanner hardening (normalization + expanded vectors)
 
-**State**: `[Verify]`  ·  **Owner**: Quality & Regulatory  ·  **Sprint**: 2  ·  Loop 3/10 (2026-06-04 batch)
+**State**: `[Done]` — `1dc7a0c` on origin/main  ·  **Owner**: Quality & Regulatory  ·  **Sprint**: 2  ·  Loop 3/10 (2026-06-04 batch)
 **Reversibility**: `two-way`. **Blast radius**: `app/services/injection_guard.py` only (feeds `quality_gate.check_segment`).
 
 ## 1. Task

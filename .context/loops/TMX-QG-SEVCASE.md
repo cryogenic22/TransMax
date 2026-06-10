@@ -1,6 +1,6 @@
 # TMX-QG-SEVCASE — Case-insensitive critical-severity detection
 
-**State**: `[Verify]`  ·  **Owner**: Quality & Regulatory  ·  **Sprint**: 2  ·  Loop 1/10 of the 2026-06-04 batch
+**State**: `[Done]` — `d4a0a25` on origin/main  ·  **Owner**: Quality & Regulatory  ·  **Sprint**: 2  ·  Loop 1/10 of the 2026-06-04 batch
 **Reversibility**: `two-way`. **G2**: the failure (a CRITICAL violation NOT recognised) is reproduced by `is_critical("CRITICAL")` being the case the old `== 'critical'` returned False for — RED-documented in the test.
 **Blast radius**: `app/core/defect_taxonomy.py` (+helper), `app/agents/nodes/translation_engine.py` (blocked flag), `app/agents/graph.py` (refine filter). The endpoints.py lowercase path is a SEPARATE convention (lowercase categories too) — out of scope, spawned TMX-QG-SEVCASE-EP.
 

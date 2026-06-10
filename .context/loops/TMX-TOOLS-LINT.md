@@ -1,6 +1,6 @@
 # TMX-TOOLS-LINT — Clean app/api/tools.py lint + tighten bare_except ratchet
 
-**State**: `[Verify]`  ·  **Owner**: Platform  ·  **Sprint**: 2  ·  Batch-3 loop 6/10 (2026-06-04)
+**State**: `[Done]` — `c5cd325` on origin/main  ·  **Owner**: Platform  ·  **Sprint**: 2  ·  Batch-3 loop 6/10 (2026-06-04)
 **Reversibility**: `two-way`. **Blast radius**: `app/api/tools.py` (cleanup, behavior-preserving) + `ratchet/baseline.json` (tighten).
 
 ## 1. Task

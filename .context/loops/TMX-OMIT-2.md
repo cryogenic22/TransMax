@@ -1,6 +1,6 @@
 # TMX-OMIT-2 — Max-segment-length cap (prevent LLM truncation)
 
-**State**: `[Verify]`  ·  **Owner**: Document Pipeline  ·  **Sprint**: 2  ·  Batch-3 loop 3/10 (2026-06-04)
+**State**: `[Done]` — `afd3a83` on origin/main  ·  **Owner**: Document Pipeline  ·  **Sprint**: 2  ·  Batch-3 loop 3/10 (2026-06-04)
 **Reversibility**: `two-way`. **Blast radius**: `app/services/segmenter.py` (post-split). **G2**: a 120-author block (>1000 chars) reproduces the over-long segment; the cap splits it with no content loss.
 
 ## 1. Task

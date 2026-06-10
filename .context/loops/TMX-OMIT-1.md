@@ -1,6 +1,6 @@
 # TMX-OMIT-1 — Deterministic coverage / gross-omission gate
 
-**State**: `[Verify]`  ·  **Owner**: Quality & Regulatory  ·  **Sprint**: 2  ·  Batch-3 loop 2/10 (2026-06-04)
+**State**: `[Done]` — `f65e3c2` on origin/main  ·  **Owner**: Quality & Regulatory  ·  **Sprint**: 2  ·  Batch-3 loop 2/10 (2026-06-04)
 **Reversibility**: `two-way`. **G2**: reproduced — the NEJM author-list segment (target ~10% of source) now flags CRITICAL OMISSION (was "✓ OK"). **Blast radius**: `app/services/coverage_check.py` (new pure), `app/services/quality_gate.py` (thin `check_coverage` + 7c wiring), `app/core/defect_taxonomy.py` (omission→CRITICAL classify rule).
 
 ## 1. Task

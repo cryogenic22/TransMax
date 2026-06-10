@@ -1,6 +1,6 @@
 # TMX-INJ-1 — Prompt-injection detection gate (source-side, deterministic)
 
-**State**: `[Verify]`
+**State**: `[Done]` — `d1e0b48` on origin/main
 **Owner**: Quality & Regulatory
 **Sprint**: 2
 **Started**: 2026-06-03

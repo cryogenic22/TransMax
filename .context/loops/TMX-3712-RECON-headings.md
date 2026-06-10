@@ -1,6 +1,6 @@
 # TMX-3712-RECON-headings — PDF export applies heading styles from element_type
 
-**State**: `[Verify]`  ·  **Owner**: Document Pipeline  ·  **Sprint**: 2  ·  Batch-3 loop 5/10 (2026-06-04)
+**State**: `[Done]` — `e3c5bfc` on origin/main  ·  **Owner**: Document Pipeline  ·  **Sprint**: 2  ·  Batch-3 loop 5/10 (2026-06-04)
 **Reversibility**: `two-way`. **Blast radius**: `app/services/document_export.py` (the PDF flat-export branch only).
 
 ## 1. Task

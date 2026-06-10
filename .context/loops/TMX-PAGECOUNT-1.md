@@ -1,6 +1,6 @@
 # TMX-PAGECOUNT-1 — Real PDF page count (not block/segment count)
 
-**State**: `[Verify]`  ·  **Owner**: Document Pipeline  ·  **Sprint**: 2  ·  Batch-3 loop 1/10 (2026-06-04)
+**State**: `[Done]` — `377b184` on origin/main  ·  **Owner**: Document Pipeline  ·  **Sprint**: 2  ·  Batch-3 loop 1/10 (2026-06-04)
 **Reversibility**: `two-way`. **G2**: reproduced — the real NEJM PDF returned `count_pages == 13` (was shown as 316). **Blast radius**: `app/services/pdf_service.py` (+`count_pages`), `app/api/documents.py` (upload uses it).
 
 ## 1. Task

@@ -1,6 +1,6 @@
 # TMX-FIDELITY-GATE — Fail-loud structural gate in DOCX export
 
-**State**: `[Verify]`  ·  **Owner**: Document Pipeline  ·  **Sprint**: 2  ·  Batch-3 loop 4/10 (2026-06-04)
+**State**: `[Done]` — `79c6a97` on origin/main  ·  **Owner**: Document Pipeline  ·  **Sprint**: 2  ·  Batch-3 loop 4/10 (2026-06-04)
 **Reversibility**: `two-way` (opt-out via `enforce_fidelity=False`). **Blast radius**: `app/services/fidelity.py` (+`structural_loss`), `app/services/document_export.py` (gate in `export_docx`).
 
 ## 1. Task

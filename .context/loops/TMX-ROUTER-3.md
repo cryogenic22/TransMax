@@ -1,6 +1,6 @@
 # TMX-ROUTER-3 — Per-tenant routing policy (table + audited CRUD)
 
-**State**: `[Verify]`  ·  **Owner**: Agent & AI + Auth  ·  **Sprint**: 2  ·  Loop 7/10 (2026-06-04 batch)
+**State**: `[Done]` — `1cd4ab2` on origin/main  ·  **Owner**: Agent & AI + Auth  ·  **Sprint**: 2  ·  Loop 7/10 (2026-06-04 batch)
 **Reversibility**: `two-way` — new table (created by create_all + a catch-up migration in DEPLOY-3) + service + a pure `select_model` override param. No-op until a policy is created AND routing is on.
 **Blast radius**: `app/models/database.py` (+`RoutingPolicy`), `app/auth/permissions.py` (+`ROUTING_CONFIGURE`), `app/services/routing_policy_service.py` (new), `app/core/model_registry.py` (`select_model` override param), `app/services/llm.py` (`resolve_model` reads tenant overrides best-effort).
 

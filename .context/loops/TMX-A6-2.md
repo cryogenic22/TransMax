@@ -1,6 +1,6 @@
 # TMX-A6-2 — Per-job LLM usage telemetry in the audit chain (A6 qualified-supplier consumption)
 
-**State**: `[Spec]`
+**State**: `[Done]` — `d072288` on origin/main
 **Owner**: Agent & AI
 **Sprint**: 2
 **Started**: 2026-06-03

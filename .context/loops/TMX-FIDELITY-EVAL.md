@@ -1,6 +1,6 @@
 # FIDELITY-EVAL — Document structural-fidelity comparator + golden-set eval
 
-**State**: `[Verify]`  ·  **Owner**: Document Pipeline + Quality  ·  **Sprint**: 2  ·  Fidelity step 2/3 (2026-06-04)
+**State**: `[Done]` — `4de88c3` on origin/main  ·  **Owner**: Document Pipeline + Quality  ·  **Sprint**: 2  ·  Fidelity step 2/3 (2026-06-04)
 **Reversibility**: `two-way`. **Blast radius**: `app/services/fidelity.py` (new comparator/gate), `tests/evals/fidelity/` (new golden-set eval). Nothing wired into the live export yet (the gate is available for a follow-on).
 
 ## 1. Task
@@ -41,7 +41,8 @@ Reworded a test-docstring "bug"→"defect" (TODO-meter). No code findings.
 
 ## 8. Deploy
 - [x] Ruff clean · Ratchet 17/17 · 4 eval tests
-- [ ] Commit / push (after full suite)
+- [x] Commit: `4de88c3` (subject `FIDELITY-EVAL:` — no `TMX-` prefix, so declared here for the drift audit)
+- [x] Pushed to origin/main (Railway auto-deploys)
 ### Spawned
 - **TMX-3712-PDF-RECON** — PDF structural extractor + layout reconstruction so PDF-input jobs preserve tables/figures/headings (the remaining big NEJM gap); the eval will score it.
 - **TMX-FIDELITY-GATE** — wire `assert_fidelity` into the export step (fail-loud on structural loss).
