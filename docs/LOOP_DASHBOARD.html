@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TransMax — v3.0 Pilot-Ready Delivery Dashboard</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#2d3748;--text:#d7dde6;--muted:#8b97a8;--accent:#58a6ff;--gold:#e3b341;--green:#3fb950;--red:#f85149;--purple:#bc8cff;--orange:#ffa657;--teal:#39d2c0;--pink:#f778ba}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.5;padding:0 0 70px}
+  .wrap{max-width:1280px;margin:0 auto;padding:0 28px}
+  header{padding:34px 0 22px;background:linear-gradient(180deg,#10182b,var(--bg));border-bottom:1px solid var(--border);margin-bottom:24px}
+  h1{font-size:1.7rem;font-weight:700;letter-spacing:-.4px}h1 .a{color:var(--accent)}
+  .sub{color:var(--muted);font-size:.92rem;margin-top:6px}
+  .updated{margin-top:10px;font-size:.74rem;color:var(--muted)}
+  .updated b{color:var(--green)}
+  h2{font-size:1.12rem;margin:34px 0 12px;color:#fff;display:flex;align-items:center;gap:10px}
+  h2 .ic{font-size:.95rem}
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:18px}
+  @media(max-width:960px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
+  .kpi .n{font-size:1.5rem;font-weight:700}
+  .kpi .l{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+  .kpi.good .n{color:var(--green)}.kpi.warn .n{color:var(--orange)}.kpi.info .n{color:var(--accent)}.kpi.gold .n{color:var(--gold)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0 0;font-size:.76rem;color:var(--muted)}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .sw.done{background:var(--green)}.sw.mid{background:var(--accent)}.sw.pend{background:#3a4555}.sw.risk{background:var(--orange)}
+  .timeline{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+  .tnode{flex:1;min-width:120px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 12px;position:relative}
+  .tnode.done{border-color:var(--green)}.tnode.mid{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .tnode .ph{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .tnode .ti{font-size:.82rem;font-weight:600;margin-top:3px}
+  .tnode .st{font-size:.7rem;margin-top:5px}
+  .st.done{color:var(--green)}.st.mid{color:var(--accent)}.st.pend{color:var(--muted)}
+  .loops{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:960px){.loops{grid-template-columns:1fr}}
+  .loop{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:15px 17px;border-left:4px solid var(--border)}
+  .loop.done{border-left-color:var(--green)}.loop.mid{border-left-color:var(--accent)}.loop.pend{border-left-color:#3a4555}.loop.risk{border-left-color:var(--orange)}
+  .loop .lh{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:8px}
+  .loop .lt{font-size:1rem;font-weight:700}
+  .loop .lt small{color:var(--muted);font-weight:400;font-size:.74rem}
+  .badge{font-size:.66rem;padding:2px 9px;border-radius:99px;font-weight:700;letter-spacing:.4px;white-space:nowrap}
+  .badge.done{background:rgba(63,185,80,.16);color:var(--green)}
+  .badge.mid{background:rgba(88,166,255,.16);color:var(--accent)}
+  .badge.pend{background:rgba(139,151,168,.14);color:var(--muted)}
+  .badge.risk{background:rgba(255,166,87,.16);color:var(--orange)}
+  .meter{height:6px;background:#1c2330;border-radius:99px;overflow:hidden;margin:8px 0 4px}
+  .meter i{display:block;height:100%;border-radius:99px}
+  .meter i.done{background:var(--green)}.meter i.mid{background:var(--accent)}.meter i.pend{background:#3a4555}
+  .pct{font-size:.7rem;color:var(--muted);margin-bottom:8px}
+  .ev{display:block;color:var(--muted);font-size:.76rem;margin-top:5px;line-height:1.45}
+  .ev b{color:var(--text);font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:.83rem;margin-top:6px}
+  th{text-align:left;padding:8px 10px;background:var(--panel2);color:var(--gold);font-weight:600;border-bottom:2px solid var(--border)}
+  td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  .risk-sev{font-size:.66rem;padding:1px 8px;border-radius:99px;font-weight:700}
+  .risk-sev.mit{background:rgba(63,185,80,.16);color:var(--green)}
+  .risk-sev.deb{background:rgba(255,166,87,.16);color:var(--orange)}
+  .risk-sev.open{background:rgba(248,81,73,.16);color:var(--red)}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:16px 18px}
+  .pods{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px}
+  @media(max-width:960px){.pods{grid-template-columns:1fr 1fr}}
+  .pod{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:11px 13px;border-top:3px solid var(--purple)}
+  .pod .pn{font-size:.8rem;font-weight:700;color:var(--purple)}
+  .pod .pd{font-size:.72rem;color:var(--muted);margin-top:3px}
+  .log{font-size:.8rem}
+  .log .e{padding:8px 0;border-bottom:1px solid #21283766;display:flex;gap:12px}
+  .log .d{color:var(--accent);font-family:Consolas,monospace;font-size:.74rem;white-space:nowrap;padding-top:1px}
+  .log .t{color:var(--muted)}.log .t b{color:var(--text)}
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);color:var(--muted);font-size:.76rem}
+  .flowline{font-family:Consolas,monospace;font-size:.72rem;color:var(--teal);text-align:center;margin:6px 0 0}
+  .note{font-size:.72rem;color:var(--muted);margin-top:8px;font-style:italic}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>TransMax — <span class="a">v3.0 Pilot-Ready</span> Delivery Dashboard</h1>
+  <div class="sub">Live status board for the auditable pharma-translation engine · epics → pods → loops · paired with <code>.context/active_tasks.md</code> + <code>.context/loops/*.md</code> (the text source of truth)</div>
+  <div class="updated">⟳ Last updated: <b id="upd"></b> · after TMX-3213 + DRIFT-GATE · <b>full suite: 1085 green</b> · <b>ratchet 17/17</b> · this dashboard is refreshed every few iterations</div>
+</div></header>
+
+<div class="wrap">
+  <div class="kpis" id="kpis"></div>
+  <div class="legend">
+    <span><i class="sw done"></i> Complete (verified)</span>
+    <span><i class="sw mid"></i> In progress</span>
+    <span><i class="sw pend"></i> Pending</span>
+    <span><i class="sw risk"></i> Risk / debt (tracked)</span>
+  </div>
+
+  <h2><span class="ic">🧭</span> Delivery sequence — the 12-week v3.0 plan</h2>
+  <div class="timeline" id="timeline"></div>
+  <div class="flowline">each loop = task → spec (falsifiable ACs) → design → code → eval/test → red-team → fix → deploy · 3 gates: anti-bloat · reproduce-failure · completion</div>
+
+  <h2><span class="ic">🗂️</span> Epic board — 11 epics toward pilot</h2>
+  <div class="loops" id="epics"></div>
+  <div class="note" id="estnote"></div>
+
+  <h2><span class="ic">👥</span> Pods — who owns what</h2>
+  <div class="pods" id="pods"></div>
+
+  <h2><span class="ic">🎯</span> Active focus</h2>
+  <div class="panel" id="focus"></div>
+
+  <h2><span class="ic">⚠️</span> Risks &amp; debt (tracked)</h2>
+  <table id="risks"><tr><th>Item</th><th>Type</th><th>Status / mitigation</th></tr></table>
+
+  <h2><span class="ic">🧾</span> Update log</h2>
+  <div class="panel log" id="log"></div>
+
+  <footer>TransMax Loop Dashboard · visual companion to <code>.context/active_tasks.md</code> · hard numbers (tests, loops, ratchet) are measured; epic % are SP-weighted estimates · refreshed every few iterations</footer>
+</div>
+
+<script>
+/* ============================================================
+   DATA — edit THIS block every few iterations, nothing else.
+   Hard metrics (tests/loops/ratchet) are measured from the repo;
+   epic `pct` are SP-weighted judgement estimates, labelled as such.
+   ============================================================ */
+const DATA = {
+  updated: "2026-06-11",
+  kpis: [
+    {n:"~41%", l:"v3.0 epics (est., SP-weighted)", cls:"info"},
+    {n:"64/94", l:"loops shipped", cls:"good"},
+    {n:"1085", l:"backend tests green (0 failed)", cls:"good"},
+    {n:"17/17", l:"ratchet metrics ≥ baseline", cls:"good"},
+    {n:"11 / 8", l:"epics / pods", cls:"gold"},
+    {n:"6", l:"tracked debt items", cls:"warn"},
+  ],
+  // status: done | mid | pend
+  timeline: [
+    {ph:"Sprint 0", ti:"Stop the bleeding", st:"done", note:"✅ done"},
+    {ph:"Sprint 1", ti:"Foundations", st:"done", note:"✅ mostly done"},
+    {ph:"Sprint 2", ti:"Engine + fidelity + audit", st:"mid", note:"🔄 active"},
+    {ph:"Sprint 3-4", ti:"Pipeline + PII + agents", st:"pend", note:"⬜ next"},
+    {ph:"Sprint 5-6", ti:"Cockpit + observability", st:"pend", note:"⬜ pending"},
+    {ph:"Pilot", ti:"Readiness pack + wall", st:"pend", note:"⬜ pending"},
+  ],
+  estNote: "Epic % are SP-weighted estimates of scope delivered (judgement, not a measured burndown). Loops-shipped, test count, and ratchet are measured from the repo as of the update date.",
+  // status: done | mid | pend ; pct 0-100 ; shipped = concrete evidence
+  epics: [
+    {id:"E4", name:"Document ingestion fidelity", sp:26, status:"mid", pct:70,
+     shipped:"DOCX v2 + tracked-changes (3700), export styles map (3701), PDF v2/heading styles (3702/3712), fail-loud structural gate + golden-set eval (FIDELITY-GATE/EVAL), real page count, file-sniff/AV (3705). 12 loops shipped.",
+     left:"XLIFF/TMX round-trip (3703/3704 partial), page-anchor highlight (3706)."},
+    {id:"E6", name:"Quality gate hardening + QRD + term-lock", sp:26, status:"mid", pct:55,
+     shipped:"Coverage/gross-omission gate (OMIT-1/2), prompt-injection gate + audit event (INJ), cross-language frequency/number sweeps (34xx), per-segment confidence + needs-review (CONF-1), TM reuse surfaced (TM-2).",
+     left:"EMA QRD templates, full term-lock, remaining defect classes."},
+    {id:"E7", name:"Agent fabric + prompt registry + cost router", sp:29, status:"mid", pct:50,
+     shipped:"Cost-aware router (ROUTER), canonical model-pricing (PRICING), per-job budget guard (BUDGET), A6 usage telemetry in the chain, back-translation drift review gate (DRIFT-GATE).",
+     left:"Prompt registry (yaml versioning, A8/TMX-3200), full agent fabric."},
+    {id:"E8", name:"Frontend IA + reviewer cockpit + design system", sp:42, status:"mid", pct:50,
+     shipped:"16 36xx loops shipped — canonical /workspace IA, reviewer surfaces, a11y, modal/counts/demo flows. Largest epic.",
+     left:"Full cockpit polish, design-system v1, retire legacy routes (A7/3600)."},
+    {id:"E2", name:"Audit ledger v2 + e-signature", sp:34, status:"mid", pct:42,
+     shipped:"Audit timestamps fixed (3212), real model in snapshot (3202), real terminal output_hash (3213), injection/usage events, 31xx hardening.",
+     left:"Cryptographic ledger v2 (domain-separated hashing + Object-Lock anchor, E2 core), e-signature."},
+    {id:"E9", name:"Observability, tracing, evals", sp:18, status:"mid", pct:45,
+     shipped:"AI eval harness (golden cases), tracing spans on graph nodes, ratchet (17 metrics), structural-fidelity eval, integration smoke.",
+     left:"Full tracing/metrics backend, broader eval suites, live-LLM golden runs."},
+    {id:"E1", name:"Security baseline & multi-tenancy", sp:21, status:"mid", pct:40,
+     shipped:"Tenant-context middleware + auto-filter, auth-adaptive get_current_user, soft-delete mixin, Sprint-0 hardening (30xx).",
+     left:"OIDC/IdP claims (3013), full per-tenant isolation, pilot login wall (AUTH-WALL)."},
+    {id:"E5", name:"PII v2 + segmentation v2", sp:21, status:"mid", pct:30,
+     shipped:"Abbreviation/initial-aware segmenter wired into PDF ingestion (3801), segment-length cap (OMIT-2).",
+     left:"Presidio integration (3805), multi-lang segmenters (ja/ar), signed token round-trip."},
+    {id:"E10", name:"Pilot readiness pack", sp:21, status:"mid", pct:25,
+     shipped:"In-app feedback intake — backend API + widget (FEEDBACK-1/2), verified live on Railway.",
+     left:"Feedback triage→auto-deploy automation (FEEDBACK-3/4), pilot login wall, GTM pack."},
+    {id:"E11", name:"Headless foundation", sp:26, status:"pend", pct:15,
+     shipped:"REST/MCP groundwork in place from v2; SDK export scaffold.",
+     left:"Minimum-viable headless agent per the headless spec; the 9 validation tracks."},
+    {id:"E3", name:"Validation pack as code", sp:21, status:"pend", pct:10,
+     shipped:"Eval-harness + ratchet provide the testable substrate.",
+     left:"Validation pack authored as code (IQ/OQ/PQ as executable contracts)."},
+  ],
+  pods: [
+    {pn:"Auth & Tenancy", pd:"E1"},
+    {pn:"Audit & Validation", pd:"E2 · E3"},
+    {pn:"Document Pipeline", pd:"E4 · E5"},
+    {pn:"Quality & Regulatory", pd:"E6 · parts E10"},
+    {pn:"Agent & AI", pd:"E7 · part E11"},
+    {pn:"Reviewer Frontend", pd:"E8"},
+    {pn:"Platform & Observability", pd:"E9 · part E11"},
+    {pn:"Pilot / GTM", pd:"E10"},
+  ],
+  focus: {
+    title: "Sprint 2 — translation engine to regulatory grade",
+    body: "Just shipped: real terminal audit output_hash (TMX-3213) + back-translation drift now enforces human review (TMX-DRIFT-GATE). Engine verified e2e: fidelity 18, critical-safety 11, full suite 1085 — all green. See <code>docs/engine_regulatory_grade_report_2026-06-10.html</code>.",
+    next: [
+      "TMX-DRIFT-SENTINEL — make semantic-drift return None (not 0.0) on no-key so a genuine 0-drift can also gate",
+      "Close stale fidelity worksheets ([Verify] → [Done]) so the audit chain matches origin",
+      "E2 core: begin the cryptographic audit ledger v2 (the path from evidence-only to defensible Part-11)",
+    ],
+  },
+  risks: [
+    {item:"Audit chain cryptographically weak (string-concat hashing, no domain separator)", sev:"open", txt:"Evidence-only, not yet defensible Part-11. Real output_hash now landed (3213); full rebuild is Epic E2 core (review C-04/C-05)."},
+    {item:".env committed with a real-looking OpenAI key", sev:"open", txt:"TMX-3000 — Kapil-gated: rotate + purge from history before editing. Do not touch until then."},
+    {item:"Railway Postgres password exposed in chat", sev:"open", txt:"Rotate in the Railway dashboard. Carried over from the deploy session."},
+    {item:"transmax.db committed + lags every migration", sev:"deb", txt:"TMX-3002 — Kapil-gated git-rm. Rebuild locally so tests use the fresh schema; never commit the rebuilt file."},
+    {item:"PII service is regex-only", sev:"deb", txt:"TMX-3805 — replace with Microsoft Presidio (E5). Tracked."},
+    {item:"Back-translation drift 0.0 no-key sentinel", sev:"deb", txt:"TMX-DRIFT-SENTINEL — excluded from gating today; make the method return None on no-key. New, logged."},
+    {item:"Live Railway DB built by create_all, not Alembic", sev:"mit", txt:"TMX-DEPLOY-MIGRATE — new tables appear automatically; column adds to existing tables would silently drift. Watched."},
+  ],
+  log: [
+    {d:"2026-06-10", t:"<b>TMX-3213 + DRIFT-GATE</b> — real terminal audit output_hash + back-translation drift enforces TRANSLATED→IN_REVIEW. 1085 tests, ratchet 17/17. <code>5f04b44</code>"},
+    {d:"2026-06-09", t:"<b>TMX-FEEDBACK-1/2</b> — in-app feedback intake (backend API + widget), verified live on Railway. <code>085aa94</code>"},
+    {d:"2026-06-08", t:"<b>TMX-TM-2</b> — surface translation-memory reuse in the quality report. <code>2d2a800</code>"},
+    {d:"2026-06-07", t:"<b>TMX-3712 / FIDELITY-GATE / FIDELITY-EVAL</b> — PDF heading styles, fail-loud DOCX structural gate, golden-set fidelity eval."},
+    {d:"2026-06-06", t:"<b>TMX-OMIT-1/2 + PAGECOUNT-1 + CONF-1</b> — coverage gate, segment-length cap, real PDF page count, per-segment confidence."},
+    {d:"2026-06-05", t:"<b>TMX-3801</b> — abbreviation/initial-aware segmenter wired into PDF ingestion."},
+  ],
+};
+
+/* ===================== RENDER ===================== */
+const $=(id)=>document.getElementById(id);
+const cls=(s)=>s==="done"?"done":s==="mid"?"mid":"pend";
+$("upd").textContent = DATA.updated;
+document.querySelector("#estnote").textContent = DATA.estNote;
+
+$("kpis").innerHTML = DATA.kpis.map(k=>
+  `<div class="kpi ${k.cls}"><div class="n">${k.n}</div><div class="l">${k.l}</div></div>`).join("");
+
+$("timeline").innerHTML = DATA.timeline.map(t=>
+  `<div class="tnode ${cls(t.st)}"><div class="ph">${t.ph}</div><div class="ti">${t.ti}</div><div class="st ${cls(t.st)}">${t.note}</div></div>`).join("");
+
+const badge=(s)=>s==="done"?'<span class="badge done">COMPLETE</span>':s==="mid"?'<span class="badge mid">IN PROGRESS</span>':'<span class="badge pend">PENDING</span>';
+$("epics").innerHTML = DATA.epics.map(e=>`
+  <div class="loop ${cls(e.status)}">
+    <div class="lh"><div class="lt">${e.id} — ${e.name} <small>${e.sp} SP</small></div>${badge(e.status)}</div>
+    <div class="meter"><i class="${cls(e.status)}" style="width:${e.pct}%"></i></div>
+    <div class="pct">${e.pct}% delivered (est.)</div>
+    <span class="ev"><b>Shipped:</b> ${e.shipped}</span>
+    <span class="ev"><b>Left:</b> ${e.left}</span>
+  </div>`).join("");
+
+$("pods").innerHTML = DATA.pods.map(p=>
+  `<div class="pod"><div class="pn">${p.pn}</div><div class="pd">${p.pd}</div></div>`).join("");
+
+$("focus").innerHTML = `
+  <p style="font-size:.9rem;color:#fff;font-weight:600;margin-bottom:6px">${DATA.focus.title}</p>
+  <p style="font-size:.85rem;color:var(--muted)">${DATA.focus.body}</p>
+  <p style="font-size:.78rem;color:var(--gold);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.5px">Next</p>
+  <ul style="list-style:none;font-size:.84rem">${DATA.focus.next.map(n=>`<li style="padding:4px 0 4px 18px;position:relative;color:var(--text)"><span style="position:absolute;left:0;color:var(--accent)">▸</span>${n}</li>`).join("")}</ul>`;
+
+$("risks").insertAdjacentHTML("beforeend", DATA.risks.map(r=>
+  `<tr><td>${r.item}</td><td><span class="risk-sev ${r.sev}">${r.sev==="mit"?"MITIGATED":r.sev==="deb"?"DEBT":"OPEN"}</span></td><td>${r.txt}</td></tr>`).join(""));
+
+$("log").innerHTML = DATA.log.map(l=>
+  `<div class="e"><div class="d">${l.d}</div><div class="t">${l.t}</div></div>`).join("");
+</script>
+</body>
+</html>
