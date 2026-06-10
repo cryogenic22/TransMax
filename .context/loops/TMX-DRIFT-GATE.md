@@ -1,6 +1,6 @@
 # TMX-DRIFT-GATE — Back-translation semantic drift becomes an enforced review gate
 
-**State**: `[Done — pending SHA record]`
+**State**: `[Done]` — `5f04b44` on origin/main
 **Owner**: Agent & AI + Quality
 **Sprint**: 2 (engine-to-regulatory-grade batch)
 **Started**: 2026-06-10
@@ -64,9 +64,9 @@ Ratchet: 17/17; print_in_app count DROPPED (removed 7 prints) — net entropy wi
 Replaced 7 `print()` calls with `logger` in the same module (in-scope hygiene; reduces the `print_in_app` ratchet). `Dict[str, object]` on the new helper to keep `any_annotations` flat. No other change.
 
 ## 8. Deploy
-- [ ] Commit: `<pending>` (bundled with TMX-3213)
-- [ ] Pushed to origin/main (Railway auto-deploys)
-- [ ] SHA recorded here + in `.context/active_tasks.md`
+- [x] Commit: `5f04b44` (bundled with TMX-3213)
+- [x] Pushed to origin/main (Railway auto-deploys) — authorized under Kapil's two-way-safe auto-deploy model
+- [x] SHA recorded here + in `.context/active_tasks.md`
 
 ---
 ## Status log
