@@ -106,35 +106,26 @@ class DatabaseService:
                     ).all()
                     
                     for term in terms:
-                        t_dict = {
-                            "term_id": term.term_id,
-                            "source": term.source_text,
-                            "target": term.target_text,
-                            "allowed_variants": term.allowed_variants or [],
-                            "reason": "Glossary constraint"
-                        }
-                        
+                        # A forbidden glossary term names a string that MUST NOT
+                        # appear in the translation (e.g. a deprecated regulatory
+                        # phrasing). Its `target_text` is the forbidden output;
+                        # it feeds the gate's critical forbidden-term check
+                        # (TMX-TERMLOCK-WB) rather than the must-include glossary.
                         if term.is_forbidden:
-                             t_dict["term"] = term.source_text # Forbidden terms are usually source terms to avoid in target, or target terms to block?
-                             # Usually Forbidden Terms are "Don't use X word in Target".
-                             # So if is_forbidden is True, the 'target_text' might be the forbidden word, or 'source_text' is the word to not translate to X?
-                             # Let's assume GlossaryTerm definition: Source=Context, Target=ForbiddenWord.
-                             # Or Source=ForbiddenWord.
-                             # Let's look at standards. Forbidden list usually: "Do not use 'Drink'". 
-                             # If term.is_forbidden, we treat term.target_text (or source if target is empty) as the Forbidden Term in Target.
-                             
-                             # Let's assume standard: source="Take", target="Drink", is_forbidden=True => "Drink" is forbidden for "Take".
-                             # Or just a global blocklist?
-                             # For now, let's assume valid target_text is the forbidden string.
-                             forbidden_word = term.target_text if term.target_text else term.source_text
-                             
-                             constraints["forbidden_terms"].append({
-                                 "term": forbidden_word,
-                                 "severity": "critical",
-                                 "reason": "Forbidden by Glossary"
-                             })
+                            forbidden_word = term.target_text or term.source_text
+                            constraints["forbidden_terms"].append({
+                                "term": forbidden_word,
+                                "severity": "critical",
+                                "reason": "Forbidden by Glossary",
+                            })
                         else:
-                             constraints["glossary"].append(t_dict)
+                            constraints["glossary"].append({
+                                "term_id": term.term_id,
+                                "source": term.source_text,
+                                "target": term.target_text,
+                                "allowed_variants": term.allowed_variants or [],
+                                "reason": "Glossary constraint",
+                            })
             
             # 2. Fetch Active Translation Rules (Black Book)
             # TMX-045: These are learned or curated agency rules (not just glossary terms)
