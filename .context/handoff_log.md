@@ -153,3 +153,11 @@
 - **Context Added**: app/services/pdf_ingestion.py
 - **Verification**: tests/test_pdf.py passed (Mocked PdfReader).
 - **Next Steps**: Awaiting new tickets for Lane B.
+
+## [2026-06-12] Agent: Claude (Opus 4.8) — 10-loop UX + trust-honesty batch
+- **Focus**: Deliver 10 loops, 50% UX/UI, per CEO request. Theme: kill fabricated trust signals + harden audit-verify surfaces + reviewer-UX fine-tuning.
+- **Shipped (origin/main)**: `a4ec99d` (TMX-3105a verify_v2 status+head-hash, TMX-VERIFY-ORG org sweep), `4cda63e` (TMX-TOOLS-CONF-HONEST no fabricated 90% on scoring outage, TMX-QDASH-CONTRACT real reasoning, TMX-AUDIT-DB-DOCID-LOOKUP get_pending_reviews stub fixed), `f4ad0b1` (5 UX: QDASH-REAL/PROV-COPY/JOBS-RETRY/SEG-COUNT/STATUS-DRY), `3dc320f` (SHA backfill).
+- **Verification**: backend 1160 passed/2 skipped; frontend typecheck+lint(0)+vitest 123+next build green; ratchet 17/17; drift audit 0.
+- **Investigated, NOT shipped (escalated)**: TMX-3052c + TMX-3104a have no correct audit sink (v1+v2 are job-keyed; no system-level stream; no current_job_id(); GET-append breaks idempotency) → filed **TMX-SYS-AUDIT-STREAM** [READY-design]; both blocked on it. Also spawned TMX-VERIFY-ORG-PAGINATE.
+- **Notes**: pre-commit hooks NOT installed locally (CI-enforced); kept changes surgical (did not run ruff-format whole-file churn). transmax.db rebuilt by tests, NOT committed (TMX-3002 Kapil-gated). 
+- **Next**: TMX-SYS-AUDIT-STREAM design decision; then unblock TMX-3052c/3104a.
