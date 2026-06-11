@@ -1,14 +1,12 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from sqlalchemy.orm import Session
-from sqlalchemy import text
 from typing import Dict, Any, Optional, List
 import json
 import uuid
 import logging
 from datetime import datetime, timezone
 
-from app.models.database import engine, SessionLocal, Base, Document, DocumentStatus, Segment
+from app.models.database import engine, SessionLocal, Base, Document, Segment
 from app.models.models import TranslationJobQueue, AuditRecord, Glossary, GlossaryTerm, TMSegment, QualityScorecard
 from app.core.constants import SubstitutionType
 from app.core.config import settings
@@ -98,7 +96,7 @@ class DatabaseService:
                 # Get latest active version
                 glossary = db.query(Glossary).filter(
                     Glossary.glossary_id == glossary_id,
-                    Glossary.is_active == True
+                    Glossary.is_active == True,  # noqa: E712 — SQLAlchemy filter needs == True for SQL generation
                 ).order_by(Glossary.version.desc()).first()
                 
                 if glossary:
@@ -292,13 +290,10 @@ class DatabaseService:
                     ).order_by(TMSegment.embedding.cosine_distance(query_vec)).first()
                     
                     if match:
-                         # Calculate similarity score (inverse of distance)
-                         # Cosine distance range 0..2. (0=identical).
-                         # Simple similarity = 1 - distance
-                         dist = 0.0 # How to get distance from query? 
-                         # SQLAlchemy doesn't return calculated calc unless selected.
-                         # We'll just assume it met threshold.
-                         
+                         # Distance isn't returned unless explicitly selected;
+                         # the cosine_distance order_by + first() already picked the
+                         # nearest match, so we return it without a recomputed score.
+
                          return {
                             "source": match.source_text,
                             "target": match.target_text,
@@ -600,7 +595,6 @@ class DatabaseService:
         TMX-022: Generate a text-based Audit Certificate.
         """
         from app.models.database import Document, Segment
-        from app.models.models import AuditRecord
         from app.core.config import settings
         
         db = self.get_session()
@@ -710,7 +704,7 @@ class DatabaseService:
         """
         TMX-062: Log manual segment changes.
         """
-        from app.models.database import ChangeLog, Segment, SegmentStatus
+        from app.models.database import ChangeLog
         
         db = self.get_session()
         try:
