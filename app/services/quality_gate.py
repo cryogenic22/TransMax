@@ -56,38 +56,10 @@ class QualityGateService:
         self._lang_packs = {}
     
     def calculate_semantic_drift(self, source_text: str, back_translation: str) -> Optional[float]:
-        """Source↔back-translation similarity (0-100, 100=identical) via OpenAI embeddings;
-        ``None`` if uncomputable (no key / embed fail). TMX-DRIFT-SENTINEL (A3): None ≠ low score."""
-        from langchain_openai import OpenAIEmbeddings
-        from app.core.config import settings
-        import numpy as np
-
-        if not settings.openai_api_key:
-            logger.warning("Semantic-drift unavailable: no OpenAI API key configured")
-            return None
-
-        try:
-            embeddings_model = OpenAIEmbeddings(api_key=settings.openai_api_key)
-            # Embed both
-            # TODO(TMX-AUDIT-QG-BATCH-EMBED): Batch this? For now, simple pair.
-            vecs = embeddings_model.embed_documents([source_text, back_translation])
-            v1 = np.array(vecs[0])
-            v2 = np.array(vecs[1])
-            
-            # Cosine Similarity
-            dot = np.dot(v1, v2)
-            norm_a = np.linalg.norm(v1)
-            norm_b = np.linalg.norm(v2)
-            similarity = dot / (norm_a * norm_b)
-            
-            # Convert to 0-100 score
-            # Score = Similarity * 100
-            score = max(0.0, min(100.0, similarity * 100))
-            return float(score)
-
-        except Exception as e:
-            logger.warning(f"Semantic-drift calculation failed: {e}")
-            return None
+        """Delegates to ``app.services.semantic_drift`` (TMX-3400-lite extraction).
+        Kept as a method so existing callers (``gate.calculate_semantic_drift``) are unchanged."""
+        from app.services.semantic_drift import calculate_semantic_drift as _csd
+        return _csd(source_text, back_translation)
 
     def check_segment(self, source_text: str, target_text: str, constraints: Dict[str, Any], target_lang: str, source_lang: str = "en", profile_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
@@ -185,14 +157,24 @@ class QualityGateService:
                     f"Glossary term missing: '{src}' -> '{tgt}'"
                 ))
         
-        # 2b. Forbidden Terms Check (Critical)
+        # 2b. Forbidden Terms Check (Critical) — TMX-TERMLOCK-WB
+        # Word-boundary match so a forbidden term doesn't false-fire inside a
+        # larger word (forbidden "ace" must NOT match "surface"). Falls back to
+        # substring for terms whose edges aren't word chars (punctuated phrases).
         forbidden_terms = constraints.get('forbidden_terms', [])
+        target_l = target_text.lower()
         for ft in forbidden_terms:
-            forbidden_word = ft.get('term', '')
-            if forbidden_word and forbidden_word.lower() in target_text.lower():
+            forbidden_word = (ft.get('term') or '').lower()
+            if not forbidden_word:
+                continue
+            if forbidden_word[0].isalnum() and forbidden_word[-1].isalnum():
+                hit = re.search(rf"\b{re.escape(forbidden_word)}\b", target_l) is not None
+            else:
+                hit = forbidden_word in target_l
+            if hit:
                 defects.append(self._create_defect(
                     DefectCategory.TERMINOLOGY,
-                    f"Forbidden term detected in translation: '{forbidden_word}'"
+                    f"Forbidden term detected in translation: '{ft.get('term', '')}'"
                 ))
 
         # 3. PII Check (Major/Critical) - Fail-Safe Integrity
