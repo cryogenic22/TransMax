@@ -16,9 +16,11 @@ Usage:
 
 See TMX-3800 worksheet; sister tickets:
   - TMX-3801: NLTK / spaCy / pragmatic-segmenter backend integration
-  - TMX-3802: language-specific segmenters for ZH/JA/KO
+  - TMX-3802: CJK segmenters for JA/ZH landed (see CJKSegmenter); KO still
+    uses the Latin fallback (modern Korean uses Latin punctuation + spaces).
   - TMX-3803: stable segment IDs (storage-layer changes)
 """
+
 from __future__ import annotations
 
 import logging
@@ -36,35 +38,96 @@ class SegmenterError(ValueError):
 # Personal titles — almost always followed by a capitalized name. Never
 # treated as sentence boundary even when followed by uppercase.
 # ("Dr. Smith said hi." -> 1 sentence, not 2.)
-_TITLE_ABBREVS: frozenset[str] = frozenset({
-    "Dr", "Drs", "Mr", "Mrs", "Ms", "Prof", "St", "Sr", "Jr",
-})
+_TITLE_ABBREVS: frozenset[str] = frozenset(
+    {
+        "Dr",
+        "Drs",
+        "Mr",
+        "Mrs",
+        "Ms",
+        "Prof",
+        "St",
+        "Sr",
+        "Jr",
+    }
+)
 
 # Academic / professional credentials (TMX-3801). Author bylines in scientific
 # manuscripts are dense with these ("Fernando P. Polack, M.D., Stephen J.
 # Thomas, M.D., ..."); the trailing dot must not shatter the byline. Stored
 # without the trailing dot — `_word_before` returns the token incl. interior
 # dots (e.g. "M.D").
-_CREDENTIAL_ABBREVS: frozenset[str] = frozenset({
-    "M.D", "Ph.D", "D.M", "B.Sc", "M.Sc", "M.P.H", "D.O", "R.N",
-    "M.S", "M.A", "B.A", "D.D.S", "Pharm.D", "M.B.A", "D.Phil",
-})
+_CREDENTIAL_ABBREVS: frozenset[str] = frozenset(
+    {
+        "M.D",
+        "Ph.D",
+        "D.M",
+        "B.Sc",
+        "M.Sc",
+        "M.P.H",
+        "D.O",
+        "R.N",
+        "M.S",
+        "M.A",
+        "B.A",
+        "D.D.S",
+        "Pharm.D",
+        "M.B.A",
+        "D.Phil",
+    }
+)
 
 # Abbreviations whose dot may or may not end a sentence. Heuristic: if the
 # next non-whitespace character starts a new sentence (uppercase / digit),
 # treat as boundary; otherwise treat as abbreviation continuation. Corporate
 # suffixes (Co./Inc./Ltd./Corp.) live here — they CAN end a sentence
 # ("Made by Acme Co. Patient agreed.") but only if a new sentence follows.
-_CONTEXTUAL_ABBREVS: frozenset[str] = frozenset({
-    "e.g", "i.e", "etc", "vs", "cf",
-    "i.v", "i.m", "p.o", "s.c", "b.i.d", "t.i.d", "q.i.d", "q.d", "qhs",
-    "mg", "mcg", "kg", "mL", "ml", "L", "g",
-    "Co", "Inc", "Ltd", "Corp",
-    "No", "Nr", "vol", "Vol", "ed", "Ed", "Rd", "pp", "al", "Fig", "Eq", "Ref",
-})
+_CONTEXTUAL_ABBREVS: frozenset[str] = frozenset(
+    {
+        "e.g",
+        "i.e",
+        "etc",
+        "vs",
+        "cf",
+        "i.v",
+        "i.m",
+        "p.o",
+        "s.c",
+        "b.i.d",
+        "t.i.d",
+        "q.i.d",
+        "q.d",
+        "qhs",
+        "mg",
+        "mcg",
+        "kg",
+        "mL",
+        "ml",
+        "L",
+        "g",
+        "Co",
+        "Inc",
+        "Ltd",
+        "Corp",
+        "No",
+        "Nr",
+        "vol",
+        "Vol",
+        "ed",
+        "Ed",
+        "Rd",
+        "pp",
+        "al",
+        "Fig",
+        "Eq",
+        "Ref",
+    }
+)
 
 # All abbreviations (case-sensitive) — keys for the WORD-BEFORE lookup.
-_ALL_ABBREVS: frozenset[str] = _TITLE_ABBREVS | _CONTEXTUAL_ABBREVS | _CREDENTIAL_ABBREVS
+_ALL_ABBREVS: frozenset[str] = (
+    _TITLE_ABBREVS | _CONTEXTUAL_ABBREVS | _CREDENTIAL_ABBREVS
+)
 
 
 # Candidate sentence-boundary regex: terminator(s) followed by whitespace.
@@ -151,8 +214,7 @@ class BaseSegmenter(ABC):
     """Abstract sentence segmenter."""
 
     @abstractmethod
-    def segment(self, text: str, language: str = "en") -> List[str]:
-        ...
+    def segment(self, text: str, language: str = "en") -> List[str]: ...
 
 
 class RegexSegmenter(BaseSegmenter):
@@ -193,14 +255,16 @@ class RegexSegmenter(BaseSegmenter):
                 continue
 
             is_title = stripped in _TITLE_ABBREVS
-            is_contextual = stripped in _CONTEXTUAL_ABBREVS or stripped in _CREDENTIAL_ABBREVS
+            is_contextual = (
+                stripped in _CONTEXTUAL_ABBREVS or stripped in _CREDENTIAL_ABBREVS
+            )
 
             if is_title:
                 # Titles never terminate a sentence even before a capitalized name.
                 continue
 
             if is_contextual:
-                tail = text[cand_after:cand_after + 1]
+                tail = text[cand_after : cand_after + 1]
                 if not _NEXT_STARTS_SENTENCE_RE.match(tail):
                     # Next word lowercase -> abbreviation continuation.
                     continue
@@ -236,11 +300,64 @@ class NaiveSplitSegmenter(BaseSegmenter):
         return [s.strip() for s in text.split(".") if s.strip()]
 
 
+# CJK sentence terminators (TMX-3802). Japanese/Chinese sentences end with the
+# ideographic full stop 。(U+3002) or full-width ！？(U+FF01/U+FF1F) and carry
+# NO whitespace between sentences, so the Latin RegexSegmenter (which keys off
+# `[.!?]+\s+`) never splits them — a whole CJK paragraph collapses into one
+# segment, and an over-long block is then silently truncated by the LLM,
+# dropping dosing/safety content (A3). ASCII `.` is deliberately NOT a CJK
+# terminator: inside CJK text it is almost always a decimal (`5.5 mg`) or a
+# Latin abbreviation, never an end-of-sentence marker.
+_CJK_TERMINATORS = "。！？"  # 。！？
+# A boundary is one-or-more terminators (。 ！？ or ASCII ! ?) plus any trailing
+# closing brackets / quotes that belong to the sentence just ended.
+_CJK_BOUNDARY_RE = re.compile(r"[" + _CJK_TERMINATORS + r"!?]+[」』）)】〕》”’\"']*")
+
+
+class CJKSegmenter(BaseSegmenter):
+    """
+    Sentence segmenter for CJK scripts (Japanese, Chinese).
+
+    Splits after every run of CJK/ASCII sentence terminators (。！？ ! ?),
+    keeping the terminator (and any trailing closing quote/bracket) attached to
+    the sentence it ends. No whitespace is required between sentences, which is
+    the defining difference from the Latin RegexSegmenter. Decimals are safe
+    because ASCII `.` is not a terminator here.
+
+    Over-long terminator-free runs are still capped (TMX-OMIT-2) so an
+    unpunctuated block cannot reach the LLM whole and be truncated.
+    """
+
+    def segment(self, text: str, language: str = "en") -> List[str]:
+        if not text or not text.strip():
+            return []
+
+        sentences: List[str] = []
+        last = 0
+        for match in _CJK_BOUNDARY_RE.finditer(text):
+            piece = text[last : match.end()].strip()
+            if piece:
+                sentences.append(piece)
+            last = match.end()
+        tail = text[last:].strip()
+        if tail:
+            sentences.append(tail)
+        if not sentences:
+            return _cap_length([text.strip()]) if text.strip() else []
+        return _cap_length(sentences)
+
+
 _SEGMENTERS_BY_LANG: dict[str, BaseSegmenter] = {
     "en": RegexSegmenter(),
-    # Future languages plug in here. ZH/JA/KO need different boundary rules
-    # (TMX-3802); for now the regex segmenter is a reasonable fallback for
-    # Latin-script languages.
+    # CJK boundary rules (TMX-3802) — ideographic terminators, no inter-sentence
+    # whitespace. Korean modern text uses Latin punctuation with spaces, so it
+    # stays on the RegexSegmenter fallback.
+    "ja": CJKSegmenter(),
+    "zh": CJKSegmenter(),
+    "zh-cn": CJKSegmenter(),
+    "zh-tw": CJKSegmenter(),
+    # Other languages fall back to the Latin RegexSegmenter, which is a
+    # reasonable default for Latin-script languages.
 }
 
 
@@ -259,5 +376,8 @@ def get_segmenter(language: str = "en") -> BaseSegmenter:
     seg = _SEGMENTERS_BY_LANG.get(prefix)
     if seg is not None:
         return seg
-    logger.info("No registered segmenter for language=%r, falling back to RegexSegmenter", language)
+    logger.info(
+        "No registered segmenter for language=%r, falling back to RegexSegmenter",
+        language,
+    )
     return _SEGMENTERS_BY_LANG["en"]
