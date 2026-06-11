@@ -1,6 +1,6 @@
 # TMX-BB-FORBIDDEN — forbidden glossary terms enforced (clean-up + regression lock)
 
-**State**: `[Done]` — pending commit
+**State**: `[Done]` — `2bd6ecd` on origin/main
 **Owner**: Quality & Regulatory
 **Sprint**: 2 (next-10 batch)
 **Reversibility**: `two-way` — removed dead think-aloud comments; behavior unchanged; added tests.
@@ -18,4 +18,4 @@
 `tests/test_forbidden_glossary_enforcement.py` — 3 passed (gate fires / gate silent / constraint mapping).
 
 ## Deploy
-- [ ] Commit: <sha>
+- [x] Commit: `2bd6ecd` (pushed to origin/main)

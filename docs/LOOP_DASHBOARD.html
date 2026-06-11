@@ -77,7 +77,7 @@
 <header><div class="wrap">
   <h1>TransMax — <span class="a">v3.0 Pilot-Ready</span> Delivery Dashboard</h1>
   <div class="sub">Live status board for the auditable pharma-translation engine · epics → pods → loops · paired with <code>.context/active_tasks.md</code> + <code>.context/loops/*.md</code> (the text source of truth)</div>
-  <div class="updated">⟳ Last updated: <b id="upd"></b> · after a 10-loop maturity batch · <b>full suite: 1097 green</b> · <b>drift audit: 0</b> · <b>ratchet 17/17 (print_in_app 41→0)</b> · this dashboard is refreshed every few iterations</div>
+  <div class="updated">⟳ Last updated: <b id="upd"></b> · after a 10-loop features batch (languages · black book · jobs/projects) · <b>full suite: 1149 green</b> · <b>drift audit: 0</b> · <b>ratchet 17/17</b> · this dashboard is refreshed every few iterations</div>
 </div></header>
 
 <div class="wrap">
@@ -121,12 +121,12 @@
 const DATA = {
   updated: "2026-06-11",
   kpis: [
-    {n:"~43%", l:"v3.0 epics (est., SP-weighted)", cls:"info"},
-    {n:"102/105", l:"loops shipped (measured)", cls:"good"},
-    {n:"1097", l:"backend tests green (0 failed)", cls:"good"},
+    {n:"~46%", l:"v3.0 epics (est., SP-weighted)", cls:"info"},
+    {n:"112/115", l:"loops shipped (measured)", cls:"good"},
+    {n:"1149", l:"backend tests green (0 failed)", cls:"good"},
     {n:"0", l:"worksheet drift (audit clean)", cls:"good"},
     {n:"17/17", l:"ratchet metrics ≥ baseline", cls:"good"},
-    {n:"4", l:"tracked debt items", cls:"warn"},
+    {n:"22", l:"languages with deep packs", cls:"info"},
   ],
   // status: done | mid | pend
   timeline: [
@@ -143,8 +143,8 @@ const DATA = {
     {id:"E4", name:"Document ingestion fidelity", sp:26, status:"mid", pct:70,
      shipped:"DOCX v2 + tracked-changes (3700), export styles map (3701), PDF v2/heading styles (3702/3712), fail-loud structural gate + golden-set eval (FIDELITY-GATE/EVAL), real page count, file-sniff/AV (3705). 12 loops shipped.",
      left:"XLIFF/TMX round-trip (3703/3704 partial), page-anchor highlight (3706)."},
-    {id:"E6", name:"Quality gate hardening + QRD + term-lock", sp:26, status:"mid", pct:55,
-     shipped:"Coverage/gross-omission gate (OMIT-1/2), prompt-injection gate + audit event (INJ), cross-language frequency/number sweeps (34xx), per-segment confidence + needs-review (CONF-1), TM reuse surfaced (TM-2).",
+    {id:"E6", name:"Quality gate hardening + QRD + term-lock", sp:26, status:"mid", pct:62,
+     shipped:"Coverage/gross-omission gate (OMIT-1/2), prompt-injection gate + audit event (INJ), cross-language frequency/number sweeps (34xx), per-segment confidence (CONF-1), TM reuse (TM-2), forbidden-glossary-term enforcement locked end-to-end (BB-FORBIDDEN), synthetic Veridian black book demo dataset (BB-SYNTH).",
      left:"EMA QRD templates, full term-lock, remaining defect classes."},
     {id:"E7", name:"Agent fabric + prompt registry + cost router", sp:29, status:"mid", pct:50,
      shipped:"Cost-aware router (ROUTER), canonical model-pricing (PRICING), per-job budget guard (BUDGET), A6 usage telemetry in the chain, back-translation drift review gate (DRIFT-GATE).",
@@ -155,18 +155,18 @@ const DATA = {
     {id:"E2", name:"Audit ledger v2 + e-signature", sp:34, status:"mid", pct:42,
      shipped:"Audit timestamps fixed (3212), real model in snapshot (3202), real terminal output_hash (3213), injection/usage events, 31xx hardening.",
      left:"Cryptographic ledger v2 (domain-separated hashing + Object-Lock anchor, E2 core), e-signature."},
-    {id:"E9", name:"Observability, tracing, evals", sp:18, status:"mid", pct:45,
-     shipped:"AI eval harness (golden cases), tracing spans on graph nodes, ratchet (17 metrics), structural-fidelity eval, integration smoke.",
+    {id:"E9", name:"Observability, tracing, evals", sp:18, status:"mid", pct:52,
+     shipped:"AI eval harness (golden cases), tracing spans, ratchet (17 metrics), structural-fidelity eval, integration smoke, critical-safety golden eval now covers en→es/ja/de (LANG-EVAL).",
      left:"Full tracing/metrics backend, broader eval suites, live-LLM golden runs."},
     {id:"E1", name:"Security baseline & multi-tenancy", sp:21, status:"mid", pct:40,
      shipped:"Tenant-context middleware + auto-filter, auth-adaptive get_current_user, soft-delete mixin, Sprint-0 hardening (30xx).",
      left:"OIDC/IdP claims (3013), full per-tenant isolation, pilot login wall (AUTH-WALL)."},
-    {id:"E5", name:"PII v2 + segmentation v2", sp:21, status:"mid", pct:30,
-     shipped:"Abbreviation/initial-aware segmenter wired into PDF ingestion (3801), segment-length cap (OMIT-2).",
-     left:"Presidio integration (3805), multi-lang segmenters (ja/ar), signed token round-trip."},
-    {id:"E10", name:"Pilot readiness pack", sp:21, status:"mid", pct:25,
-     shipped:"In-app feedback intake — backend API + widget (FEEDBACK-1/2), verified live on Railway.",
-     left:"Feedback triage→auto-deploy automation (FEEDBACK-3/4), pilot login wall, GTM pack."},
+    {id:"E5", name:"PII v2 + segmentation v2", sp:21, status:"mid", pct:42,
+     shipped:"Abbreviation/initial-aware segmenter (3801), segment-length cap (OMIT-2), CJK segmenter for JA/ZH — ideographic boundaries so dosing sentences no longer collapse + LLM-truncate (3802).",
+     left:"Presidio integration (3805), Arabic/Korean segmenters, signed token round-trip."},
+    {id:"E10", name:"Pilot readiness pack", sp:21, status:"mid", pct:33,
+     shipped:"In-app feedback intake — backend API + widget (FEEDBACK-1/2), verified live on Railway. Project grouping + job filtering/metrics so a pilot can manage a real submission as a body of work (PROJECTS-MODEL/API, JOBS-FILTER).",
+     left:"Feedback triage→auto-deploy automation (FEEDBACK-3/4), pilot login wall, GTM pack, reviewer assignment/deadlines (Kapil-gated schema)."},
     {id:"E11", name:"Headless foundation", sp:26, status:"pend", pct:15,
      shipped:"REST/MCP groundwork in place from v2; SDK export scaffold.",
      left:"Minimum-viable headless agent per the headless spec; the 9 validation tracks."},
@@ -185,12 +185,13 @@ const DATA = {
     {pn:"Pilot / GTM", pd:"E10"},
   ],
   focus: {
-    title: "Sprint 2 — engine maturity + program-state integrity",
-    body: "Just shipped a 10-loop maturity batch: force_finalize flag (no magic 999), SyntaxWarning fix, FastAPI lifespan migration, 29 print()→logger (incl. DATABASE_URL credential hygiene), 160 build-artifacts untracked, db_service lint, CLAUDE.md known-issues reconciled, semantic_drift extracted (C-08 partial paydown), word-boundary term-lock. Full suite 1097 green; ratchet print_in_app 41→0. TMX-3706 (PDF page anchors) parked — needs a one-way schema migration.",
+    title: "Sprint 2 — feature breadth: languages · black book · jobs/projects",
+    body: "Just shipped a 10-loop features batch across three threads the CEO asked for. LANGUAGES: 8 EMA official-language deep packs (nl/sv/da/fi/pl/el/cs/hu) replacing the generic fallback, a CJK segmenter for JA/ZH (dosing sentences no longer collapse + truncate), and golden critical-safety eval for en→ja/de. BLACK BOOK: a near-real synthetic 'Veridian Therapeutics' dataset (3 pairs, 108 terms, 12 forbidden, 17 rules) + idempotent loader, and forbidden-glossary-term enforcement locked end-to-end. JOBS/PROJECTS: new Project + project_documents tables (create_all-safe), a project CRUD/membership API, and richer job filtering + a metrics roll-up. Full suite 1149 green; ratchet 17/17 (kept clean by using Dict[str,object] not Any).",
     next: [
-      "Deeper MEASURED epic burndown — reconcile all 122 planned tickets vs shipped loops to replace the SP-weighted estimates with real per-epic %",
-      "E2 core: begin the cryptographic audit ledger v2 (evidence-only → defensible Part-11)",
-      "Kapil-gated schema loop: Segment.page_number + Alembic (unblocks TMX-3706) bundled with TMX-DEPLOY-MIGRATE",
+      "Kapil-gated schema loop: add documents.priority / due_date / reviewer_id (+ Alembic) for full TMS workflow — parked because column-adds to an existing table don't auto-deploy (same rule as TMX-3706)",
+      "Frontend: wire the mock /workspace/projects page to the new projects API",
+      "Deeper MEASURED epic burndown — reconcile all 122 planned tickets vs shipped loops to replace the SP-weighted estimates",
+      "E2 core: cryptographic audit ledger v2 (evidence-only → defensible Part-11)",
     ],
   },
   risks: [
@@ -203,6 +204,7 @@ const DATA = {
     {item:"Live Railway DB built by create_all, not Alembic", sev:"mit", txt:"TMX-DEPLOY-MIGRATE — new tables appear automatically; column adds to existing tables would silently drift. Watched."},
   ],
   log: [
+    {d:"2026-06-11", t:"<b>10-loop features batch</b> — LANGUAGES: 8 EMA deep packs (nl/sv/da/fi/pl/el/cs/hu) + CJK segmenter JA/ZH + en→ja/de golden eval (<code>942a8cf</code>). BLACK BOOK: synthetic Veridian dataset (108 terms/12 forbidden/17 rules) + loader + forbidden-term lock (<code>2bd6ecd</code>). JOBS/PROJECTS: Project + project_documents tables + CRUD/membership API + job filter/metrics (<code>36c5262</code>). 1149 green; ratchet 17/17. Parked: documents.priority/due_date/reviewer_id (Kapil-gated schema)."},
     {d:"2026-06-11", t:"<b>10-loop maturity batch</b> — force_finalize (TMX-3211), SyntaxWarning fix, lifespan migration, 29 print()→logger + credential hygiene, 160 artifacts untracked, db_service lint, known-issues reconciled, semantic_drift extraction, word-boundary term-lock. 1097 green; print_in_app 41→0. <code>7602de8</code>..<code>384eb16</code>"},
     {d:"2026-06-11", t:"<b>TMX-DRIFT-SENTINEL</b> — semantic-drift returns None (not 0.0) when uncomputable, so the gate holds on a genuine 0 and skips a non-signal (A3). 1088 tests. <code>a987c3d</code>"},
     {d:"2026-06-11", t:"<b>Worksheet-drift reconciliation</b> — 28 stale-state worksheets flipped to [Done] + SHA; drift audit clean (OK 92, 0 stale). Tier-0 entropy fix. <code>cd29c52</code>"},

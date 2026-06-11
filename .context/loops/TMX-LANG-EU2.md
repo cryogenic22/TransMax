@@ -1,6 +1,6 @@
 # TMX-LANG-EU2 — deep language packs: Polish, Greek, Czech, Hungarian
 
-**State**: `[Done]` — pending commit
+**State**: `[Done]` — `942a8cf` on origin/main
 **Owner**: Document Pipeline / Quality & Regulatory
 **Sprint**: 2 (next-10 batch)
 **Reversibility**: `two-way` — new pack files + registry entries; revert restores GenericLanguagePack fallback.
@@ -13,4 +13,4 @@
 Same rubric + test file as TMX-LANG-EU1 (`tests/test_lang_packs_eu.py`). pl/el/cs/hu resolve to dedicated packs; negation + numeric gates verified.
 
 ## Deploy
-- [ ] Commit: <sha>
+- [x] Commit: `942a8cf` (pushed to origin/main)

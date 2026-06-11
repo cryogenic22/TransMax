@@ -1,6 +1,6 @@
 # TMX-JOBS-FILTER — richer job query + metrics endpoint
 
-**State**: `[Done]` — pending commit
+**State**: `[Done]` — `36c5262` on origin/main
 **Owner**: Reviewer Frontend / Platform
 **Sprint**: 2 (next-10 batch)
 **Reversibility**: `two-way` — additive query params + new read-only endpoint; omitting params preserves prior behaviour.
@@ -18,4 +18,4 @@
 `tests/test_projects_api.py::test_metrics_endpoint_shape` + `::test_add_and_list_documents_and_filter`.
 
 ## Deploy
-- [ ] Commit: <sha>
+- [x] Commit: `36c5262` (pushed to origin/main)
