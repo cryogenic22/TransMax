@@ -1,6 +1,6 @@
 # TMX-QG-ESCAPE — Fix invalid-escape SyntaxWarning in quality_gate.py
 
-**State**: `[Done — pending SHA record]`
+**State**: `[Done]` — `7602de8` on origin/main
 **Owner**: Quality & Regulatory
 **Sprint**: 2 (10-loop maturity batch)
 **Reversibility**: `two-way` — one docstring made raw.
@@ -16,8 +16,8 @@
 `tests/test_engine_hardening.py::test_quality_gate_compiles_without_syntax_warning`.
 
 ## Deploy
-- [ ] Commit: `<pending>` (bundled with TMX-3211)
-- [ ] Pushed to origin/main
+- [x] Commit: `7602de8` (bundled under the TMX-3211 commit subject)
+- [x] Pushed to origin/main
 
 ## Status log
 | When (UTC) | From | To | Note |
