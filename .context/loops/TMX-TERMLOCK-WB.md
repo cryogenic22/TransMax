@@ -1,6 +1,6 @@
 # TMX-TERMLOCK-WB — Word-boundary forbidden-term detection
 
-**State**: `[Done — pending SHA record]`
+**State**: `[Done]` — `384eb16` on origin/main
 **Owner**: Quality & Regulatory
 **Sprint**: 2 (10-loop maturity batch)
 **Reversibility**: `two-way` — tightens one deterministic check; revert restores substring matching.
@@ -18,10 +18,10 @@
 `tests/test_termlock_wb.py` — subword-no-fire, standalone-fire, case-insensitive (3) + the drift-module test (1) = 4 passed.
 
 ## Deploy
-- [x] Commit: `<pending>` (bundled with TMX-3400-lite)
+- [x] Commit: `384eb16` (bundled with TMX-3400-lite)
 - [ ] Pushed to origin/main
 
 ## Status log
 | When (UTC) | From | To | Note |
 |---|---|---|---|
-| 2026-06-11 | — | `[Done — pending SHA record]` | substring → word-boundary; both-direction tests green |
+| 2026-06-11 | — | `[Done]` — `384eb16` on origin/main | substring → word-boundary; both-direction tests green |

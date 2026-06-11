@@ -1,6 +1,6 @@
 # TMX-ARTIFACTS — Untrack committed .pyc/.log build artifacts
 
-**State**: `[Done — pending SHA record]`
+**State**: `[Done]` — `8514a79` on origin/main
 **Owner**: Platform & Observability
 **Sprint**: 2 (10-loop maturity batch)
 **Reversibility**: `two-way` — `git rm --cached` only removes from the index; files stay on disk. `.gitignore` already covered both patterns (rules predate the stale commits). Revert = re-add.
@@ -18,10 +18,10 @@
 `git ls-files '*.pyc' '*.log'` → empty. Ratchet `committed_log_files` 18→1 (remaining 1 = a `.next` build artifact). Files confirmed still on disk after `--cached`.
 
 ## Deploy
-- [x] Commit: `<pending>`
+- [x] Commit: `8514a79`
 - [ ] Pushed to origin/main
 
 ## Status log
 | When (UTC) | From | To | Note |
 |---|---|---|---|
-| 2026-06-11 | — | `[Done — pending SHA record]` | 160 artifacts untracked; 17 junk logs deleted; gitignore already covered |
+| 2026-06-11 | — | `[Done]` — `8514a79` on origin/main | 160 artifacts untracked; 17 junk logs deleted; gitignore already covered |

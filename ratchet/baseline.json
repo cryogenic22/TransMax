@@ -25,7 +25,7 @@
     "backend.bare_except": 2,
     "backend.mega_files_800": 2,
     "backend.placeholder_strings": 1,
-    "backend.print_in_app": 41,
+    "backend.print_in_app": 0,
     "backend.todo_without_issue": 3,
     "backend.type_ignore": 3,
     "frontend.any_annotations": 1,
@@ -34,10 +34,10 @@
     "frontend.ts_ignore": 0,
     "frontend.ts_nocheck": 0,
     "hygiene.committed_db_files": 3,
-    "hygiene.committed_log_files": 18,
+    "hygiene.committed_log_files": 1,
     "hygiene.committed_pyc_files": 3,
-    "tests.files": 151,
-    "tests.functions": 961
+    "tests.files": 159,
+    "tests.functions": 999
   },
-  "note": "TMX-TOOLS-LINT: bare_except 4->2 (fixed app/api/tools.py); tests up"
+  "note": ""
 }

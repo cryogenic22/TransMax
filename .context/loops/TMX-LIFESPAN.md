@@ -1,6 +1,6 @@
 # TMX-LIFESPAN — Migrate main.py @app.on_event → lifespan protocol
 
-**State**: `[Done — pending SHA record]`
+**State**: `[Done]` — `2a0dad0` on origin/main
 **Owner**: Platform & Observability
 **Sprint**: 2 (10-loop maturity batch)
 **Reversibility**: `two-way` — swap a deprecated startup hook for the lifespan context manager; identical startup behaviour.
@@ -17,10 +17,10 @@
 Smoke: `TestClient(app)` boots, `/health`→200 (verified). Covered indirectly by the full API suite (every TestClient test exercises lifespan).
 
 ## Deploy
-- [x] Commit: `<pending>` (batch B)
+- [x] Commit: `2a0dad0` (batch B)
 - [ ] Pushed to origin/main
 
 ## Status log
 | When (UTC) | From | To | Note |
 |---|---|---|---|
-| 2026-06-11 | — | `[Done — pending SHA record]` | lifespan migration; health 200 verified |
+| 2026-06-11 | — | `[Done]` — `2a0dad0` on origin/main | lifespan migration; health 200 verified |

@@ -1,6 +1,6 @@
 # TMX-DBSERVICE-LINT — Clean ruff debt in db_service.py
 
-**State**: `[Done — pending SHA record]`
+**State**: `[Done]` — `9bbcc4e` on origin/main
 **Owner**: Platform & Observability
 **Sprint**: 2 (10-loop maturity batch)
 **Reversibility**: `two-way` — removes unused imports + one dead assignment; one intentional SQLAlchemy filter `# noqa`'d.
@@ -19,10 +19,10 @@
 `ruff check app/services/db_service.py` → clean. `import app.services.db_service` OK. Full suite in batch wrap-up.
 
 ## Deploy
-- [x] Commit: `<pending>`
+- [x] Commit: `9bbcc4e`
 - [ ] Pushed to origin/main
 
 ## Status log
 | When (UTC) | From | To | Note |
 |---|---|---|---|
-| 2026-06-11 | — | `[Done — pending SHA record]` | 6 auto-fixed + 2 judged manually (kept the SQLAlchemy `== True`) |
+| 2026-06-11 | — | `[Done]` — `9bbcc4e` on origin/main | 6 auto-fixed + 2 judged manually (kept the SQLAlchemy `== True`) |
