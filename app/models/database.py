@@ -352,6 +352,87 @@ class DeletionRecord(TenantScopedMixin, SoftDeleteMixin, Base):
         return f"<DeletionRecord(id={self.id}, doc={self.document_id}, deleted_at={self.deleted_at})>"
 
 
+class Project(TenantScopedMixin, SoftDeleteMixin, Base):
+    """
+    TMX-PROJECTS — a project groups related translation jobs/documents so a
+    professional TMS can track a body of work (a submission, a study, a client
+    engagement) above the individual document level.
+
+    A NEW table only (no column added to ``documents``), so Railway's
+    ``create_all`` provisions it automatically with no Alembic column-add
+    (the one-way schema change that stays Kapil-gated). Document membership is
+    held in the ``project_documents`` join, keeping ``documents`` untouched.
+    """
+
+    __tablename__ = "projects"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    organization_id = Column(
+        GUID, ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    client_name = Column(String(255), nullable=True)
+    # active | on_hold | completed | archived
+    status = Column(String(32), nullable=False, default="active")
+    source_language = Column(String(10), nullable=True)
+    target_languages = Column(JSON, default=list)  # list[str]
+    metadata_json = Column(JSON, nullable=True)
+    created_by = Column(String(36), nullable=True)
+    created_at = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('active','on_hold','completed','archived')",
+            name="ck_projects_status",
+        ),
+    )
+
+    def __repr__(self):
+        return f"<Project(id={self.id}, name='{self.name}', status={self.status})>"
+
+
+class ProjectDocument(TenantScopedMixin, SoftDeleteMixin, Base):
+    """Join row binding a Document to a Project (TMX-PROJECTS).
+
+    Kept as a separate table (not a FK column on ``documents``) so a document
+    can belong to a project without mutating the existing ``documents`` schema,
+    and so membership is itself soft-deletable and audit-scoped.
+    """
+
+    __tablename__ = "project_documents"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    organization_id = Column(
+        GUID, ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    project_id = Column(
+        String(36), ForeignKey("projects.id"), nullable=False, index=True
+    )
+    document_id = Column(
+        String(36), ForeignKey("documents.id"), nullable=False, index=True
+    )
+    added_by = Column(String(36), nullable=True)
+    added_at = Column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    # Membership de-duplication is enforced in the service layer (add_document_
+    # to_project) rather than a DB unique constraint, because soft-delete must
+    # be able to re-add a previously-removed document (A9).
+
+    def __repr__(self):
+        return f"<ProjectDocument(project={self.project_id}, doc={self.document_id})>"
+
+
 # --- Database Setup ---
 
 
