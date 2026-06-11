@@ -37,7 +37,7 @@ Other consumers of the endpoint? The e2e specs MOCK the response (don't hit the 
 No findings — clean.
 
 ## 8. Deploy
-- [ ] Commit: <SHA> (batch B)
+- [x] Commit: 4cda63e (on origin/main)
 - [x] active_tasks updated
 
 ## Status log

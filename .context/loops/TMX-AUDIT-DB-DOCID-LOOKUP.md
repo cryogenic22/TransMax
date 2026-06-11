@@ -63,7 +63,7 @@ No findings — clean.
 
 ## 8. Deploy
 
-- [ ] Commit: <SHA> (batch B)
+- [x] Commit: 4cda63e (on origin/main)
 - [x] `.context/active_tasks.md` updated
 
 ---
