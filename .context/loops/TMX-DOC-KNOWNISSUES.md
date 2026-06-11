@@ -1,6 +1,6 @@
 # TMX-DOC-KNOWNISSUES — Refresh CLAUDE.md "Known issues" (mark resolved)
 
-**State**: `[Done — pending SHA record]`
+**State**: `[Done]` — `2a0dad0` on origin/main
 **Owner**: Platform & Observability
 **Sprint**: 2 (10-loop maturity batch)
 **Reversibility**: `two-way` — doc-only.
@@ -17,10 +17,10 @@
 Manual verification each "resolved" claim against current code (resolve_model, datetime.now utc, force_finalize, real output_hash, no-threshold learning_service, segmenter).
 
 ## Deploy
-- [x] Commit: `<pending>` (batch B)
+- [x] Commit: `2a0dad0` (batch B)
 - [ ] Pushed to origin/main
 
 ## Status log
 | When (UTC) | From | To | Note |
 |---|---|---|---|
-| 2026-06-11 | — | `[Done — pending SHA record]` | known-issues list reconciled to reality |
+| 2026-06-11 | — | `[Done]` — `2a0dad0` on origin/main | known-issues list reconciled to reality |

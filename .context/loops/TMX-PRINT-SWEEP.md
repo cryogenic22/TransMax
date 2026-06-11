@@ -1,6 +1,6 @@
 # TMX-PRINT-SWEEP — Convert all app/ print() to logger
 
-**State**: `[Done — pending SHA record]`
+**State**: `[Done]` — `2a0dad0` on origin/main
 **Owner**: Platform & Observability
 **Sprint**: 2 (10-loop maturity batch)
 **Reversibility**: `two-way` — mechanical print→logger; behaviour-preserving (both emit; logger routes to the logging system).
@@ -18,11 +18,11 @@
 `tests/test_no_print_in_app.py` (guard). Runtime import smoke: 12/12 modules OK. Conversion via a reviewed throwaway codemod (not committed); diff inspected for level correctness + logger placement.
 
 ## Deploy
-- [x] Commit: `<pending>` (batch B)
+- [x] Commit: `2a0dad0` (batch B)
 - [ ] Pushed to origin/main
 - Follow-up: tighten the `print_in_app` ratchet baseline to the new floor (handled in the batch ratchet-tighten loop).
 
 ## Status log
 | When (UTC) | From | To | Note |
 |---|---|---|---|
-| 2026-06-11 | — | `[Done — pending SHA record]` | 29 prints → logger; 0 remain; imports green |
+| 2026-06-11 | — | `[Done]` — `2a0dad0` on origin/main | 29 prints → logger; 0 remain; imports green |

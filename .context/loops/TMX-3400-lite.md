@@ -1,6 +1,6 @@
 # TMX-3400-lite — Extract semantic_drift out of quality_gate.py
 
-**State**: `[Done — pending SHA record]`
+**State**: `[Done]` — `384eb16` on origin/main
 **Owner**: Quality & Regulatory
 **Sprint**: 2 (10-loop maturity batch)
 **Reversibility**: `two-way` — moved a self-contained function to a new module; `QualityGateService.calculate_semantic_drift` keeps a thin delegating method, so both callers (reflexion node, `/tools`) are unchanged.
@@ -18,10 +18,10 @@
 `tests/test_drift_sentinel.py` (delegation) + `tests/test_termlock_wb.py::test_semantic_drift_module_importable_and_none_without_key`. quality_gate.py 799→771.
 
 ## Deploy
-- [x] Commit: `<pending>` (bundled with TMX-TERMLOCK-WB)
+- [x] Commit: `384eb16` (bundled with TMX-TERMLOCK-WB)
 - [ ] Pushed to origin/main
 
 ## Status log
 | When (UTC) | From | To | Note |
 |---|---|---|---|
-| 2026-06-11 | — | `[Done — pending SHA record]` | extracted; 799→771; delegation green |
+| 2026-06-11 | — | `[Done]` — `384eb16` on origin/main | extracted; 799→771; delegation green |
