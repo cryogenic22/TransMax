@@ -36,7 +36,7 @@ Nested `<button>` inside the chip `<span>` — checked all usages: none place a 
 No findings — clean.
 
 ## 8. Deploy
-- [ ] Commit: <SHA> (batch C) · [x] active_tasks updated
+- [x] Commit: f4ad0b1 (on origin/main)
 
 ## Status log
 | 2026-06-11 | — | `[Done]` | hash copyable + AT-accessible |

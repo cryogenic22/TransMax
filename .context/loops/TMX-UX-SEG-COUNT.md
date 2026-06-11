@@ -34,7 +34,7 @@ Counts derive from the same `segments` array + the same `gate_results?.violation
 No findings — clean.
 
 ## 8. Deploy
-- [ ] Commit: <SHA> (batch C) · [x] active_tasks updated
+- [x] Commit: f4ad0b1 (on origin/main)
 
 ## Status log
 | 2026-06-11 | — | `[Done]` | review scope visible up front |

@@ -33,7 +33,7 @@ Engine-first, surface-second: the data already exists; expose it. `breakdown_rea
 No findings — clean.
 
 ## 8. Deploy
-- [ ] Commit: <SHA> (batch B) · [x] active_tasks updated
+- [x] Commit: 4cda63e (on origin/main)
 
 ## Status log
 | 2026-06-11 | — | `[Done]` | bundled with TMX-TOOLS-CONF-HONEST |

@@ -37,7 +37,7 @@ No event-count cap: a very large org verifies all chains in one call (latency). 
 No findings — clean. Follow-up spawned (pagination).
 
 ## 8. Deploy
-- [ ] Commit: <SHA> (batch A) · [x] active_tasks updated
+- [x] Commit: a4ec99d (on origin/main)
 
 ## Status log
 | 2026-06-11 | — | `[Done]` | new org-wide verify surface |
