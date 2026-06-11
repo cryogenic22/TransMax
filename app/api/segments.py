@@ -18,6 +18,10 @@ from app.auth.providers import AuthenticatedIdentity
 from app.auth.dependencies import get_current_user, require_permission
 from app.auth.permissions import Permission
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 router = APIRouter(prefix="/api", tags=["Segments"])
 
 
@@ -104,7 +108,7 @@ async def update_segment(
             user_name=user.name
         )
     except Exception as e:
-        print(f"Failed to write ChangeLog: {e}")
+        logger.warning(f"Failed to write ChangeLog: {e}")
         # We don't rollback segment change here as it was committed.
         
     return segment_to_response(seg)

@@ -4,6 +4,10 @@ from app.agents.graph import app as graph_app
 from app.core.tenant_context import org_context
 from app.models.database import SessionLocal, Document # For error handling updates
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 async def run_pipeline_wrapper(
     doc_id: str,
     target_lang: str,
@@ -18,9 +22,9 @@ async def run_pipeline_wrapper(
     audit records, scorecards, DLQ entries) is correctly tenanted via the
     auto-inject mixin. A3 forbids silent fallbacks; we never default here.
     """
-    print(f"[Runner] Starting job {doc_id} for {target_lang}")
+    logger.info(f"[Runner] Starting job {doc_id} for {target_lang}")
     if segment_ids:
-        print(f"[Runner] Filtering to {len(segment_ids)} selected segments")
+        logger.info(f"[Runner] Filtering to {len(segment_ids)} selected segments")
 
     initial_state = {
         "doc_id": doc_id,
@@ -40,13 +44,13 @@ async def run_pipeline_wrapper(
             final_state = await graph_app.ainvoke(initial_state)
 
             if final_state.get("error"):
-                print(f"[Runner] Job {doc_id} failed logic: {final_state['error']}")
+                logger.warning(f"[Runner] Job {doc_id} failed logic: {final_state['error']}")
                 # Update DB to error if not handled inside
 
-            print(f"[Runner] Job {doc_id} completed.")
+            logger.info(f"[Runner] Job {doc_id} completed.")
 
         except Exception as e:
-            print(f"[Runner] CRITICAL FAILURE for {doc_id}: {e}")
+            logger.warning(f"[Runner] CRITICAL FAILURE for {doc_id}: {e}")
             # Fail-safe DB update
             with SessionLocal() as db:
                 doc = db.query(Document).filter(Document.id == doc_id).first()

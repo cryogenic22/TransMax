@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -77,11 +78,28 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         return response
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """TMX-LIFESPAN: startup/shutdown via the lifespan protocol (the deprecated
+    @app.on_event handler is removed). Initialises the DB on boot; creates auth
+    tables only when auth is enabled."""
+    init_db()
+    if getattr(settings, "auth_mode", "none") != "none":
+        from app.models.auth import User  # noqa: F401 — registers model with Base
+        from app.models.database import Base
+        from app.core.database import engine
+
+        Base.metadata.create_all(bind=engine)
+    yield
+    # No shutdown work today.
+
+
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     openapi_url=f"{settings.api_prefix}/openapi.json",
     docs_url=f"{settings.api_prefix}/docs",
+    lifespan=lifespan,
 )
 
 # IMPORTANT: Middleware order matters! They are processed in REVERSE order.
@@ -159,19 +177,6 @@ app.include_router(feedback_router)
 from app.api.dashboard import router as dashboard_router  # noqa: E402  (router import beside its registration)
 
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database on startup."""
-    init_db()
-    # Create auth tables only when auth is enabled (not in no-auth mode)
-    if getattr(settings, "auth_mode", "none") != "none":
-        from app.models.auth import User  # noqa: F401 — registers model with Base
-        from app.models.database import Base
-        from app.core.database import engine
-
-        Base.metadata.create_all(bind=engine)
 
 
 @app.get("/health")

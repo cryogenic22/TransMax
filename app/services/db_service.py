@@ -39,7 +39,7 @@ class DatabaseService:
                     conn.commit()
             logger.info("Database initialized successfully.")
         except Exception as e:
-            print(f"Warning: DB Initialization failed: {e}")
+            logger.warning(f"Warning: DB Initialization failed: {e}")
         
         self._initialized = True
 
@@ -72,7 +72,7 @@ class DatabaseService:
             return job_id
         except Exception as e:
             db.rollback()
-            print(f"Error creating job: {e}")
+            logger.warning(f"Error creating job: {e}")
             raise e
         finally:
             db.close()
@@ -176,12 +176,12 @@ class DatabaseService:
                             "score": 0.9 # Placeholder, actual distance not easily retrievable in ORM without selection
                         })
                 except Exception as ve:
-                    print(f"Vector search warning: {ve}")
+                    logger.warning(f"Vector search warning: {ve}")
             
             return constraints
             
         except Exception as e:
-            print(f"Error fetching constraints: {e}")
+            logger.warning(f"Error fetching constraints: {e}")
             return constraints # Fail safe
         finally:
             db.close()
@@ -313,7 +313,7 @@ class DatabaseService:
             return None
             
         except Exception as e:
-            print(f"Error finding TM match: {e}")
+            logger.warning(f"Error finding TM match: {e}")
             return None
         finally:
             db.close()
@@ -485,7 +485,7 @@ class DatabaseService:
             
         except Exception as e:
             db.rollback()
-            print(f"Error saving audit log: {e}")
+            logger.warning(f"Error saving audit log: {e}")
         finally:
             db.close()
 

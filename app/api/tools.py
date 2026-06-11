@@ -11,6 +11,10 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from app.auth.providers import AuthenticatedIdentity
 from app.auth.dependencies import get_current_user
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 router = APIRouter()
 
 # --- Request Models ---
@@ -242,7 +246,7 @@ Ensure all text is covered.""")
                 # Reconstruct full text
                 translated_text = " ".join([s.get("target", "") for s in segments])
         except Exception as parse_e:
-            print(f"JSON Parse failed, falling back to text: {parse_e}")
+            logger.warning(f"JSON Parse failed, falling back to text: {parse_e}")
             translated_text = response.content
             segments = [{"source": request.text, "target": translated_text}]
 
@@ -295,7 +299,7 @@ Ensure all text is covered.""")
 
         except Exception as e:
             # Log error but return translation
-            print(f"Scoring failed: {e}")
+            logger.warning(f"Scoring failed: {e}")
 
         return {
             "translated_text": translated_text,

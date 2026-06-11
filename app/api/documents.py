@@ -24,6 +24,10 @@ from app.auth.providers import AuthenticatedIdentity
 from app.auth.dependencies import get_current_user, require_permission
 from app.auth.permissions import Permission
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 router = APIRouter(prefix="/api/documents", tags=["Documents"])
 
 # --- Constants ---
@@ -109,7 +113,7 @@ async def create_document(
             paragraphs = [p.strip() for p in content.split("\n\n") if p.strip()]
             blocks = [{"text": p, "type": "PlainText"} for p in paragraphs] if paragraphs else [{"text": content, "type": "PlainText"}]
     except Exception as e:
-        print(f"Ingestion failed: {e}")
+        logger.warning(f"Ingestion failed: {e}")
         # Non-blocking failure? Or fail request?
         # For now, create doc but with warning log
         blocks = []
