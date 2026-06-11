@@ -21,7 +21,6 @@ route is added and all 7 turn green.
 """
 from __future__ import annotations
 
-import json
 import uuid
 from datetime import datetime, timezone
 
@@ -293,6 +292,147 @@ def test_ac6_response_size_under_100kb_for_clean_chain(fresh_app_client):
 # ---------------------------------------------------------------------------
 # AC-7: OpenAPI exposes the response_model
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# TMX-3105a: status headline + chain_head_hash
+# ---------------------------------------------------------------------------
+
+
+def test_tmx3105a_clean_chain_status_ok_and_head_hash(fresh_app_client):
+    """Clean chain → status 'OK' + chain_head_hash == hex(last event_hash)."""
+    client, core_db, _ = fresh_app_client
+    from app.core.tenant_context import org_context
+    from app.models.database import DEFAULT_ORG_ID
+
+    _seed_org(core_db.engine, DEFAULT_ORG_ID)
+    with org_context(DEFAULT_ORG_ID):
+        job_id = _seed_job(core_db.engine, DEFAULT_ORG_ID)
+        events = _write_chain(core_db, job_id, 5)
+
+    expected_head = events[-1].event_hash.hex()
+
+    resp = client.get(f"/api/v1/audit/{job_id}/verify_v2")
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["status"] == "OK"
+    assert data["ok"] is True
+    assert data["chain_head_hash"] == expected_head
+    assert len(data["chain_head_hash"]) == 64  # 32 bytes hex
+
+
+def test_tmx3105a_tampered_payload_status_tampered(fresh_app_client):
+    """A payload tamper headlines as TAMPERED (not a sequence defect)."""
+    import json as _json
+    from app.core.tenant_context import org_context
+    from app.models.database import DEFAULT_ORG_ID
+
+    client, core_db, _ = fresh_app_client
+    _seed_org(core_db.engine, DEFAULT_ORG_ID)
+    with org_context(DEFAULT_ORG_ID):
+        job_id = _seed_job(core_db.engine, DEFAULT_ORG_ID)
+        events = _write_chain(core_db, job_id, 4)
+
+    with core_db.engine.begin() as conn:
+        conn.execute(
+            text("UPDATE audit_events_v2 SET payload = :p WHERE event_id = :id")
+            .bindparams(p=_json.dumps({"x": "TAMPERED"}), id=events[1].event_id)
+        )
+
+    resp = client.get(f"/api/v1/audit/{job_id}/verify_v2")
+    data = resp.json()
+    assert data["status"] == "TAMPERED"
+    assert data["ok"] is False
+    # head hash still present (the head event itself wasn't deleted)
+    assert data["chain_head_hash"] is not None
+
+
+def test_tmx3105a_sequence_gap_status(fresh_app_client):
+    """Deleting a middle event yields a SEQUENCE_GAP headline, which takes
+    precedence over any co-occurring tamper/broken-chain finding."""
+    from app.core.tenant_context import org_context
+    from app.models.database import DEFAULT_ORG_ID
+
+    client, core_db, _ = fresh_app_client
+    _seed_org(core_db.engine, DEFAULT_ORG_ID)
+    with org_context(DEFAULT_ORG_ID):
+        job_id = _seed_job(core_db.engine, DEFAULT_ORG_ID)
+        events = _write_chain(core_db, job_id, 5)
+
+    # Delete sequence_index 2 → gap (0,1,3,4).
+    with core_db.engine.begin() as conn:
+        conn.execute(
+            text("DELETE FROM audit_events_v2 WHERE event_id = :id")
+            .bindparams(id=events[2].event_id)
+        )
+
+    resp = client.get(f"/api/v1/audit/{job_id}/verify_v2")
+    data = resp.json()
+    assert data["status"] == "SEQUENCE_GAP"
+    assert data["ok"] is False
+
+
+# ---------------------------------------------------------------------------
+# TMX-VERIFY-ORG: org-wide verification sweep
+# ---------------------------------------------------------------------------
+
+
+def test_verify_org_all_ok_and_itemises_tamper(fresh_app_client):
+    """Two jobs under the tenant: one clean, one tampered. The org sweep
+    reports total_chains=2, ok_chains=1, all_ok=false, and headlines the
+    tampered job as TAMPERED."""
+    import json as _json
+    from app.core.tenant_context import org_context
+    from app.models.database import DEFAULT_ORG_ID
+
+    client, core_db, _ = fresh_app_client
+    _seed_org(core_db.engine, DEFAULT_ORG_ID)
+    with org_context(DEFAULT_ORG_ID):
+        job_ok = _seed_job(core_db.engine, DEFAULT_ORG_ID)
+        _write_chain(core_db, job_ok, 3)
+        job_bad = _seed_job(core_db.engine, DEFAULT_ORG_ID)
+        events = _write_chain(core_db, job_bad, 3)
+
+    with core_db.engine.begin() as conn:
+        conn.execute(
+            text("UPDATE audit_events_v2 SET payload = :p WHERE event_id = :id")
+            .bindparams(p=_json.dumps({"x": "TAMPERED"}), id=events[1].event_id)
+        )
+
+    resp = client.get("/api/v1/audit/verify_v2/org")
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["total_chains"] == 2
+    assert data["ok_chains"] == 1
+    assert data["all_ok"] is False
+
+    by_job = {c["job_id"]: c for c in data["chains"]}
+    assert by_job[job_ok]["status"] == "OK"
+    assert by_job[job_bad]["status"] == "TAMPERED"
+
+
+def test_verify_org_excludes_other_tenants(fresh_app_client):
+    """Org B's chains do not appear in the DEFAULT_ORG sweep (tenant scoping)."""
+    from app.core.tenant_context import org_context
+    from app.models.database import DEFAULT_ORG_ID
+
+    client, core_db, _ = fresh_app_client
+    org_b = "33333333-3333-3333-3333-333333333333"
+    _seed_org(core_db.engine, DEFAULT_ORG_ID)
+    _seed_org(core_db.engine, org_b)
+    with org_context(DEFAULT_ORG_ID):
+        job_a = _seed_job(core_db.engine, DEFAULT_ORG_ID)
+        _write_chain(core_db, job_a, 2)
+    with org_context(org_b):
+        job_b = _seed_job(core_db.engine, org_b)
+        _write_chain(core_db, job_b, 2)
+
+    resp = client.get("/api/v1/audit/verify_v2/org")
+    data = resp.json()
+    job_ids = {c["job_id"] for c in data["chains"]}
+    assert job_a in job_ids
+    assert job_b not in job_ids
+    assert data["all_ok"] is True
 
 
 def test_ac7_openapi_documents_verify_v2_route(fresh_app_client):

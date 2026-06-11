@@ -160,11 +160,53 @@ class AuditVerificationResponse(BaseModel):
     `ok` is true iff the verifier found zero defects across the chain.
     A3-loud: a tampered chain returns `ok=False` with populated
     `findings`, NEVER an empty findings list with `ok=True`.
+
+    TMX-3105a: `status` is a single machine-stable headline the reviewer UI
+    renders as a badge without parsing the findings array; `chain_head_hash`
+    is the hex `event_hash` of the latest event, the value a regulator
+    anchors against the daily Merkle root / external timestamp.
     """
     ok: bool = Field(..., description="True iff zero defects detected.")
+    status: str = Field(
+        ...,
+        description=(
+            "Headline verdict: OK (clean) | TAMPERED (hash/payload/chain "
+            "defect) | SEQUENCE_GAP (missing or duplicate sequence) | EMPTY "
+            "(no events). Derived from findings; `ok == (status == 'OK')`."
+        ),
+    )
     organization_id: str
     job_id: str
     event_count: int
     ok_count: int
+    chain_head_hash: Optional[str] = Field(
+        None,
+        description="Hex event_hash of the highest-sequence event; null for an empty chain.",
+    )
     findings: List[VerifyFinding] = Field(default_factory=list)
+
+
+class OrgChainSummary(BaseModel):
+    """TMX-VERIFY-ORG: one job's verdict in an org-wide verification sweep."""
+    job_id: str
+    ok: bool
+    status: str = Field(..., description="OK | TAMPERED | SEQUENCE_GAP | EMPTY")
+    event_count: int
+    ok_count: int
+
+
+class OrgAuditVerificationResponse(BaseModel):
+    """
+    TMX-VERIFY-ORG: independent verification of EVERY v2 chain owned by the
+    current tenant, in one regulator-facing call.
+
+    `all_ok` is the single gate a compliance dashboard reads: true iff every
+    chain verified clean. A3-loud: any tampered/gapped chain flips `all_ok`
+    to false and is itemised in `chains`.
+    """
+    organization_id: str
+    total_chains: int
+    ok_chains: int
+    all_ok: bool
+    chains: List[OrgChainSummary] = Field(default_factory=list)
 
