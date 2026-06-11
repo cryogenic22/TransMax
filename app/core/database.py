@@ -17,7 +17,7 @@ load_dotenv()
 
 # Use PostgreSQL from .env, fallback to SQLite only if not set
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./transmax.db")
-print(f"DEBUG: Using DATABASE_URL={DATABASE_URL}")
+logger.debug(f"DEBUG: Using DATABASE_URL={DATABASE_URL}")
 
 # Create engine
 engine = create_engine(
@@ -81,10 +81,10 @@ def _enable_pgvector():
         with engine.connect() as conn:
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
             conn.commit()
-        print("pgvector extension enabled.")
+        logger.info("pgvector extension enabled.")
         return True
     except Exception as e:
-        print(f"WARNING: pgvector extension not available ({e}). Embedding columns will be skipped.")
+        logger.warning(f"WARNING: pgvector extension not available ({e}). Embedding columns will be skipped.")
         return False
 
 
@@ -119,12 +119,12 @@ def init_db():
             table.create(bind=engine, checkfirst=True)
         except Exception as e:
             failed.append(table.name)
-            print(f"WARNING: Could not create table '{table.name}': {e}")
+            logger.warning(f"WARNING: Could not create table '{table.name}': {e}")
 
     if failed:
-        print(f"Database init complete with skipped tables: {failed}")
+        logger.warning(f"Database init complete with skipped tables: {failed}")
     else:
-        print("Database tables created successfully.")
+        logger.info("Database tables created successfully.")
 
     _seed_default_org()
 

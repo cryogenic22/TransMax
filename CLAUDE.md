@@ -346,11 +346,19 @@ Project-specific addenda also live in `.claude/skills/transmax-coding-discipline
 
 These are real bugs the May 2026 review identified. Fix them only with an explicit ticket; do not paper over them.
 
-- `app/agents/graph.py:141` — model in audit snapshot is hard-coded `"gpt-4o"` placeholder. v3.0 ticket TMX-3202 fixes by capturing the real model in the JobConfigSnapshot.
-- `app/agents/graph.py:149,438` — event timestamp is computed via `Formatter.formatTime(LogRecord("",0,"","",None,None,None))` which produces a meaningless string. v3.0 ticket TMX-3212 / TMX-3102 fixes with `datetime.now(timezone.utc).isoformat()`.
-- `app/agents/graph.py:432` — `state['iteration_count'] = 999` is a hack to break the refinement loop on safety regression. v3.0 ticket TMX-3211 replaces with an explicit `force_finalize` flag.
-- `app/agents/graph.py:615` — final audit `output_hash: "placeholder_hash"`. v3.0 ticket TMX-3213 chains the real hash.
-- `app/services/audit_service.py` — chained-hashing uses string concatenation, no domain separator (review C-04). v3.0 epic E2 rebuilds the ledger.
+**✅ Resolved since the May 2026 review** (kept for legible history — do NOT re-open as if broken; verify before re-touching):
+
+- ~~`graph.py:141` model hard-coded `"gpt-4o"`~~ — **RESOLVED** (TMX-3202): audit snapshot captures the real model via `resolve_model(...)`.
+- ~~`graph.py:149,438` meaningless `Formatter.formatTime` timestamp~~ — **RESOLVED** (TMX-3212): now `datetime.now(timezone.utc).isoformat()`.
+- ~~`graph.py:432` `state['iteration_count'] = 999` hack~~ — **RESOLVED** (TMX-3211, `7602de8`): explicit `force_finalize` flag read by `decide_next_step`.
+- ~~`graph.py:615` final audit `output_hash: "placeholder_hash"`~~ — **RESOLVED** (TMX-3213, `5f04b44`): real deterministic sha256 over the ordered output, on legacy + v2 sinks.
+- ~~Auto-approval `0.90` in `learning_service.py` (C-13)~~ — **RESOLVED** (TMX-3405): no threshold logic; entries persist PROPOSED, no auto-promote.
+- ~~`text.split('.')` segmentation in `translations.py` (C-11)~~ — **RESOLVED** (TMX-3800): abbreviation-aware segmenter at `app/services/segmenter.py`.
+- ~~`print()` in `app/` (no structured logging)~~ — **RESOLVED** (TMX-PRINT-SWEEP): all `app/` prints converted to `logger`; the `DATABASE_URL` debug print is now `logger.debug` (no credential leak at default level).
+
+**⚠️ Still open** (the context you need before changing behaviour in these files):
+
+- `app/services/audit_service.py` — chained-hashing uses string concatenation, no domain separator (review C-04). v3.0 epic E2 rebuilds the ledger. The terminal `output_hash` is now real (TMX-3213), but the *chain* hashing redesign is still pending.
 - `transmax.db` — SQLite file committed in git, recently grew 266KB → 5.6MB. v3.0 ticket TMX-3002 removes from history. **Recurring schema-staleness:** the committed file lags behind every Alembic migration (TMX-3015 soft-delete columns, TMX-3045 approval columns) and causes ~40 false-red test failures whenever a test falls through to it instead of using `tests/conftest.py`'s `fresh_engine_for_db` fixture. To rebuild locally so tests stop tripping on schema drift: `python -c "import os; os.remove('transmax.db') if os.path.exists('transmax.db') else None; from app.core.database import init_db; init_db()"` — DO NOT commit the rebuilt file (TMX-3002 is Kapil-gated for the `git rm --cached` step). Follow-up TMX-AUDIT-DB-3002a audits test-fixture usage.
 - `.env` — committed with what appears to be a real OpenAI key (review C-01). **Do not edit until the key has been rotated and the file purged from history (TMX-3000).**
 - Single Alembic mega-migration (review C-06). v3.0 ticket TMX-3017 unwinds it.

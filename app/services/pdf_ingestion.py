@@ -2,6 +2,10 @@ from typing import List, Dict, Any
 import pypdf
 import os
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 class PDFIngestionService:
     """
     Service for ingesting PDF documents and extracting text content.
@@ -32,7 +36,7 @@ class PDFIngestionService:
                         }
                     })
         except Exception as e:
-            print(f"Error extracting PDF content: {e}")
+            logger.warning(f"Error extracting PDF content: {e}")
             raise e
             
         return blocks

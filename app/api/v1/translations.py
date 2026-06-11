@@ -208,6 +208,10 @@ def get_audit_bundle(job_id: str, db: Session = Depends(get_db)):
 from fastapi.responses import StreamingResponse
 from app.services.reporting_service import ReportingService
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 @router.get("/{job_id}/certificate")
 def download_certificate(job_id: str, db: Session = Depends(get_db)):
     """
@@ -223,5 +227,5 @@ def download_certificate(job_id: str, db: Session = Depends(get_db)):
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        print(f"PDF Gen Error: {e}")
+        logger.warning(f"PDF Gen Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate certificate")

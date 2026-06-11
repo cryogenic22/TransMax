@@ -4,6 +4,10 @@ import re
 from .base import BaseLanguagePack
 from app.core.policy_definitions import ViolationType, get_severity
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 class JapanesePack(BaseLanguagePack):
     """
     Language Driver for Japanese (Pharma).
@@ -132,7 +136,7 @@ class JapanesePack(BaseLanguagePack):
              # TMX-033 implies strictness. Validation checks usually fail open (pass) if tool breaks to avoid blocking pipeline, 
              # OR blocking if safety critical.
              # Let's assume passed but log error.
-             print(f"Tokenizer warning: {e}")
+             logger.warning(f"Tokenizer warning: {e}")
              return []
 
         for bad_term, fix in forbidden_variants:

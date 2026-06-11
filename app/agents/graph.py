@@ -414,7 +414,7 @@ async def refine_translation(state: TransMaxState) -> TransMaxState:
     """
     Auto-fixes non-critical violations.
     """
-    print(f"Refining Translation (Iteration {state.get('iteration_count', 0) + 1})...")
+    logger.info(f"Refining Translation (Iteration {state.get('iteration_count', 0) + 1})...")
     state['iteration_count'] = state.get('iteration_count', 0) + 1
     
     constraint_pack = state.get('constraint_pack', {})

@@ -1,6 +1,10 @@
 from typing import List, Dict, Any
 import os
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 class PDFService:
     """
     Service for ingesting and processing PDF documents.
@@ -39,7 +43,7 @@ class PDFService:
                 })
             
         except (ImportError, Exception) as e:
-            print(f"Extraction fallback (unstructured failed: {e})")
+            logger.warning(f"Extraction fallback (unstructured failed: {e})")
             raw_blocks = self._extract_pypdf(file_path)
 
         # Refine blocks: Split large text into sentences/semantic units
