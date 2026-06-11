@@ -178,6 +178,11 @@ from app.api.dashboard import router as dashboard_router  # noqa: E402  (router 
 
 app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
 
+# Projects (TMX-PROJECTS) — job grouping for the workspace.
+from app.api.projects import router as projects_router  # noqa: E402  (router import beside its registration)
+
+app.include_router(projects_router)
+
 
 @app.get("/health")
 async def health_check():

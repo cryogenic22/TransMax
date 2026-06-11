@@ -173,28 +173,74 @@ async def list_documents(
     page_size: int = Query(20, ge=1, le=100),
     status: Optional[DocumentStatus] = None,
     search: Optional[str] = None,
+    target_language: Optional[str] = Query(None, description="Filter by target language code"),
+    project_id: Optional[str] = Query(None, description="Only jobs grouped under this project (TMX-PROJECTS)"),
     db: Session = Depends(get_db),
     user: AuthenticatedIdentity = Depends(get_current_user),
 ):
     """
-    List all documents with pagination and filters.
+    List all documents (jobs) with pagination and filters.
+
+    TMX-JOBS-FILTER added `target_language` and `project_id` filters — additive
+    and backward-compatible (omitting them preserves the prior behaviour).
     """
     query = db.query(Document)
-    
+
     if status:
         query = query.filter(Document.status == status)
     if search:
         query = query.filter(Document.name.ilike(f"%{search}%"))
-    
+    if target_language:
+        query = query.filter(Document.target_language == target_language)
+    if project_id:
+        from app.models.database import ProjectDocument
+        member_ids = [
+            row.document_id
+            for row in db.query(ProjectDocument).filter(
+                ProjectDocument.project_id == project_id
+            ).all()
+        ]
+        # Empty membership -> no documents (use a sentinel that matches nothing).
+        query = query.filter(Document.id.in_(member_ids or ["__none__"]))
+
     total = query.count()
     docs = query.order_by(Document.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
-    
+
     return DocumentListResponse(
         items=[document_to_response(doc, db) for doc in docs],
         total=total,
         page=page,
         page_size=page_size
     )
+
+
+@router.get("/metrics")
+async def documents_metrics(
+    db: Session = Depends(get_db),
+    user: AuthenticatedIdentity = Depends(get_current_user),
+):
+    """
+    Aggregate job metrics for the workspace dashboard (TMX-JOBS-FILTER):
+    total jobs, a breakdown by status, and a breakdown by target language.
+    Computed in one tenant-scoped pass — additive, read-only.
+    """
+    status_rows = (
+        db.query(Document.status, func.count(Document.id))
+        .group_by(Document.status)
+        .all()
+    )
+    lang_rows = (
+        db.query(Document.target_language, func.count(Document.id))
+        .group_by(Document.target_language)
+        .all()
+    )
+    by_status = {str(s): int(c) for s, c in status_rows}
+    by_target_language = {str(lang): int(c) for lang, c in lang_rows if lang}
+    return {
+        "total": sum(by_status.values()),
+        "by_status": by_status,
+        "by_target_language": by_target_language,
+    }
 
 
 @router.get("/{doc_id}", response_model=DocumentResponse)
