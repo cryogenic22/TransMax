@@ -1,6 +1,6 @@
 # TMX-LANG-EVAL — golden critical-safety eval data for en→ja and en→de
 
-**State**: `[Done]` — pending commit
+**State**: `[Done]` — `942a8cf` on origin/main
 **Owner**: Platform & Observability (E9)
 **Sprint**: 2 (next-10 batch)
 **Reversibility**: `two-way` — additive eval data + mirrored tests; no runtime change.
@@ -18,4 +18,4 @@
 `tests/evals/test_critical_safety_en_ja.py` + `..._en_de.py` — 22 passed (10 cases each + corpus check).
 
 ## Deploy
-- [ ] Commit: <sha>
+- [x] Commit: `942a8cf` (pushed to origin/main)

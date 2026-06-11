@@ -1,6 +1,6 @@
 # TMX-LANG-EU1 — deep language packs: Dutch, Swedish, Danish, Finnish
 
-**State**: `[Done]` — pending commit
+**State**: `[Done]` — `942a8cf` on origin/main
 **Owner**: Document Pipeline / Quality & Regulatory
 **Sprint**: 2 (next-10 batch)
 **Reversibility**: `two-way` — new pack files + registry entries; revert restores GenericLanguagePack fallback.
@@ -18,4 +18,4 @@
 `tests/test_lang_packs_eu.py` (shared with EU2) — 5 tests across all 8 packs.
 
 ## Deploy
-- [ ] Commit: <sha>
+- [x] Commit: `942a8cf` (pushed to origin/main)

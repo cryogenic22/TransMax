@@ -1,6 +1,6 @@
 # TMX-BB-SYNTH — Synthetic pharma black book (Veridian Therapeutics)
 
-**State**: `[Done]` — pending commit
+**State**: `[Done]` — `2bd6ecd` on origin/main
 **Owner**: Quality & Regulatory
 **Sprint**: 2 (next-10 batch)
 **Reversibility**: `two-way` — additive data file + import-safe loader script; no schema change, no runtime path touched.
@@ -25,4 +25,4 @@
 `tests/test_synthetic_black_book.py` — 6 passed.
 
 ## Deploy
-- [ ] Commit: <sha>
+- [x] Commit: `2bd6ecd` (pushed to origin/main)

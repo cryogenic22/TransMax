@@ -1,6 +1,6 @@
 # TMX-PROJECTS-API — project CRUD + membership endpoints
 
-**State**: `[Done]` — pending commit
+**State**: `[Done]` — `36c5262` on origin/main
 **Owner**: Reviewer Frontend
 **Sprint**: 2 (next-10 batch)
 **Reversibility**: `two-way` — additive router; no existing endpoint changed (backwards-compatible API additions only).
@@ -18,4 +18,4 @@
 `tests/test_projects_api.py` — 4 passed (create/list/get, add+list+filter, metrics, 404).
 
 ## Deploy
-- [ ] Commit: <sha>
+- [x] Commit: `36c5262` (pushed to origin/main)

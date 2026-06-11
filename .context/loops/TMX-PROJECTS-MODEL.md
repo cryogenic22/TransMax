@@ -1,6 +1,6 @@
 # TMX-PROJECTS-MODEL — Project + project_documents tables + service
 
-**State**: `[Done]` — pending commit
+**State**: `[Done]` — `36c5262` on origin/main
 **Owner**: Reviewer Frontend / Platform (jobs management)
 **Sprint**: 2 (next-10 batch)
 **Reversibility**: `two-way` — **NEW tables only** (no column added to existing `documents`). Railway `create_all` provisions new tables automatically, so this is two-way-safe (unlike a column-add to an existing table, which stays Kapil-gated — see TMX-3706 / TMX-DEPLOY-MIGRATE). Verified `create_all` adds `projects` + `project_documents` locally.
@@ -21,4 +21,4 @@ New `projects` + `project_documents` join (not a FK column on `documents`) so th
 `tests/test_project_service.py` — 6 passed.
 
 ## Deploy
-- [ ] Commit: <sha>
+- [x] Commit: `36c5262` (pushed to origin/main)
