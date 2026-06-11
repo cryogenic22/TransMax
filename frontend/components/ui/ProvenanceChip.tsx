@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Fingerprint } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { CopyButton } from "@/components/ui/CopyButton"
 
 export interface ProvenanceChipProps
   extends React.HTMLAttributes<HTMLSpanElement> {
@@ -62,9 +63,20 @@ export function ProvenanceChip({
         <span className="text-audit-chip-fg/70">· {version}</span>
       ) : null}
       {hash ? (
-        <code className="text-audit-hash font-mono text-[10px]">
-          · {hash.length > 10 ? `${hash.slice(0, 8)}…` : hash}
-        </code>
+        <>
+          <code
+            className="text-audit-hash font-mono text-[10px]"
+            // The visible value is truncated; expose the FULL hash to screen
+            // readers so an auditor on AT hears the value they must verify.
+            aria-label={`Audit hash ${hash}`}
+          >
+            · {hash.length > 10 ? `${hash.slice(0, 8)}…` : hash}
+          </code>
+          {/* TMX-UX-PROV-COPY (A1 trust signal): the full hash is the value a
+              reviewer references in a report — give them a one-click copy
+              instead of forcing a hover-tooltip read or a screenshot. */}
+          <CopyButton text={hash} label="Copy full audit hash" size={11} />
+        </>
       ) : null}
     </span>
   )

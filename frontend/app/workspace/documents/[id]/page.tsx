@@ -673,6 +673,29 @@ export default function DocumentReviewPage() {
                         border: "1px solid #e0e0e0",
                         overflow: "hidden"
                     }}>
+                        {/* TMX-UX-SEG-COUNT: an auditor needs the review scope
+                            up front — how many segments exist, how many are
+                            translated, and how many still need a human. */}
+                        <div style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: "1rem",
+                            flexWrap: "wrap",
+                            padding: "0.625rem 1.25rem",
+                            background: "white",
+                            borderBottom: "1px solid #e0e0e0",
+                            fontSize: "0.8125rem",
+                            color: "#5f6368",
+                            fontWeight: 500
+                        }}>
+                            <span>{segments.length} segment{segments.length === 1 ? "" : "s"}</span>
+                            <span>
+                                {segments.filter(s => s.translated_text).length} translated
+                                {" · "}
+                                {segments.filter(s => (s.gate_results?.violations?.length || 0) > 0).length} need review
+                            </span>
+                        </div>
                         <div style={{
                             display: "grid",
                             gridTemplateColumns: "60px 1fr 1fr 100px",

@@ -4,7 +4,18 @@ import { Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { getErrMessage } from '@/lib/utils'
 
-export function CopyButton({ text }: { text: string }) {
+export function CopyButton({
+    text,
+    // TMX-UX-PROV-COPY: explicit accessible label (was title-only, invisible
+    // to screen readers) + size override so the same button works inline in a
+    // compact provenance chip and standalone in a toolbar.
+    label = "Copy to clipboard",
+    size = 16,
+}: {
+    text: string
+    label?: string
+    size?: number
+}) {
     const [copied, setCopied] = useState(false)
 
     const handleCopy = async () => {
@@ -24,7 +35,8 @@ export function CopyButton({ text }: { text: string }) {
     return (
         <button
             onClick={handleCopy}
-            title="Copy to clipboard"
+            title={copied ? "Copied" : label}
+            aria-label={copied ? "Copied" : label}
             className="p-1 hover:bg-slate-100 rounded transition-colors"
             style={{
                 background: 'transparent',
@@ -37,7 +49,7 @@ export function CopyButton({ text }: { text: string }) {
                 transition: 'color 0.2s',
             }}
         >
-            {copied ? <Check size={16} /> : <Copy size={16} />}
+            {copied ? <Check size={size} /> : <Copy size={size} />}
         </button>
     )
 }
