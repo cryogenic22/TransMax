@@ -1,12 +1,9 @@
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import logging
-import uuid
-from datetime import datetime
 
 # Import DB Service (interface)
 from app.services.db_service import get_db_service
-from app.models.database import SegmentStatus
 
 logger = logging.getLogger(__name__)
 
@@ -19,21 +16,23 @@ class ReviewService:
     def get_pending_reviews(self, job_id: str) -> List[Dict[str, Any]]:
         """
         Fetches all segments for a job that require review or are blocked.
+
+        TMX-AUDIT-DB-DOCID-LOOKUP: the reviewer/job surface uses ``Document.id``
+        as its identifier (see ``db_service.get_doc_id_from_job``). Resolve the
+        identifier to a doc id, then delegate to ``get_flagged_segments`` —
+        the single source of truth for "which segments need a human". A3: a
+        missing document is surfaced as a WARNING + an empty list, never a
+        silent ``None``.
         """
         db = get_db_service()
-        # In a real impl, we'd query by Job ID -> Doc IDs -> Segments.
-        # For our flat schema, we might iterate Docs in the Job.
-        # Assuming we can filter segments by document_id associated with Job.
-        
-        # For now, simplistic fetch: Get blocked segments for doc.
-        # We need to look up doc_id from job_id.
-        # TODO(TMX-AUDIT-DB-DOCID-LOOKUP): Add get_doc_id_from_job(job_id) to DB service.
-        # Fallback: Assume the frontend passes doc_id for now or we query Job table.
-        
-        # We return a mocked structure if the DB query is complex, 
-        # but the goal is LIVE. So let's try to query via DB service if possible.
-        # Extending db_service might be needed.
-        pass
+        doc_id = db.get_doc_id_from_job(job_id)
+        if doc_id is None:
+            logger.warning(
+                "get_pending_reviews: no document resolves to job/identifier %s "
+                "(returning empty review queue)", job_id
+            )
+            return []
+        return self.get_flagged_segments(doc_id)
         
     def get_flagged_segments(self, doc_id: str) -> List[Dict[str, Any]]:
         """
@@ -71,7 +70,6 @@ class ReviewService:
         logger.info(f"Review: Correction submitted for {segment_id} by {user_id}")
         
         # 1. Fetch original for logs and learning
-        original_segment = None
         # We need a method to get single segment. Extending db logic here or using direct query if exposed.
         # Assuming db.get_segment(id) exists or we iterate.
         # For now, let's assume we can fetch it. If not, we query via session.

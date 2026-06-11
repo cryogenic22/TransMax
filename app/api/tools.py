@@ -250,10 +250,17 @@ Ensure all text is covered.""")
             translated_text = response.content
             segments = [{"source": request.text, "target": translated_text}]
 
-        # Calculate Confidence (Best Effort)
-        confidence_score = 90.0
+        # Calculate Confidence (Best Effort).
+        # TMX-TOOLS-CONF-HONEST (A3): on scoring failure we must NOT emit a
+        # fabricated "90% / High" verdict — a scoring outage would otherwise
+        # render in the UI as a green "Ready for Review". Defaults below are
+        # the HONEST "scoring unavailable" state; the try-block overwrites
+        # them with real values only on success.
+        scoring_available = False
+        confidence_score = None
         score_breakdown = {}
-        score_band = "High"
+        score_band = "Unavailable"
+        breakdown_reasoning: list[str] = []  # TMX-QDASH-CONTRACT
         recommendations = []
 
         try:
@@ -284,6 +291,11 @@ Ensure all text is covered.""")
             confidence_score = score_result.final_score
             score_breakdown = score_result.components
             score_band = score_result.band
+            # TMX-QDASH-CONTRACT: surface the engine's real, human-readable
+            # reasoning so the UI renders the actual "why" instead of
+            # fabricated dimension bars. The engine already computes this.
+            breakdown_reasoning = list(score_result.breakdown_reasoning)
+            scoring_available = True
 
             # TMX-CONF-1: surface concrete issues from ALL violations + the
             # confidence score (not just band=="Low"/Glossary), so the response
@@ -298,15 +310,27 @@ Ensure all text is covered.""")
                 recommendations.append("Source contains formulas/math. Verify precision.")
 
         except Exception as e:
-            # Log error but return translation
+            # TMX-TOOLS-CONF-HONEST (A3): return the translation, but do NOT
+            # fabricate a confidence verdict. Leave confidence=None /
+            # band="Unavailable" and force review so the UI shows an honest
+            # "quality scoring unavailable" state, never a green 90%.
             logger.warning(f"Scoring failed: {e}")
+            review_note = (
+                "Quality scoring is unavailable for this translation — "
+                "manual review required before use."
+            )
+            recommendations = [review_note]
 
         return {
             "translated_text": translated_text,
             "segments": segments,
+            "scoring_available": scoring_available,
             "confidence": confidence_score,
             "score_breakdown": score_breakdown,
+            "breakdown_reasoning": breakdown_reasoning,
             "score_band": score_band,
+            # A scoring outage is always review-worthy; a successful score
+            # carries its own needs_review verdict from summarize_issues.
             "needs_review": needs_review if 'needs_review' in locals() else True,
             "issues": issues if 'issues' in locals() else [],
             "review_note": review_note if 'review_note' in locals() else "",
