@@ -8,12 +8,57 @@ from app.models.models import AuditRecord
 from app.schemas.api_v1 import (
     AuditRecordResponse,
     AuditVerificationResponse,
+    OrgAuditVerificationResponse,
+    OrgChainSummary,
     VerifyFinding,
 )
 from app.services.audit_service import AuditService
 from app.services.audit_verifier_v2 import AuditVerifierV2
 
 router = APIRouter()
+
+
+# NB: registered BEFORE the `/{audit_id}` parametrised routes so the static
+# `/verify_v2/org` path is never captured as `audit_id="verify_v2"`.
+@router.get("/verify_v2/org", response_model=OrgAuditVerificationResponse)
+def verify_v2_org_chains(db: Session = Depends(get_db)):
+    """
+    TMX-VERIFY-ORG: independent re-compute verification of EVERY v2 audit
+    chain owned by the current tenant, in one call.
+
+    Wraps :py:meth:`AuditVerifierV2.verify_org_chain`, which auto-scopes to
+    ``current_org_id()``. A compliance dashboard reads ``all_ok`` as the
+    single org-wide integrity gate; ``chains`` itemises every job verdict.
+
+    500 — propagated TenantContextMissing if middleware fails to set context
+    (misconfigured deployment; loud crash per A3), mirroring ``/verify_v2``.
+    """
+    org_id = current_org_id()
+    if org_id is None:
+        raise TenantContextMissing(
+            "verify_v2/org endpoint requires tenant context — middleware misconfigured?"
+        )
+
+    verifier = AuditVerifierV2(session_factory=core_db.SessionLocal)
+    reports = verifier.verify_org_chain()
+    chains = [
+        OrgChainSummary(
+            job_id=str(r.job_id),
+            ok=r.is_valid,
+            status=_derive_status(r.findings, r.event_count),
+            event_count=r.event_count,
+            ok_count=r.ok_count,
+        )
+        for r in reports
+    ]
+    ok_chains = sum(1 for c in chains if c.ok)
+    return OrgAuditVerificationResponse(
+        organization_id=org_id,
+        total_chains=len(chains),
+        ok_chains=ok_chains,
+        all_ok=ok_chains == len(chains),
+        chains=chains,
+    )
 
 @router.get("/{audit_id}", response_model=AuditRecordResponse)
 def get_audit_record(audit_id: str, db: Session = Depends(get_db)):
@@ -113,12 +158,25 @@ def verify_v2_audit_chain(job_id: str, db: Session = Depends(get_db)):
     verifier = AuditVerifierV2(session_factory=core_db.SessionLocal)
     report = verifier.verify_job_chain(job_id)
 
+    # TMX-3105a: head hash = event_hash of the highest-sequence event. Read it
+    # under the same tenant-scoped session the count used (auto-filtered to the
+    # current org), so a cross-tenant job never leaks a hash.
+    head = (
+        db.query(AuditEventV2)
+        .filter(AuditEventV2.job_id == job_id)
+        .order_by(AuditEventV2.sequence_index.desc())
+        .first()
+    )
+    chain_head_hash = head.event_hash.hex() if head and head.event_hash else None
+
     return AuditVerificationResponse(
         ok=report.is_valid,
+        status=_derive_status(report.findings, report.event_count),
         organization_id=report.organization_id,
         job_id=str(report.job_id),
         event_count=report.event_count,
         ok_count=report.ok_count,
+        chain_head_hash=chain_head_hash,
         findings=[
             VerifyFinding(
                 event_id=f.event_id,
@@ -129,3 +187,26 @@ def verify_v2_audit_chain(job_id: str, db: Session = Depends(get_db)):
             for f in report.findings
         ],
     )
+
+
+# TMX-3105a: stable finding-class buckets for the single-word headline.
+_SEQUENCE_FINDINGS = frozenset({"sequence_gap", "sequence_duplicate"})
+
+
+def _derive_status(findings, event_count: int) -> str:
+    """Collapse the findings list into one machine-stable headline.
+
+    A sequence defect (a deleted/duplicated event) is called out distinctly
+    from a content tamper because the regulator response differs: a gap means
+    "an event is missing"; a tamper means "an event was altered". Precedence
+    is sequence-defect first so a chain that is BOTH gapped and tampered reads
+    as the more structural problem.
+    """
+    if event_count == 0:
+        return "EMPTY"
+    if not findings:
+        return "OK"
+    finding_values = {f.finding.value for f in findings}
+    if finding_values & _SEQUENCE_FINDINGS:
+        return "SEQUENCE_GAP"
+    return "TAMPERED"
