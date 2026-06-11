@@ -832,6 +832,30 @@ class DatabaseService:
         finally:
             session.close()
 
+    def get_doc_id_from_job(self, identifier: str) -> Optional[str]:
+        """
+        Resolve a reviewer/job identifier to a document id.
+
+        TMX-AUDIT-DB-DOCID-LOOKUP. The reviewer + job surfaces use
+        ``Document.id`` as their identifier end-to-end (the frontend calls
+        ``api.documents.get(jobId)`` / ``api.segments.list(jobId)``), so an
+        identifier "is a doc_id" iff a ``Document`` with that id exists in the
+        current tenant. Returns the identifier when found, ``None`` otherwise
+        (explicit — A3: never guess a default).
+
+        Deliberately operational-layer-only: it does NOT join across to the
+        ``TranslationJobQueue`` queue layer. A4 warns that mixing the two
+        model layers in a query crashes on SQLite; there is also no FK between
+        them. If a genuine non-document job-id path ever emerges it gets its
+        own ticket rather than deepening the dual-layer divergence here.
+        """
+        session = self.get_session()
+        try:
+            doc = session.query(Document).filter(Document.id == identifier).first()
+            return doc.id if doc else None
+        finally:
+            session.close()
+
     def get_segments_for_doc(self, doc_id: str) -> List[Dict[str, Any]]:
         """
         Fetches all segments for a document, ordered by index.
