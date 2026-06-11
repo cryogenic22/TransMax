@@ -21,9 +21,17 @@ export default function TrustedTranslatePage() {
     // Result State
     const [segments, setSegments] = useState<Array<{ source: string; target: string }>>([])
     const [resultMeta, setResultMeta] = useState<{
-        confidence?: number
+        confidence?: number | null
+        scoringAvailable?: boolean
         band?: string
-        score_breakdown?: unknown
+        breakdown?: {
+            base?: number
+            deterministic_penalty?: number
+            semantic_penalty?: number
+            structural_penalty?: number
+            process_penalty?: number
+        }
+        breakdownReasoning?: string[]
         recommendations?: string[]
     } | null>(null)
     const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
@@ -52,9 +60,11 @@ export default function TrustedTranslatePage() {
             }
 
             setResultMeta({
-                confidence: res.confidence,
+                confidence: res.confidence ?? null,
+                scoringAvailable: res.scoring_available ?? true,
                 band: res.score_band,
-                score_breakdown: res.score_breakdown,
+                breakdown: res.score_breakdown,
+                breakdownReasoning: res.breakdown_reasoning || [],
                 recommendations: res.recommendations || []
             })
 
@@ -255,13 +265,10 @@ export default function TrustedTranslatePage() {
                         className="shrink-0 pb-8"
                     >
                         <QualityDashboard
-                            metrics={{
-                                confidence: (resultMeta.confidence ?? 0),
-                                accuracy: (resultMeta.confidence ?? 0) > 90 ? 98 : 85, // Mocked breakdown if not in API
-                                fluency: (resultMeta.confidence ?? 0) > 90 ? 95 : 88,
-                                terminology: (resultMeta.confidence ?? 0) > 90 ? 100 : 92,
-                                formatting: 100
-                            }}
+                            confidence={resultMeta.confidence ?? null}
+                            scoringAvailable={resultMeta.scoringAvailable ?? true}
+                            breakdown={resultMeta.breakdown}
+                            breakdownReasoning={resultMeta.breakdownReasoning}
                             sourceText={source}
                         />
                     </motion.div>

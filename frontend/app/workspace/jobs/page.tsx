@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useMemo } from "react"
 import {
-    Clock, CheckCircle2, AlertCircle, Play, RefreshCw, FileText, Languages,
+    Clock, CheckCircle2, RefreshCw, FileText, Languages,
     Search, Eye, ArrowUpRight, Zap, Target, WifiOff
 } from "lucide-react"
 import Link from "next/link"
 import { api, Document } from "@/lib/api"
 import { ConfidenceMeter } from "@/components/ui/ConfidenceMeter"
+import { JobStatusBadge } from "@/components/ui/JobStatusBadge"
 import { getErrMessage } from "@/lib/utils"
 
 interface EnrichedJob {
@@ -145,32 +146,6 @@ export default function JobsPage() {
         processing: jobs.filter(j => j.status === 'processing').length,
         queued: jobs.filter(j => j.status === 'queued').length
     }), [jobs])
-
-    const getStatusBadge = (status: string) => {
-        const styles: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
-            completed: { bg: "#dcfce7", color: "#166534", icon: <CheckCircle2 size={14} /> },
-            processing: { bg: "#dbeafe", color: "#1e40af", icon: <Play size={14} /> },
-            queued: { bg: "#f3f4f6", color: "#374151", icon: <Clock size={14} /> },
-            failed: { bg: "#fef2f2", color: "#dc2626", icon: <AlertCircle size={14} /> }
-        }
-        const style = styles[status] || styles.queued
-        return (
-            <span style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.375rem",
-                padding: "0.375rem 0.75rem",
-                background: style.bg,
-                color: style.color,
-                borderRadius: "20px",
-                fontSize: "0.8125rem",
-                fontWeight: 500
-            }}>
-                {style.icon}
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-            </span>
-        )
-    }
 
     const formatDate = (dateStr: string) => {
         const d = new Date(dateStr)
@@ -587,7 +562,7 @@ export default function JobsPage() {
                                 </div>
 
                                 {/* Status */}
-                                {getStatusBadge(job.status)}
+                                <JobStatusBadge status={job.status} />
 
                                 {/* Date */}
                                 <div>

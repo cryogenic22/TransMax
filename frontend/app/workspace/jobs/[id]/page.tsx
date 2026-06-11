@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, Suspense } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, FileText, Globe, Loader2 } from "lucide-react"
+import { ArrowLeft, FileText, Globe, Loader2, RefreshCw } from "lucide-react"
 import { api, Document, Segment } from "@/lib/api"
 import {
     StatusLifecycle,
@@ -71,25 +71,35 @@ function WorkspaceJobDetailInner() {
     // lanes panel during a 500 outage isn't read as "no agents running".
     const { data: agentActivities, error: agentError } = useAgentActivityByJob(jobId)
 
+    // TMX-UX-JOBS-RETRY: segments load once (no poll), so a transient failure
+    // would otherwise strand the user on a page refresh. Split it out so the
+    // banner can re-run just this fetch.
+    const fetchSegments = useCallback(async () => {
+        setSegmentsError(null)
+        try {
+            const segs = await api.segments.list(jobId)
+            setSegments(segs)
+        } catch (segErr) {
+            setSegmentsError(getErrMessage(segErr, "Failed to load segments"))
+        }
+    }, [jobId])
+
     const fetchData = useCallback(async () => {
         // TMX-3603-jobs-id-err: A3 — never silently substitute a default for
         // a regulated-path fetch. Each fetch's error surfaces as its own
         // state so the doc header still renders if only segments fail.
+        setLoading(true)
+        setError(null)
         try {
             const d = await api.documents.get(jobId)
             setDoc(d)
-            try {
-                const segs = await api.segments.list(jobId)
-                setSegments(segs)
-            } catch (segErr) {
-                setSegmentsError(getErrMessage(segErr, "Failed to load segments"))
-            }
+            await fetchSegments()
         } catch (err) {
             setError(getErrMessage(err, "Failed to load job"))
         } finally {
             setLoading(false)
         }
-    }, [jobId])
+    }, [jobId, fetchSegments])
 
     useEffect(() => {
         fetchData()
@@ -104,7 +114,16 @@ function WorkspaceJobDetailInner() {
                     <ArrowLeft size={14} /> Back to Jobs
                 </Link>
                 <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-                    {error ?? "Job not found."}
+                    <p>{error ?? "Job not found."}</p>
+                    {error ? (
+                        <button
+                            type="button"
+                            onClick={fetchData}
+                            className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors"
+                        >
+                            <RefreshCw size={13} /> Retry
+                        </button>
+                    ) : null}
                 </div>
             </div>
         )
@@ -150,9 +169,18 @@ function WorkspaceJobDetailInner() {
                 <div
                     role="status"
                     aria-label="Segments failed to load"
-                    className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
+                    className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 flex items-center justify-between gap-4 flex-wrap"
                 >
-                    <strong>Couldn&apos;t load segments.</strong> {segmentsError}
+                    <span><strong>Couldn&apos;t load segments.</strong> {segmentsError}</span>
+                    {/* TMX-UX-JOBS-RETRY: one-shot fetch — give the reviewer a
+                        retry instead of forcing a full page reload. */}
+                    <button
+                        type="button"
+                        onClick={fetchSegments}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100 transition-colors shrink-0"
+                    >
+                        <RefreshCw size={13} /> Retry
+                    </button>
                 </div>
             ) : null}
 

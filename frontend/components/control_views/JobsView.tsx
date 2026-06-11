@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useMemo } from "react"
 import {
-    Clock, CheckCircle2, AlertCircle, Play, RefreshCw, FileText,
+    RefreshCw, FileText,
     Search, Target, WifiOff, Download, Trash2,
     ChevronDown, ChevronUp
 } from "lucide-react"
+import { JobStatusBadge } from "@/components/ui/JobStatusBadge"
 import Link from "next/link"
 import { api, Document, DeletionRecord } from "@/lib/api"
 import { ConfidenceMeter } from "@/components/ui/ConfidenceMeter"
@@ -149,21 +150,6 @@ export function JobsView() {
         })
     }, [jobs, searchQuery, statusFilter])
 
-    const getStatusBadge = (status: string) => {
-        const styles: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-            completed: { bg: "bg-green-100", text: "text-green-800", icon: <CheckCircle2 size={14} /> },
-            processing: { bg: "bg-blue-100", text: "text-blue-800", icon: <Play size={14} /> },
-            queued: { bg: "bg-slate-100", text: "text-slate-600", icon: <Clock size={14} /> },
-            failed: { bg: "bg-red-50", text: "text-red-600", icon: <AlertCircle size={14} /> }
-        }
-        const s = styles[status] || styles.queued
-        return (
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${s.bg} ${s.text}`}>
-                {s.icon} {status.charAt(0).toUpperCase() + status.slice(1)}
-            </span>
-        )
-    }
-
     if (loading) return <div className="p-12 text-center text-slate-500">Loading jobs...</div>
 
     if (error) return (
@@ -268,7 +254,7 @@ export function JobsView() {
                                         {job.confidence_score ? <ConfidenceMeter score={job.confidence_score} /> : <span className="text-xs text-slate-400">—</span>}
                                     </td>
                                     <td className="px-6 py-4">
-                                        {getStatusBadge(job.status)}
+                                        <JobStatusBadge status={job.status} />
                                     </td>
                                     <td className="px-6 py-4 text-sm text-slate-500">
                                         {new Date(job.created_at).toLocaleDateString()}

@@ -40,4 +40,26 @@ describe("<ProvenanceChip>", () => {
     // Fingerprint is the only svg in the chip; its absence verifies the conditional.
     expect(container.querySelector("svg")).not.toBeInTheDocument()
   })
+
+  // TMX-UX-PROV-COPY
+  it("renders a copy affordance with an accessible label when a hash is present", () => {
+    render(
+      <ProvenanceChip source="Translator" hash="a3f9e2bc81d44a99b3ce0a2f7d18c4e5" />
+    )
+    expect(
+      screen.getByRole("button", { name: /copy full audit hash/i })
+    ).toBeInTheDocument()
+  })
+
+  it("exposes the full hash to assistive tech via aria-label on the code", () => {
+    const full = "a3f9e2bc81d44a99b3ce0a2f7d18c4e5"
+    const { container } = render(<ProvenanceChip source="Translator" hash={full} />)
+    const code = container.querySelector("code")
+    expect(code?.getAttribute("aria-label")).toContain(full)
+  })
+
+  it("renders no copy affordance when there is no hash", () => {
+    render(<ProvenanceChip source="job" version="abc12345" />)
+    expect(screen.queryByRole("button")).not.toBeInTheDocument()
+  })
 })

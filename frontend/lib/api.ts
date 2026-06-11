@@ -272,9 +272,25 @@ export interface ToolMatrixResult {
 
 export interface ToolUniversalResult {
     translated_text?: string
-    confidence?: number
+    // TMX-TOOLS-CONF-HONEST: scoring_available is false when the quality
+    // scorer could not run; confidence is then null (NOT a fabricated 90%).
+    scoring_available?: boolean
+    confidence?: number | null
     score_band?: string
-    score_breakdown?: unknown
+    // Real penalty components from the engine's ConfidenceService
+    // (base, deterministic_penalty, semantic_penalty, structural_penalty,
+    // process_penalty) — NOT fabricated accuracy/fluency/terminology bars.
+    score_breakdown?: {
+        base?: number
+        deterministic_penalty?: number
+        semantic_penalty?: number
+        structural_penalty?: number
+        process_penalty?: number
+    }
+    // TMX-QDASH-CONTRACT: the engine's real human-readable reasoning lines.
+    breakdown_reasoning?: string[]
+    needs_review?: boolean
+    review_note?: string
     recommendations?: string[]
     segments?: Array<{ source: string; target: string }>
 }

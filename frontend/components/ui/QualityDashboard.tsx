@@ -1,82 +1,46 @@
 
 import React, { useState } from 'react'
-import { CheckCircle2, AlertTriangle, AlertOctagon, BarChart3, Calculator, ChevronDown, ChevronUp, ShieldAlert } from 'lucide-react'
+import { CheckCircle2, AlertTriangle, AlertOctagon, BarChart3, Calculator, ChevronDown, ChevronUp, ShieldAlert, HelpCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 // --- Types & Helpers ---
 
-interface QualityMetrics {
-    accuracy: number
-    fluency: number
-    terminology: number
-    formatting: number
-    confidence: number
+/**
+ * TMX-UX-QDASH-REAL: the dashboard renders ONLY data the engine actually
+ * produced. Earlier it fabricated accuracy/fluency/terminology bars from the
+ * confidence number (a green "98% Accuracy" with no such measurement behind
+ * it) — an A3 trust violation on a regulator-facing surface. It now shows the
+ * real penalty breakdown + the engine's reasoning, and an honest
+ * "scoring unavailable" state when the scorer could not run.
+ */
+interface PenaltyBreakdown {
+    base?: number
+    deterministic_penalty?: number
+    semantic_penalty?: number
+    structural_penalty?: number
+    process_penalty?: number
 }
 
 interface QualityDashboardProps {
-    metrics: QualityMetrics
+    /** Real confidence 0-100, or null when scoring was unavailable. */
+    confidence: number | null
+    /** False when the quality scorer could not run for this translation. */
+    scoringAvailable: boolean
+    /** Engine penalty components (base + per-category penalties). */
+    breakdown?: PenaltyBreakdown
+    /** Engine's human-readable reasoning lines (the real "why"). */
+    breakdownReasoning?: string[]
     sourceText: string
 }
 
-function getStatus(metrics: QualityMetrics, sourceText: string) {
-    const hasFormulas = /=|[0-9]{2,}/.test(sourceText)
-    const hasPII = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|(?:\+\d{1,2}\s?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/.test(sourceText)
+const PENALTY_LABELS: Array<{ key: keyof PenaltyBreakdown; label: string }> = [
+    { key: 'deterministic_penalty', label: 'QA Defects' },
+    { key: 'semantic_penalty', label: 'Semantic Drift' },
+    { key: 'structural_penalty', label: 'Structural Risk' },
+    { key: 'process_penalty', label: 'Process Gaps' },
+]
 
-    let status: 'green' | 'amber' | 'red' = 'green'
-    let label = 'Ready for Review'
-    let Icon = CheckCircle2
-
-    if (metrics.confidence < 70) {
-        status = 'red'; label = 'Critical Issues'; Icon = AlertOctagon
-    } else if (metrics.confidence < 90 || hasFormulas || hasPII) {
-        status = 'amber'; label = 'Human Review Needed'; Icon = AlertTriangle
-    }
-
-    return { status, label, Icon, hasFormulas, hasPII }
-}
-
-const COLORS = {
-    green: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-900', icon: 'text-emerald-600', bar: 'bg-emerald-500', pill: 'bg-emerald-100 text-emerald-800' },
-    amber: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-900', icon: 'text-amber-600', bar: 'bg-amber-500', pill: 'bg-amber-100 text-amber-800' },
-    red: { bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-900', icon: 'text-rose-600', bar: 'bg-rose-500', pill: 'bg-rose-100 text-rose-800' }
-}
-
-// --- Components ---
-
-export function QualitySummaryPill({ metrics, sourceText, onClick, isActive }: QualityDashboardProps & { onClick: () => void, isActive: boolean }) {
-    const { status, label, Icon } = getStatus(metrics, sourceText)
-    const theme = COLORS[status]
-
-    return (
-        <button
-            onClick={onClick}
-            className={`
-                flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide border transition-all
-                ${isActive ? 'ring-2 ring-offset-1 ring-blue-500/30' : 'hover:bg-opacity-80'}
-                ${theme.bg} ${theme.border} ${theme.text}
-            `}
-        >
-            <Icon size={14} className={theme.icon} />
-            <span>{Math.round(metrics.confidence)}%</span>
-            <span className="opacity-50">|</span>
-            <span>{label}</span>
-            {isActive ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
-    )
-}
-
-interface QualityDashboardProps {
-    metrics: {
-        accuracy: number
-        fluency: number
-        terminology: number
-        formatting: number
-        confidence: number
-    }
-    sourceText: string
-}
-
-export function QualityDashboard({ metrics, sourceText }: QualityDashboardProps) {
+export function QualityDashboard({ confidence, scoringAvailable, breakdown, breakdownReasoning, sourceText }: QualityDashboardProps) {
     const [isExpanded, setIsExpanded] = useState(false)
 
     // Detection Logic
@@ -87,14 +51,20 @@ export function QualityDashboard({ metrics, sourceText }: QualityDashboardProps)
     // RAG Status Logic
     let status: 'green' | 'amber' | 'red' = 'green'
     let statusLabel = 'Ready for Review'
-    let StatusIcon = CheckCircle2
+    let StatusIcon: typeof CheckCircle2 = CheckCircle2
 
-    // Downgrade logic
-    if (metrics.confidence < 70) {
+    // TMX-UX-QDASH-REAL / A3: a scoring OUTAGE is its own state — never a
+    // green verdict and never a red "critical defect" (which would imply we
+    // measured a defect). It is amber "scoring unavailable, review required".
+    if (!scoringAvailable || confidence === null) {
+        status = 'amber'
+        statusLabel = 'Quality scoring unavailable — manual review required'
+        StatusIcon = HelpCircle
+    } else if (confidence < 70) {
         status = 'red'
         statusLabel = 'Critical Issues Detected'
         StatusIcon = AlertOctagon
-    } else if (metrics.confidence < 90 || hasFormulas || hasPII) {
+    } else if (confidence < 90 || hasFormulas || hasPII) {
         status = 'amber'
         statusLabel = 'Human Review Recommended'
         StatusIcon = AlertTriangle
@@ -123,7 +93,7 @@ export function QualityDashboard({ metrics, sourceText }: QualityDashboardProps)
                     <div>
                         <h3 className={`text-base font-bold ${theme.text}`}>{statusLabel}</h3>
                         <p className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-2">
-                            AI Confidence: <span className="font-bold text-slate-700">{metrics.confidence.toFixed(1)}%</span>
+                            AI Confidence: <span className="font-bold text-slate-700">{confidence === null ? 'N/A' : `${confidence.toFixed(1)}%`}</span>
                             {(hasFormulas || hasPII) && (
                                 <span className="flex items-center gap-1 text-amber-600 bg-amber-100/50 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide font-bold">
                                     Signals Detected
@@ -154,18 +124,48 @@ export function QualityDashboard({ metrics, sourceText }: QualityDashboardProps)
                     >
                         <div className="p-6 bg-white/50 space-y-6">
 
-                            {/* Detailed Scores */}
-                            <div>
-                                <h4 className="text-xs font-bold uppercase text-slate-400 mb-4 tracking-wider flex items-center gap-2">
-                                    <BarChart3 size={14} /> Dimension Breakdown
-                                </h4>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <ScoreItem label="Accuracy" score={metrics.accuracy} theme={theme} />
-                                    <ScoreItem label="Fluency" score={metrics.fluency} theme={theme} />
-                                    <ScoreItem label="Terminology" score={metrics.terminology} theme={theme} />
-                                    <ScoreItem label="Formatting" score={metrics.formatting} theme={theme} />
+                            {/* TMX-UX-QDASH-REAL: real penalty breakdown + the
+                                engine's reasoning. When scoring was unavailable
+                                we show an honest note instead of any numbers. */}
+                            {!scoringAvailable ? (
+                                <div className="flex items-start gap-3 bg-amber-50 p-3 rounded-lg border border-amber-100">
+                                    <HelpCircle size={18} className="text-amber-600 mt-0.5 shrink-0" />
+                                    <p className="text-sm text-amber-800 leading-snug">
+                                        Quality scoring could not run for this translation, so no
+                                        confidence score is shown. Treat the output as unverified
+                                        and have a qualified reviewer check it before use.
+                                    </p>
                                 </div>
-                            </div>
+                            ) : (
+                                <div>
+                                    <h4 className="text-xs font-bold uppercase text-slate-400 mb-4 tracking-wider flex items-center gap-2">
+                                        <BarChart3 size={14} /> Score Breakdown
+                                    </h4>
+                                    <div className="space-y-1.5 text-sm">
+                                        <div className="flex justify-between font-medium text-slate-700">
+                                            <span>Base</span>
+                                            <span>{breakdown?.base ?? 100}</span>
+                                        </div>
+                                        {PENALTY_LABELS.map(({ key, label }) => {
+                                            const v = breakdown?.[key]
+                                            if (!v) return null
+                                            return (
+                                                <div key={key} className="flex justify-between text-rose-700">
+                                                    <span>{label}</span>
+                                                    <span>−{v}</span>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                    {breakdownReasoning && breakdownReasoning.length > 0 && (
+                                        <ul className="mt-4 space-y-1 list-disc list-inside text-xs text-slate-500">
+                                            {breakdownReasoning.map((line, i) => (
+                                                <li key={i}>{line}</li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Warnings / Signals */}
                             {(hasFormulas || hasPII) && (
@@ -203,26 +203,3 @@ export function QualityDashboard({ metrics, sourceText }: QualityDashboardProps)
     )
 }
 
-interface ScoreTheme {
-    bar: string
-    text: string
-    bg: string
-}
-function ScoreItem({ label, score, theme }: { label: string, score: number, theme: ScoreTheme }) {
-    return (
-        <div className="p-3 bg-white/80 rounded-lg border border-black/5 shadow-sm">
-            <div className="flex justify-between items-end mb-2">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">{label}</span>
-                <span className={`text-sm font-black ${theme.text}`}>{score}%</span>
-            </div>
-            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${score}%` }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className={`h-full ${theme.bar} rounded-full`}
-                />
-            </div>
-        </div>
-    )
-}
