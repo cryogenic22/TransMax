@@ -200,6 +200,17 @@ The 4-agent verify-audit on 2026-05-11 went RED on Agent 2 (pytest) with 53 reds
 
 ---
 
+## 2026-06-12 4-agent verification audit — GREEN ×4
+
+Ran over `2d2a800..e06c9a2` (~25 commits / 14 tickets). Reports archived at `docs/audit-extracts/loop-{quality-review,pytest-report,vitest-report,spec-compliance}-2026-06-12.md`. Verdict: **GREEN across all four** — quality 12/12 substantive commits pass; backend 1160 passed/0 failed; frontend typecheck/lint/vitest 123/build green; spec-vs-delivery 14 Match / 0 Drift / 0 Tests-only. Decision per matrix: **keep going**. Two LOW non-blocking concerns logged below.
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-DRIFT-THRESHOLD-CONFIG | Move `REFLEXION_REVIEW_THRESHOLD = 70.0` out of a hardcoded module constant to per-tenant config | Quality & Regulatory | **[Backlog]** | Audit-1 concern: a regulator-relevant gate threshold should be config-not-constant (A3/per-tenant-flag spirit). Low. |
+| TMX-DOCID-JOB-DISAMBIG | If a real non-document job-id path emerges, give `get_pending_reviews`/`get_doc_id_from_job` explicit handling instead of the `[]`+WARNING default | Auth & Tenancy | **[Backlog]** | Audit-1 concern; already documented as out-of-scope in the TMX-AUDIT-DB-DOCID-LOOKUP worksheet (job_id==doc_id convention). Revisit alongside A4 / TMX-3017. Low. |
+
+---
+
 ## Spawned by the 2026-06-12 UX/trust batch
 
 | Ticket | Title | Owner | Status | Notes |
