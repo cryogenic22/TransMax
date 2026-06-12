@@ -58,7 +58,7 @@ See ADR-0005. Canonical IR is the single source of truth; backends normalise int
 - No other findings.
 
 ## 8. Deploy
-- [ ] Commit: <SHA>
+- [x] Commit: 39998e4 (on origin/main)
 - [x] active_tasks updated
 
 ## Status log

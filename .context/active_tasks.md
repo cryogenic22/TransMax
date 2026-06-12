@@ -206,7 +206,7 @@ Root cause: PDF ingestion is lossy (pypdf flat text; `unstructured` not even loa
 
 | Ticket | Title | Owner | Status | Notes |
 |---|---|---|---|---|
-| TMX-PARSE-1 | Pluggable parser backends + canonical IR (Docling default-target + Azure/Google connectors + pypdf fallback) | Document Pipeline | **[Done]** `<sha>` | 7 modules in `app/services/parsing/`, registry/config-not-branching, fail-loud connectors (A3), A/B eval. Suite 1172 green; ratchet 17/17. Live route NOT wired yet (reversible). See `.context/loops/TMX-PARSE-1.md` + ADR-0005. |
+| TMX-PARSE-1 | Pluggable parser backends + canonical IR (Docling default-target + Azure/Google connectors + pypdf fallback) | Document Pipeline | **[Done]** `39998e4` | 7 modules in `app/services/parsing/`, registry/config-not-branching, fail-loud connectors (A3), A/B eval. Suite 1172 green; ratchet 17/17. Live route NOT wired yet (reversible). See `.context/loops/TMX-PARSE-1.md` + ADR-0005. |
 | TMX-PARSE-2 | Wire the registry into the upload route behind `parser_backend` (+ async/background for Docling latency) | Document Pipeline | **[READY]** | the value-realizing follow-up; flag-gated so default stays pypdf |
 | TMX-PARSE-3 | Extend the FidelityGate to the PDF→DOCX path (Docling structure as the source skeleton) | Quality & Regulatory | **[READY]** | closes the gap that DOCX already has but PDF doesn't |
 | TMX-PARSE-CLOUD-GOVERNANCE | A6/data-residency gate before any tenant can enable `azure`/`google` (PHI leaves the boundary — DPA, EU region, opt-in, audit event) | Quality & Regulatory + Auth | **[READY]** | RED-TEAM finding from TMX-PARSE-1; cloud parsing must not be a silent default |
