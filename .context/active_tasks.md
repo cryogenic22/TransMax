@@ -200,6 +200,22 @@ The 4-agent verify-audit on 2026-05-11 went RED on Agent 2 (pytest) with 53 reds
 
 ---
 
+## Document-fidelity / parser architecture (started 2026-06-12)
+
+Root cause: PDF ingestion is lossy (pypdf flat text; `unstructured` not even loading). Measured on a real 17-page oncology PDF — pypdf: 0 tables, 0 structure, mojibake; Docling: 4 tables, 30 figures, 36 section-headers, clean unicode. DOCX round-trip is already strong (FidelityGate). Decision in **ADR-0005**: pluggable parser backends behind a canonical IR. PDF→DOCX is the fidelity deliverable; PDF→PDF is a separate hard problem (out of scope unless a pilot demands it).
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-PARSE-1 | Pluggable parser backends + canonical IR (Docling default-target + Azure/Google connectors + pypdf fallback) | Document Pipeline | **[Done]** `<sha>` | 7 modules in `app/services/parsing/`, registry/config-not-branching, fail-loud connectors (A3), A/B eval. Suite 1172 green; ratchet 17/17. Live route NOT wired yet (reversible). See `.context/loops/TMX-PARSE-1.md` + ADR-0005. |
+| TMX-PARSE-2 | Wire the registry into the upload route behind `parser_backend` (+ async/background for Docling latency) | Document Pipeline | **[READY]** | the value-realizing follow-up; flag-gated so default stays pypdf |
+| TMX-PARSE-3 | Extend the FidelityGate to the PDF→DOCX path (Docling structure as the source skeleton) | Quality & Regulatory | **[READY]** | closes the gap that DOCX already has but PDF doesn't |
+| TMX-PARSE-CLOUD-GOVERNANCE | A6/data-residency gate before any tenant can enable `azure`/`google` (PHI leaves the boundary — DPA, EU region, opt-in, audit event) | Quality & Regulatory + Auth | **[READY]** | RED-TEAM finding from TMX-PARSE-1; cloud parsing must not be a silent default |
+| TMX-PARSE-AZURE / TMX-PARSE-GOOGLE | Live-verify the cloud connectors against real creds + integration tests | Document Pipeline | **[Backlog]** | interfaces + fail-loud shipped; live mapping unverified |
+| TMX-PARSE-XLSX / TMX-PARSE-PPTX | Round-trip backends for XLSX/PPTX (openpyxl/python-pptx), reusing the DOCX pattern | Document Pipeline | **[Backlog]** | current gap: only DOCX/PDF/TXT |
+| TMX-PARSE-DOCLANG | Serialize the canonical IR to DocLang `.dclg.xml` for interop | Document Pipeline | **[Backlog]** | DocLang is a representation DSL, not a parser; map to it later |
+
+---
+
 ## 2026-06-12 4-agent verification audit — GREEN ×4
 
 Ran over `2d2a800..e06c9a2` (~25 commits / 14 tickets). Reports archived at `docs/audit-extracts/loop-{quality-review,pytest-report,vitest-report,spec-compliance}-2026-06-12.md`. Verdict: **GREEN across all four** — quality 12/12 substantive commits pass; backend 1160 passed/0 failed; frontend typecheck/lint/vitest 123/build green; spec-vs-delivery 14 Match / 0 Drift / 0 Tests-only. Decision per matrix: **keep going**. Two LOW non-blocking concerns logged below.
