@@ -51,3 +51,7 @@ black
 mypy
 pre-commit
 reportlab
+
+# Opt-in heavy parser backends (Docling layout/table recovery) live in
+# requirements-parsing.txt — kept separate so default install / CI stays light.
+# See ADR-0005 / TMX-PARSE-1.

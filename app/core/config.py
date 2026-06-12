@@ -87,6 +87,19 @@ class Settings(BaseSettings):
     enable_real_pdf_parsing: bool = True  # Enabled for demo
     enable_live_llm_inference: bool = True
 
+    # TMX-PARSE-1 (ADR-0005): pluggable document-parser backend. Default
+    # "pypdf" keeps current behaviour; "docling" enables layout/table/reading-
+    # order recovery; "azure"/"google" are cloud connectors. The live upload
+    # route still calls the legacy PDFService until TMX-PARSE-2 wires the
+    # registry behind this flag.
+    parser_backend: str = "pypdf"  # pypdf | docling | azure | google
+    parser_ocr_enabled: bool = False  # OCR off = fast for born-digital PDFs
+    # Cloud-connector credentials (fail-loud if a cloud backend is selected
+    # without these — never a silent fallback to a worse parser, A3).
+    azure_docintel_endpoint: str = ""
+    azure_docintel_key: str = ""
+    google_docai_processor: str = ""  # projects/.../locations/.../processors/...
+
     # TMX-ROUTER-2: opt-in LLM router. When False (default) every task uses
     # default_gpt_model (current behaviour). When True, get_llm(task, ...)
     # selects a model per task/complexity via app/core/model_registry. Keep OFF

@@ -1,0 +1,21 @@
+# TMX-PARSE-1 (ADR-0005) — opt-in heavy parser backends.
+#
+# Kept OUT of the main requirements.txt so the default install / CI stays light
+# (Docling pulls torch + layout/table models, ~hundreds of MB). Install this in
+# the deploy image (or locally) only when running the `docling` parser backend:
+#
+#     pip install -r requirements-parsing.txt
+#
+# Then set `parser_backend = "docling"` (and `parser_ocr_enabled = true` only
+# for scanned PDFs — OCR off is much faster for born-digital).
+
+docling>=2.84
+
+# Load-bearing pin: docling's transformers dep requires tokenizers<0.22; a
+# floating 0.22.x breaks `import docling` (transformers version guard). See
+# ADR-0005 / TMX-PARSE-1.
+tokenizers<0.22
+
+# Cloud connectors (azure / google parser backends) — install only if used:
+#   pip install azure-ai-documentintelligence
+#   pip install google-cloud-documentai
