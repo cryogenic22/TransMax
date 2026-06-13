@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Shield, Book, BookOpen, Lock, CheckCircle, XCircle, RefreshCw } from "lucide-react"
 import { GlassCard } from "@/components/ui/GlassCard"
-import { api } from "@/lib/api"
+import { api, type Glossary } from "@/lib/api"
 
 export default function TrustCenterPage() {
     const [activeTab, setActiveTab] = useState("rules")
@@ -79,14 +79,17 @@ function BlackBookView() {
         confidence_score?: number
     }>>([])
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     const fetchRules = async () => {
         setLoading(true)
+        setError(null)
         try {
             const data = await api.knowledge.listRules()
             setRules(data)
         } catch (e) {
-            console.error("Failed to fetch rules", e)
+            // A3: surface the failure, never silently show an empty Black Book
+            setError(e instanceof Error ? e.message : "Failed to load rules")
         } finally {
             setLoading(false)
         }
@@ -97,8 +100,12 @@ function BlackBookView() {
     }, [])
 
     const handleVote = async (id: string, status: "ACTIVE" | "REJECTED") => {
-        await api.knowledge.updateRule(id, status)
-        fetchRules()
+        try {
+            await api.knowledge.updateRule(id, status)
+            fetchRules()
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Failed to update rule")
+        }
     }
 
     return (
@@ -113,6 +120,15 @@ function BlackBookView() {
             <GlassCard>
                 {loading ? (
                     <div className="p-8 text-center text-gray-500">Loading rules...</div>
+                ) : error ? (
+                    <div className="p-8 text-center">
+                        <XCircle className="text-red-500 mx-auto mb-3" size={28} />
+                        <h3 className="text-red-600 font-medium">Couldn&apos;t load the Black Book</h3>
+                        <p className="text-gray-500 text-sm mt-1">{error}</p>
+                        <button onClick={fetchRules} className="btn btn-secondary text-sm mt-4">
+                            <RefreshCw size={14} className="mr-2" /> Retry
+                        </button>
+                    </div>
                 ) : rules.length === 0 ? (
                     <div className="p-12 text-center">
                         <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
@@ -187,39 +203,89 @@ function BlackBookView() {
 }
 
 function GlossaryView() {
+    const [glossaries, setGlossaries] = useState<Glossary[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
+    const fetchGlossaries = async () => {
+        setLoading(true)
+        setError(null)
+        try {
+            // A3: real data only — no fabricated "FDA · 14,203 terms" placeholders.
+            setGlossaries(await api.knowledge.listGlossaries())
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Failed to load glossaries")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchGlossaries()
+    }, [])
+
     return (
-        <GlassCard className="p-8 text-center">
-            <BookOpen className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold">Regulatory Glossaries</h3>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto">
-                Manage mandated terminology dictionaries (FDA, EMA, PMDA).
-                Currently 3 Global Glossaries are active.
-            </p>
-            {/* Mock for now */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
-                <div className="border border-gray-200 p-4 rounded-lg">
-                    <div className="font-semibold">FDA Standard Terms</div>
-                    <div className="text-xs text-gray-500">ver 2024.1 • 14,203 terms</div>
-                    <div className="mt-2 text-green-600 text-xs font-medium flex items-center gap-1">
-                        <CheckCircle size={12} /> Active
-                    </div>
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h2 className="text-xl font-semibold">Regulatory Glossaries</h2>
+                    <p className="text-gray-500 text-sm mt-1">
+                        Mandated terminology dictionaries (FDA, EMA, PMDA) enforced across translations.
+                    </p>
                 </div>
-                <div className="border border-gray-200 p-4 rounded-lg">
-                    <div className="font-semibold">EMA MedDRA (EU)</div>
-                    <div className="text-xs text-gray-500">ver 27.1 • 8,100 terms</div>
-                    <div className="mt-2 text-green-600 text-xs font-medium flex items-center gap-1">
-                        <CheckCircle size={12} /> Active
-                    </div>
-                </div>
-                <div className="border border-gray-200 p-4 rounded-lg">
-                    <div className="font-semibold">TransMax Exclusion List</div>
-                    <div className="text-xs text-gray-500">ver internal.4 • 150 terms</div>
-                    <div className="mt-2 text-green-600 text-xs font-medium flex items-center gap-1">
-                        <CheckCircle size={12} /> Active
-                    </div>
-                </div>
+                <button onClick={fetchGlossaries} className="btn btn-secondary text-sm">
+                    <RefreshCw size={14} className="mr-2" /> Refresh
+                </button>
             </div>
-        </GlassCard>
+
+            <GlassCard>
+                {loading ? (
+                    <div className="p-8 text-center text-gray-500">Loading glossaries...</div>
+                ) : error ? (
+                    <div className="p-8 text-center">
+                        <XCircle className="text-red-500 mx-auto mb-3" size={28} />
+                        <h3 className="text-red-600 font-medium">Couldn&apos;t load glossaries</h3>
+                        <p className="text-gray-500 text-sm mt-1">{error}</p>
+                        <button onClick={fetchGlossaries} className="btn btn-secondary text-sm mt-4">
+                            <RefreshCw size={14} className="mr-2" /> Retry
+                        </button>
+                    </div>
+                ) : glossaries.length === 0 ? (
+                    <div className="p-12 text-center">
+                        <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium">No glossaries yet</h3>
+                        <p className="text-gray-500 mt-1 max-w-md mx-auto">
+                            Upload a mandated terminology dictionary to enforce approved terms
+                            across every translation.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
+                        {glossaries.map((g) => (
+                            <div key={`${g.glossary_id}-${g.version}`} className="border border-gray-200 p-4 rounded-lg">
+                                <div className="font-semibold truncate" title={g.glossary_id}>{g.glossary_id}</div>
+                                <div className="text-xs text-gray-500">
+                                    ver {g.version}
+                                    {typeof g.term_count === "number" ? ` • ${g.term_count.toLocaleString()} terms` : ""}
+                                </div>
+                                {g.meta_json?.source_language && g.meta_json?.target_language && (
+                                    <div className="text-xs text-gray-400 mt-1">
+                                        {g.meta_json.source_language} → {g.meta_json.target_language}
+                                    </div>
+                                )}
+                                <div className={`mt-2 text-xs font-medium flex items-center gap-1 ${g.is_active ? "text-green-600" : "text-gray-400"}`}>
+                                    {g.is_active ? (
+                                        <><CheckCircle size={12} /> Active</>
+                                    ) : (
+                                        <><XCircle size={12} /> Inactive</>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </GlassCard>
+        </div>
     )
 }
 
