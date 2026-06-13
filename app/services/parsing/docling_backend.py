@@ -102,24 +102,27 @@ class DoclingParser:
         for item, _level in self._iter_items(ddoc):
             etype = _canon(getattr(item, "label", None))
             page_no = self._page_no(item)
+            bbox, gmeta = self._geom(item, ddoc)
             if etype is ElementType.TABLE:
                 text, grid = self._table(item, ddoc)
                 order += 1
                 blocks.append(
                     ParsedBlock(
                         text=text, element_type=etype, order_index=order,
-                        page_no=page_no, table_grid=grid,
-                        meta={"backend": self.name, "native_label": "table"},
+                        page_no=page_no, bbox=bbox, table_grid=grid,
+                        meta={"backend": self.name, "native_label": "table", **gmeta},
                     )
                 )
                 continue
             if etype is ElementType.FIGURE:
-                # Preserve the figure in the skeleton; no prose to translate.
+                # Preserve the figure in the skeleton; bbox lets a renderer crop the
+                # real bitmap from the source (pypdfium2) instead of dropping it.
                 order += 1
                 blocks.append(
                     ParsedBlock(
                         text="", element_type=etype, order_index=order, page_no=page_no,
-                        meta={"backend": self.name, "native_label": "picture"},
+                        bbox=bbox,
+                        meta={"backend": self.name, "native_label": "picture", **gmeta},
                     )
                 )
                 continue
@@ -130,7 +133,8 @@ class DoclingParser:
             blocks.append(
                 ParsedBlock(
                     text=text, element_type=etype, order_index=order, page_no=page_no,
-                    meta={"backend": self.name, "native_label": str(getattr(item, "label", ""))},
+                    bbox=bbox,
+                    meta={"backend": self.name, "native_label": str(getattr(item, "label", "")), **gmeta},
                 )
             )
 
@@ -160,6 +164,36 @@ class DoclingParser:
         except Exception:  # noqa: BLE001
             pass
         return None
+
+    @staticmethod
+    def _geom(item, ddoc):
+        """Return (bbox, geom_meta) from prov, or (None, {}).
+
+        bbox is (l, t, r, b) in PDF points. geom_meta carries coord_origin + page
+        size so a downstream renderer (figure cropping, layout-aware placement) can
+        convert correctly. Defensive against Docling API drift (A3-adjacent: a
+        missing bbox degrades to None, never crashes the parse)."""
+        try:
+            prov = getattr(item, "prov", None) or []
+            if not prov:
+                return None, {}
+            b = getattr(prov[0], "bbox", None)
+            if b is None:
+                return None, {}
+            bbox = (float(b.l), float(b.t), float(b.r), float(b.b))
+            origin = getattr(getattr(b, "coord_origin", None), "value", None) \
+                or str(getattr(b, "coord_origin", "")) or None
+            meta = {"coord_origin": origin}
+            page_no = getattr(prov[0], "page_no", None)
+            pages = getattr(ddoc, "pages", {}) or {}
+            page = pages.get(page_no) if hasattr(pages, "get") else None
+            size = getattr(page, "size", None)
+            if size is not None:
+                meta["page_width"] = float(getattr(size, "width", 0)) or None
+                meta["page_height"] = float(getattr(size, "height", 0)) or None
+            return bbox, meta
+        except Exception:  # noqa: BLE001 — geometry is best-effort
+            return None, {}
 
     @staticmethod
     def _page_count(ddoc):

@@ -132,3 +132,49 @@ def classify(
 
     # 6) Default: it's content.
     return Translatability.CONTENT
+
+
+# --- IR-level classification (Tier-2 pdf_render) ---------------------------
+# The canonical IR (ADR-0005) lacks per-span font size, so the geometry/size
+# signals above don't all apply. We use what the IR DOES carry: the element type
+# (Docling already tags page_header/page_footer), cross-page repetition of short
+# strings (running heads/folios), identifier shape, and an optional glossary.
+
+_IR_CHROME_TYPES = frozenset({"page_header", "page_footer"})
+
+
+def build_ir_repeats(blocks: list[dict]) -> frozenset:
+    """Normalized SHORT texts that repeat on >= 2 pages of an IR block list."""
+    pages_by_norm: dict[str, set] = {}
+    for b in blocks:
+        norm = _normalize(b.get("text", ""))
+        if not (2 <= len(norm) <= 80):
+            continue
+        pages_by_norm.setdefault(norm, set()).add(b.get("page_no"))
+    return frozenset(n for n, pages in pages_by_norm.items() if len(pages) >= 2)
+
+
+def ir_disposition(block: dict, repeats: frozenset, *,
+                   glossary: frozenset = frozenset()) -> str:
+    """Decide how a Tier-2 re-render should treat an IR block:
+
+      "translate" — prose content → send to the translator
+      "verbatim"  — brand/identifier → render untranslated, in the flow
+      "drop"      — per-page chrome (running head/footer, repeated folio) → omit
+
+    Per-page chrome is dropped because a reflowed single document has no per-page
+    running elements; brand/identifier strings are kept verbatim so the masthead
+    or a DOI is neither translated nor lost.
+    """
+    text = (block.get("text") or "").strip()
+    if not text:
+        return "drop"
+    if (block.get("element_type") or "").lower() in _IR_CHROME_TYPES:
+        return "drop"
+    if _normalize(text) in repeats:
+        return "drop"
+    if _normalize(text, drop_digits=False) in glossary:
+        return "verbatim"
+    if _looks_identifier(text):
+        return "verbatim"
+    return "translate"
