@@ -94,6 +94,14 @@ class Settings(BaseSettings):
     # registry behind this flag.
     parser_backend: str = "pypdf"  # pypdf | docling | azure | google
     parser_ocr_enabled: bool = False  # OCR off = fast for born-digital PDFs
+    # Export backend (ADR-0006). docx = fidelity round-trip (default, prefer the
+    # editable source); pdf_overlay = fitz redact+reinsert for fixed-layout PDFs;
+    # pdf_render = Tier-2 re-typeset (not yet built). Flag-gated; default-off path
+    # for pdf_overlay until the AGPL (PyMuPDF) licence review lands.
+    export_backend: str = "docx"  # docx | pdf_overlay | pdf_render
+    # Optional dir of Unicode TTFs the pdf_overlay backend embeds (DejaVu*). Empty
+    # = auto-locate (repo-bundled assets, then matplotlib's DejaVu in dev).
+    export_font_dir: str = ""
     # Cloud-connector credentials (fail-loud if a cloud backend is selected
     # without these — never a silent fallback to a worse parser, A3).
     azure_docintel_endpoint: str = ""

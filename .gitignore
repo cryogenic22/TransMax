@@ -34,6 +34,7 @@ uploads/
 *.log
 *.txt
 !requirements.txt
+!requirements-export.txt
 !README.txt
 
 # Claude Code transient session state (commands/skills may be shared; these are not)
