@@ -124,6 +124,33 @@ class TestTablesInterleaved:
         assert len(cell_blocks) == 4
         assert [b["text"] for b in cell_blocks] == ["R0C0", "R0C1", "R1C0", "R1C1"]
 
+    def test_table_cell_text_is_translated_on_export(self, tmp_path, ingestion, exporter):
+        """Translated text must land INSIDE single-paragraph table cells.
+
+        Regression: ``_replace_cell_text`` cleared the paragraph it had just
+        written because it compared python-docx proxy identity
+        (``p is not paras[0]``) instead of element identity (``p._p is ...``).
+        A fresh proxy is built per ``cell.paragraphs`` access, so every
+        single-paragraph cell — the common case in pharma SmPC/CSR tables —
+        came back EMPTY while the table grid survived (FidelityGate passed).
+        """
+        doc = DocxDocument()
+        table = doc.add_table(rows=2, cols=2)
+        for (r, c) in [(0, 0), (0, 1), (1, 0), (1, 1)]:
+            table.cell(r, c).text = f"R{r}C{c}"
+        path = save_docx(doc, tmp_path)
+
+        blocks = ingestion.extract_blocks(path)
+        buf = exporter.export_docx(path, build_segments(blocks))
+        result = DocxDocument(buf)
+
+        cells = result.tables[0].rows
+        got = [cell.text for row in cells for cell in row.cells]
+        assert got == ["TR:R0C0", "TR:R0C1", "TR:R1C0", "TR:R1C1"], (
+            f"table cells not translated correctly: {got!r}"
+        )
+        assert "" not in got, "single-paragraph cell came back empty (the regression)"
+
 
 class TestMergedCells:
     def test_merged_cell_dedup(self, tmp_path, ingestion):
