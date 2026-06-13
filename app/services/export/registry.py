@@ -45,9 +45,11 @@ def get_exporter(name: Optional[str] = None) -> DocumentExporter:
 def _register_builtin_backends() -> None:
     from app.services.export.docx_backend import DocxExporter
     from app.services.export.pdf_overlay_backend import PdfOverlayExporter
+    from app.services.export.pdf_render_backend import PdfRenderExporter
 
     register_backend("docx", DocxExporter)
     register_backend("pdf_overlay", PdfOverlayExporter)
+    register_backend("pdf_render", PdfRenderExporter)
 
 
 _register_builtin_backends()
