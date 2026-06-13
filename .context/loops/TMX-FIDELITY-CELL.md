@@ -65,7 +65,7 @@ No further findings — the one-line change is the fix; regression locks it.
 
 ## 8. Deploy
 
-- [x] Commit: <filled at commit>
+- [x] Commit: `1f9176b` (local; push Kapil-gated)
 - [ ] CI green: pending push (Kapil-gated)
 - [x] `.context/active_tasks.md`: to be referenced in next backlog sync
 - [ ] Ratchet: N/A (no new module)

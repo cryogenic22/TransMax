@@ -78,7 +78,7 @@ Full FR run on the 13-page NEJM manuscript via the real backend (`gpt-4o`): 496 
 ## 8. Deploy
 
 - [x] Commit (ADR-0006 + worksheet): `5ea6f90`
-- [x] Commit (export package + tests + config): <SHA at commit>
+- [x] Commit (export package + tests + config): `e8ac38d` (local; push Kapil-gated)
 - [ ] Wire `pdf_overlay` behind the upload route (flag) — follow-up **TMX-EXPORT-WIRE**
 - [ ] Legal: AGPL review for PyMuPDF before any pilot ship
 - [ ] Bundle DejaVu TTFs for Linux/Railway (don't depend on matplotlib) — **TMX-EXPORT-FONTS-BUNDLE**
