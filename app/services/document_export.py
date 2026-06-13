@@ -400,9 +400,14 @@ class DocumentExportService:
 
         if len(paras) == 1:
             self._replace_paragraph_text(paras[0], translated)
-            # Clear any other paragraphs
+            # Clear any OTHER paragraphs. Compare by underlying XML element
+            # (``._p``), not proxy identity: python-docx builds a fresh
+            # ``Paragraph`` proxy on every ``cell.paragraphs`` access, so
+            # ``p is not paras[0]`` is always True and would wipe the very
+            # paragraph we just translated — emptying every single-paragraph
+            # table cell (the common case in pharma SmPC/CSR tables).
             for p in cell.paragraphs:
-                if p is not paras[0] and p.text.strip():
+                if p._p is not paras[0]._p and p.text.strip():
                     for run in p.runs:
                         run.text = ""
             return
