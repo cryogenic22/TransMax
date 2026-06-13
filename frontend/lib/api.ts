@@ -507,7 +507,7 @@ class ApiClient {
         /**
          * POST /api/knowledge/glossaries/upload
          */
-        uploadGlossary: async (file: File, glossaryId: string, version: string, srcLang: string = 'en', tgtLang: string = 'fr'): Promise<ApiAck & { term_count?: number; imported?: number }> => {
+        uploadGlossary: async (file: File, glossaryId: string, version: string, srcLang: string = 'en', tgtLang: string = 'fr'): Promise<ApiAck & { terms_imported?: number; term_count?: number; imported?: number; errors?: string[] }> => {
             const formData = new FormData();
             formData.append('file', file);
 

@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Shield, Book, BookOpen, Lock, CheckCircle, XCircle, RefreshCw } from "lucide-react"
+import { Shield, Book, BookOpen, Lock, CheckCircle, XCircle, RefreshCw, Upload, X } from "lucide-react"
+import { toast } from "sonner"
 import { GlassCard } from "@/components/ui/GlassCard"
 import { api, type Glossary, type TrustPosture } from "@/lib/api"
 
@@ -206,6 +207,7 @@ function GlossaryView() {
     const [glossaries, setGlossaries] = useState<Glossary[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [showUpload, setShowUpload] = useState(false)
 
     const fetchGlossaries = async () => {
         setLoading(true)
@@ -233,10 +235,22 @@ function GlossaryView() {
                         Mandated terminology dictionaries (FDA, EMA, PMDA) enforced across translations.
                     </p>
                 </div>
-                <button onClick={fetchGlossaries} className="btn btn-secondary text-sm">
-                    <RefreshCw size={14} className="mr-2" /> Refresh
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={() => setShowUpload((v) => !v)} className="btn btn-primary text-sm">
+                        <Upload size={14} className="mr-2" /> Upload Glossary
+                    </button>
+                    <button onClick={fetchGlossaries} className="btn btn-secondary text-sm">
+                        <RefreshCw size={14} className="mr-2" /> Refresh
+                    </button>
+                </div>
             </div>
+
+            {showUpload && (
+                <GlossaryUploadForm
+                    onClose={() => setShowUpload(false)}
+                    onUploaded={() => { setShowUpload(false); fetchGlossaries() }}
+                />
+            )}
 
             <GlassCard>
                 {loading ? (
@@ -286,6 +300,79 @@ function GlossaryView() {
                 )}
             </GlassCard>
         </div>
+    )
+}
+
+function GlossaryUploadForm({ onClose, onUploaded }: { onClose: () => void; onUploaded: () => void }) {
+    const [file, setFile] = useState<File | null>(null)
+    const [gid, setGid] = useState("")
+    const [version, setVersion] = useState("1.0.0")
+    const [srcLang, setSrcLang] = useState("en")
+    const [tgtLang, setTgtLang] = useState("fr")
+    const [uploading, setUploading] = useState(false)
+
+    const inputCls = "w-full border border-gray-200 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+
+    const handleUpload = async () => {
+        if (!file) { toast.error("Choose a CSV file to upload"); return }
+        if (!gid.trim() || !version.trim()) { toast.error("Glossary ID and version are required"); return }
+        setUploading(true)
+        try {
+            const res = await api.knowledge.uploadGlossary(file, gid.trim(), version.trim(), srcLang.trim(), tgtLang.trim())
+            const n = res.terms_imported ?? res.term_count ?? res.imported ?? 0
+            toast.success(`Imported ${n} term${n === 1 ? "" : "s"} into "${gid.trim()}" v${version.trim()}`)
+            onUploaded()
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Glossary upload failed")
+        } finally {
+            setUploading(false)
+        }
+    }
+
+    return (
+        <GlassCard className="p-6 border border-blue-100">
+            <div className="flex justify-between items-start mb-4">
+                <div>
+                    <h3 className="font-semibold">Upload a glossary</h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                        CSV columns: <code className="font-mono">term_id, source_text, target_text, is_forbidden, allowed_variants</code>
+                    </p>
+                </div>
+                <button onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Close upload form">
+                    <X size={18} />
+                </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className="text-sm md:col-span-2">
+                    <span className="block text-gray-600 mb-1">CSV file</span>
+                    <input type="file" accept=".csv,text/csv"
+                        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                        className="block w-full text-sm" />
+                </label>
+                <label className="text-sm">
+                    <span className="block text-gray-600 mb-1">Glossary ID</span>
+                    <input value={gid} onChange={(e) => setGid(e.target.value)} placeholder="e.g. fda-oncology" className={inputCls} />
+                </label>
+                <label className="text-sm">
+                    <span className="block text-gray-600 mb-1">Version</span>
+                    <input value={version} onChange={(e) => setVersion(e.target.value)} placeholder="1.0.0" className={inputCls} />
+                </label>
+                <label className="text-sm">
+                    <span className="block text-gray-600 mb-1">Source language</span>
+                    <input value={srcLang} onChange={(e) => setSrcLang(e.target.value)} placeholder="en" className={inputCls} />
+                </label>
+                <label className="text-sm">
+                    <span className="block text-gray-600 mb-1">Target language</span>
+                    <input value={tgtLang} onChange={(e) => setTgtLang(e.target.value)} placeholder="fr" className={inputCls} />
+                </label>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+                <button onClick={onClose} className="btn btn-secondary text-sm" disabled={uploading}>Cancel</button>
+                <button onClick={handleUpload} className="btn btn-primary text-sm" disabled={uploading}>
+                    {uploading ? "Uploading..." : "Upload"}
+                </button>
+            </div>
+        </GlassCard>
     )
 }
 
