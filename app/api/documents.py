@@ -498,15 +498,60 @@ async def translate_document(
     )
 
 
+def _export_via_backend(backend_name: str, doc, seg_dicts: list):
+    """Render a translated PDF via the pluggable export registry (ADR-0006),
+    reusing the already-translated segments as the translation source — the
+    injected translate_fn is a lookup, NOT a re-translation. Fails loud (A3) on
+    unsupported source type, missing source file, or an unavailable backend
+    (e.g. pdf_overlay needs the optional PyMuPDF/AGPL dep)."""
+    import io
+    from app.services.export import get_exporter
+    from app.services.export.base import ExporterUnavailable
+
+    src_path = doc.file_path
+    if not src_path or not os.path.exists(src_path):
+        raise HTTPException(status_code=400, detail="Original source file is unavailable for PDF re-export.")
+    ext = (doc.file_type or "").lower()
+    if backend_name == "pdf_overlay" and ext != "pdf":
+        raise HTTPException(status_code=400, detail="pdf_overlay requires a PDF source document; use pdf_render or format=auto.")
+    if backend_name == "pdf_render" and ext not in ("pdf", "docx"):
+        raise HTTPException(status_code=400, detail="pdf_render supports PDF or DOCX source documents.")
+
+    lookup = {
+        (s.get("source_text") or "").strip(): s["translated_text"]
+        for s in seg_dicts if s.get("translated_text")
+    }
+
+    def translate_fn(texts):
+        return [lookup.get((t or "").strip(), t) for t in texts]
+
+    try:
+        result = get_exporter(backend_name).export(
+            src_path, translate_fn, target_lang=doc.target_language or "")
+    except ExporterUnavailable as e:
+        raise HTTPException(status_code=503, detail=f"{backend_name} backend unavailable: {e}")
+    return io.BytesIO(result.data)
+
+
 @router.get("/{doc_id}/download-translated")
 async def download_translated(
     doc_id: str,
+    format: str = Query(
+        "auto",
+        description="auto = original-format preserving (DOCX/TXT); "
+                    "pdf_overlay = exact-look PDF overlay (PDF source only); "
+                    "pdf_render = re-typeset PDF (structural).",
+    ),
     db: Session = Depends(get_db),
     user: AuthenticatedIdentity = Depends(require_permission(Permission.DOCUMENT_READ)),
 ):
     """
-    Download the translated document in its original format.
-    DOCX -> DOCX (format-preserving), TXT -> TXT, PDF -> DOCX (fallback).
+    Download the translated document.
+
+    ``format=auto`` (default) preserves the original format: DOCX -> DOCX
+    (format-preserving), TXT -> TXT, PDF -> DOCX. ``format=pdf_overlay`` /
+    ``pdf_render`` route through the pluggable export backends (ADR-0006) to emit
+    a translated PDF, reusing the already-translated segments (no re-translation).
     """
     doc = db.query(Document).filter(Document.id == doc_id).first()
     if not doc:
@@ -534,10 +579,19 @@ async def download_translated(
         for s in segments
     ]
 
+    doc_name_base = os.path.splitext(doc.name)[0]
+
+    # --- PDF export backends (ADR-0006), reusing existing translations ---------
+    if format in ("pdf_overlay", "pdf_render"):
+        buffer = _export_via_backend(format, doc, seg_dicts)
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{doc_name_base}_translated.pdf"'},
+        )
+
     from app.services.document_export import DocumentExportService
     export_service = DocumentExportService()
-
-    doc_name_base = os.path.splitext(doc.name)[0]
 
     if doc.file_type == "txt":
         buffer = export_service.export_txt(seg_dicts)
