@@ -1,0 +1,15 @@
+# TMX-EXPORT-1 / ADR-0006 — opt-in deps for the pdf_overlay export backend.
+# Kept OUT of the main requirements.txt so the default install/CI stays light and
+# the AGPL dependency is an explicit, reviewed opt-in (see ADR-0006 licence gate).
+#
+#   pip install -r requirements-export.txt
+#
+# NOTE: PyMuPDF is AGPL-3.0 — a licence review gates shipping the overlay backend
+# in the commercial product. The docx backend (default) has no such constraint.
+PyMuPDF>=1.26,<2
+
+# The overlay embeds a Unicode TTF so French/Western-European typography
+# (œ, em-dash, « guillemets », curly quotes) renders — base-14 fonts only cover
+# Latin-1. In dev the locator finds DejaVu via matplotlib; for deterministic
+# Linux/Railway builds, bundle the DejaVu TTFs under app/services/export/_fonts/
+# (or point settings.export_font_dir at them) instead of depending on matplotlib.

@@ -1,6 +1,6 @@
 # TMX-EXPORT-1 — Pluggable document-export backends + Tier-1 PDF→PDF overlay
 
-**State**: `[Spec]` (ADR-0006 accepted in principle; POC validated; productionization not yet built)
+**State**: `[Done]` (registry + classifier/fonts/layout + docx & pdf_overlay backends built, tested, flag-gated default-off; upload-route wiring + AGPL review + Tier-2 are follow-ups)
 **Owner**: Document Pipeline
 **Sprint**: 2-3
 **Started**: 2026-06-13
@@ -22,14 +22,14 @@ Add a translated-PDF capability so PDF-only intake (CSR/SmPC/PIL/manuscript) is 
 
 ## 2. Spec — acceptance criteria
 
-- [ ] AC-1: `get_exporter(name=None)` registry keyed on `settings.export_backend` (config-not-branching, A7), symmetric with `get_parser`.
-- [ ] AC-2: one `DocumentExporter` protocol; backends `docx` (fold existing), `pdf_overlay` (new, fitz), `pdf_render` (Tier-2, later).
-- [ ] AC-3: the overlay operates on the **canonical IR** (ADR-0005) + geometry, never on `if source == "<journal>"`.
-- [ ] AC-4: a per-block **translatability classifier** (content vs chrome/branding/identifier/DNT-glossary) so mastheads/running-heads/trademarks are preserved, not translated.
-- [ ] AC-5: per-block **strategy negotiation** — in-place → reflow-in-box → escalate-to-render — with a recorded reason; never silently clip (A3).
-- [ ] AC-6: **font-resolution** layer — reuse embedded face if it covers the target charset, else nearest Unicode-complete family; substitution recorded in provenance.
-- [ ] AC-7: content-aware **FidelityGate** — every source block maps to a non-empty target box; overflow/clip/DNT-skip flagged in a fidelity report.
-- [ ] AC-8: A5 — each overlaid box carries its `segment_id`.
+- [x] AC-1: `get_exporter(name=None)` registry keyed on `settings.export_backend` (config-not-branching, A7), symmetric with `get_parser`.
+- [x] AC-2: one `DocumentExporter` protocol; backends `docx` (folded), `pdf_overlay` (new, fitz); `pdf_render` (Tier-2) deferred.
+- [x] AC-3: the overlay operates on a generic `LayoutBlock` (text+geometry+style), never on `if source == "<journal>"`.
+- [x] AC-4: per-block **translatability classifier** (CONTENT/PRESERVE/DROP_CAP) via cross-page repetition + geometry + identifier shape + glossary.
+- [x] AC-5: per-block **strategy negotiation** — in_place → shrunk → reflowed → escalate — recorded per block.
+- [x] AC-6: **font-resolution** — family map + embedded Unicode DejaVu (covers œ/dashes/guillemets); charset gaps flagged not mangled.
+- [~] AC-7: **FidelityReport** records per-block translatability/strategy/overflow/font-sub + `degraded` rollup. The *gate* that hard-fails a degraded export (and asserts every source block maps non-empty) is the **content-aware FidelityGate follow-up** (TMX-FIDELITY-GATE-CONTENT).
+- [ ] AC-8: A5 — overlaid boxes carry a `block_id`, NOT yet the pipeline `segment_id`. Follow-up **TMX-EXPORT-SEGID**.
 
 Out of scope (this ticket): Tier-2 `pdf_render`; scanned-PDF OCR routing (delegates to ADR-0005 parsers); RTL/CJK box shaping; the AGPL licence decision (legal, blocking pilot ship).
 
@@ -39,11 +39,25 @@ See **ADR-0006**. Core principle answering "modular/flexible/intelligent, not ha
 
 ## 4. Code
 
-POC seed: `uploads/fidelity_fr_demo/pdf_overlay_poc.py` (NOT committed; gitignored). Productionization → `app/services/export/{registry,base,docx_backend,pdf_overlay_backend}.py`.
+| File | Change |
+|---|---|
+| `app/services/export/base.py` | protocol + value objects (LayoutBlock, Translatability/FitStrategy, BlockVerdict, FidelityReport, ExportResult, ExporterUnavailable) |
+| `app/services/export/classify.py` | translatability classifier — cross-page repetition + geometry + identifier shape + glossary (AC-3/4) |
+| `app/services/export/fonts.py` | font resolution — serif/sans/mono family + embedded DejaVu Unicode TTF (œ/dashes/guillemets) + charset honesty (AC-6) |
+| `app/services/export/layout.py` | fit negotiation in_place→shrunk→reflowed→escalate (AC-5) |
+| `app/services/export/pdf_overlay_backend.py` | fitz orchestrator: classify→translate→font/fit→redact(fill=None)→reinsert; drop-cap re-seat; FidelityReport |
+| `app/services/export/docx_backend.py` | folds `DocumentExportService` under the protocol (Tier-3) |
+| `app/services/export/registry.py` | `get_exporter()` keyed on `settings.export_backend` (AC-1) |
+| `app/core/config.py` | `export_backend`, `export_font_dir` settings |
+| `requirements-export.txt` | opt-in PyMuPDF (AGPL gate) + DejaVu bundling note |
+
+POC seed: `uploads/fidelity_fr_demo/pdf_overlay_poc.py` + `run_overlay_prod.py` (gitignored).
 
 ## 5. Eval / Test
 
-POC run (real `gpt-4o`, FR): NEJM p1 (title/structured-abstract/side-box) + p2 (2-col body, red section heading) — masthead/colours/columns/footnotes/side-box preserved; title + abstract accurate medical French. Artifacts: `manuscript_fr_overlay.pdf`, `fr_p1_hi.png`, `fr_p2_hi.png`.
+23 new unit/integration tests (`tests/test_export_*.py`) — classifier (masthead-by-repetition, folio, identifier, drop-cap, single-page top-band, glossary), fonts (family map + French/CJK charset honesty), layout (4 fit rungs), registry (fail-loud), overlay integration (preserve chrome / translate body / count-mismatch fail-loud). 50 passed with docx+config; 17 parsing green (symmetry intact).
+
+Full FR run on the 13-page NEJM manuscript via the real backend (`gpt-4o`): 496 blocks → 350 preserve / 146 content; strategies 18 in_place / 116 shrunk / 12 reflowed; **0 degraded**. Masthead/folios/citations preserved; title/abstract/body accurate medical French; tables/figures/colours/columns/side-boxes intact. Artifacts: `manuscript_fr_final.pdf`, `final_p{1,2,3,6}.png`.
 
 ## 6. Red team — edge cases the single POC run already surfaced
 
@@ -55,15 +69,19 @@ POC run (real `gpt-4o`, FR): NEJM p1 (title/structured-abstract/side-box) + p2 (
 | Text expansion | FR longer; shrink-to-fit used | AC-5 negotiation: shrink → reflow → escalate; cap min readable size |
 | Scanned/no-text PDF | n/a here (born-digital) | route to OCR parser (ADR-0005) before export; detect, don't assume |
 
-## 7. Fix
+## 7. Fix — tuning items the full 13-page run surfaced
 
-Pending productionization.
+- **Over-preservation in tables/refs** (350 preserve / 146 content): short text row-labels and reference entries sometimes classified PRESERVE by the identifier/short-text heuristics. Citations-stay-untranslated is often correct, but table prose labels should translate → tune the classifier (table-cell context, language-ID on the block) — **TMX-EXPORT-CLASSIFY-TUNE**.
+- **Drop-cap pairing** is heuristic (nearest body block to the right); fine on this doc, needs a guard for multi-column false pairs.
+- These are recorded, not silent — the FidelityReport makes the split inspectable.
 
 ## 8. Deploy
 
-- [ ] Commit (ADR-0006 + this worksheet): <SHA>
-- [ ] Backend build: follow-up loop
+- [x] Commit (ADR-0006 + worksheet): `5ea6f90`
+- [x] Commit (export package + tests + config): <SHA at commit>
+- [ ] Wire `pdf_overlay` behind the upload route (flag) — follow-up **TMX-EXPORT-WIRE**
 - [ ] Legal: AGPL review for PyMuPDF before any pilot ship
+- [ ] Bundle DejaVu TTFs for Linux/Railway (don't depend on matplotlib) — **TMX-EXPORT-FONTS-BUNDLE**
 
 ---
 
@@ -71,4 +89,5 @@ Pending productionization.
 
 | When (UTC) | From | To | Note |
 |---|---|---|---|
-| 2026-06-13 | — | `[Spec]` | ADR-0006 + POC validated on NEJM manuscript (p1+p2, EN→FR). Productionization scoped; edge-case backlog captured. |
+| 2026-06-13 | — | `[Spec]` | ADR-0006 + POC validated on NEJM manuscript (p1+p2, EN→FR). |
+| 2026-06-13 | `[Spec]` | `[Done]` | Productionized `app/services/export/` (registry + classifier/fonts/layout + 2 backends); 23 tests; full 13-page FR run 0-degraded. Flag-gated default-off; wiring + AGPL + segment_id + classifier-tune are follow-ups. |
