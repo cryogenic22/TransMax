@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Shield, Book, BookOpen, Lock, CheckCircle, XCircle, RefreshCw } from "lucide-react"
 import { GlassCard } from "@/components/ui/GlassCard"
-import { api, type Glossary } from "@/lib/api"
+import { api, type Glossary, type TrustPosture } from "@/lib/api"
 
 export default function TrustCenterPage() {
     const [activeTab, setActiveTab] = useState("rules")
@@ -290,61 +290,82 @@ function GlossaryView() {
 }
 
 function PrivacyMonitor() {
-    return (
-        <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <GlassCard className="p-6 border-l-4 border-l-green-500">
-                    <h3 className="font-semibold flex items-center gap-2 mb-2">
-                        <Lock className="text-green-600" size={20} />
-                        Zero Retention (Azure OpenAI)
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                        Data passed to the LLM is <strong>not stored</strong> or used for training models.
-                        This is enforced via API policy `opt-out: true`.
-                    </p>
-                    <div className="flex items-center gap-2 text-xs font-mono bg-gray-100 p-2 rounded">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                        Policy Active: NO_STORE
-                    </div>
-                </GlassCard>
+    const [posture, setPosture] = useState<TrustPosture | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
-                <GlassCard className="p-6 border-l-4 border-l-blue-500">
-                    <h3 className="font-semibold flex items-center gap-2 mb-2">
-                        <Shield className="text-blue-600" size={20} />
-                        PII Redaction Shield
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                        Personally Identifiable Information (Names, Dates, MRNs) is masked
-                        <strong> before</strong> leaving the secure perimeter.
-                    </p>
-                    <div className="flex items-center gap-2 text-xs font-mono bg-gray-100 p-2 rounded">
-                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                        Scrubber Active: NER_V2_EN
-                    </div>
-                </GlassCard>
-            </div>
+    const fetchPosture = async () => {
+        setLoading(true)
+        setError(null)
+        try {
+            // A3: real posture only — no fabricated "Zero Retention / AES-256 / NER_V2".
+            setPosture(await api.trust.getPosture())
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Failed to load trust posture")
+        } finally {
+            setLoading(false)
+        }
+    }
 
-            <GlassCard className="p-6">
-                <h3 className="font-semibold mb-4">Privacy Impact Assessment</h3>
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                        <span className="text-sm font-medium">Data Residency</span>
-                        <span className="text-sm text-gray-600">US-EAST-2 (Virginia)</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                        <span className="text-sm font-medium">Encryption at Rest</span>
-                        <span className="text-sm text-green-600 flex items-center gap-1">
-                            <CheckCircle size={14} /> AES-256
-                        </span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                        <span className="text-sm font-medium">Audit Trail Immutability</span>
-                        <span className="text-sm text-green-600 flex items-center gap-1">
-                            <CheckCircle size={14} /> SHA-256 Chained
-                        </span>
-                    </div>
+    useEffect(() => {
+        fetchPosture()
+    }, [])
+
+    if (loading) {
+        return <GlassCard><div className="p-8 text-center text-gray-500">Loading trust posture...</div></GlassCard>
+    }
+    if (error) {
+        return (
+            <GlassCard>
+                <div className="p-8 text-center">
+                    <XCircle className="text-red-500 mx-auto mb-3" size={28} />
+                    <h3 className="text-red-600 font-medium">Couldn&apos;t load trust posture</h3>
+                    <p className="text-gray-500 text-sm mt-1">{error}</p>
+                    <button onClick={fetchPosture} className="btn btn-secondary text-sm mt-4">
+                        <RefreshCw size={14} className="mr-2" /> Retry
+                    </button>
                 </div>
             </GlassCard>
+        )
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Shield size={16} />
+                Self-reported controls. Items marked <span className="font-medium text-amber-600">Not verified in-app</span> are
+                infrastructure- or policy-level and must be confirmed in the deployment environment.
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {posture?.controls.map((c) => (
+                    <GlassCard
+                        key={c.key}
+                        className={`p-5 border-l-4 ${c.verified ? "border-l-green-500" : "border-l-amber-400"}`}
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 className="font-semibold flex items-center gap-2">
+                                    {c.verified ? (
+                                        <Lock className="text-green-600" size={18} />
+                                    ) : (
+                                        <Shield className="text-amber-500" size={18} />
+                                    )}
+                                    {c.label}
+                                </h3>
+                                <p className="text-sm text-gray-700 mt-1 font-mono">{c.value}</p>
+                                <p className="text-xs text-gray-500 mt-2">{c.detail}</p>
+                            </div>
+                            <span
+                                className={`shrink-0 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${c.verified ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+                                    }`}
+                            >
+                                {c.verified ? <CheckCircle size={12} /> : <XCircle size={12} />}
+                                {c.verified ? "Verified" : "Not verified in-app"}
+                            </span>
+                        </div>
+                    </GlassCard>
+                ))}
+            </div>
         </div>
     )
 }
