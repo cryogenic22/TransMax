@@ -109,30 +109,40 @@ async def login(request: LoginRequest):
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account is deactivated")
 
-    # Update last login
+    # _get_user_by_email returns a DETACHED instance; capture the fields now,
+    # while the loaded attributes are still cached, BEFORE touching another
+    # session (a second-session add+commit would expire them and the later
+    # issue_tokens access would raise DetachedInstanceError).
+    user_id, user_email = str(user.id), user.email
+    user_name, user_role = user.name, user.role
+    user_provider, user_active = user.auth_provider, user.is_active
+
+    # Update last_login by id — no reliance on the detached instance.
     from app.core.database import SessionLocal
+    from app.models.auth import User
     db = SessionLocal()
     try:
-        user.last_login_at = datetime.now(timezone.utc)
-        db.add(user)
+        db.query(User).filter(User.id == user_id).update(
+            {"last_login_at": datetime.now(timezone.utc)}
+        )
         db.commit()
     finally:
         db.close()
 
     provider = get_auth_provider()
-    tokens = await provider.issue_tokens(str(user.id), user.email, user.name, UserRole(user.role))
+    tokens = await provider.issue_tokens(user_id, user_email, user_name, UserRole(user_role))
     return TokenResponse(
         access_token=tokens.access_token,
         refresh_token=tokens.refresh_token,
         token_type=tokens.token_type,
         expires_in=tokens.expires_in,
         user={
-            "user_id": str(user.id),
-            "email": user.email,
-            "name": user.name,
-            "role": user.role,
-            "auth_provider": user.auth_provider,
-            "is_active": user.is_active,
+            "user_id": user_id,
+            "email": user_email,
+            "name": user_name,
+            "role": user_role,
+            "auth_provider": user_provider,
+            "is_active": user_active,
         },
     )
 

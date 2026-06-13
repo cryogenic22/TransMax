@@ -128,6 +128,15 @@ class Settings(BaseSettings):
     auth_mode: str = "none"  # "none" | "jwt" | "oidc"
     auth_jwt_algorithm: str = "HS256"
 
+    # TMX-AUTH-WALL: seed a demo admin at startup so flipping AUTH_MODE=jwt is a
+    # config change, not a manual SSH + seed-script run. Off by default; only
+    # seeds when ALL of: auth_mode=jwt, seed_demo_admin=true, and a non-empty
+    # demo_admin_password (A3 — never seed a blank/guessable-password account).
+    seed_demo_admin: bool = False
+    demo_admin_email: str = "admin@transmax.local"
+    demo_admin_name: str = "TransMax Admin"
+    demo_admin_password: str = ""
+
     # OIDC / SSO (only needed when auth_mode="oidc")
     oidc_provider: Optional[str] = None       # "okta" | "microsoft" | "google"
     oidc_client_id: Optional[str] = None

@@ -127,6 +127,7 @@ def init_db():
         logger.info("Database tables created successfully.")
 
     _seed_default_org()
+    _seed_demo_admin()
 
     # TMX-DEPLOY-1: on Postgres (the production-like deployments), refuse to
     # boot on a drifted schema. create_all creates missing tables but never
@@ -173,3 +174,57 @@ def _seed_default_org() -> None:
             )
     except Exception as e:
         logger.warning("default-org seed failed (%s). TMX-3011 backfill will fail until resolved.", e)
+
+
+def _seed_demo_admin() -> None:
+    """Seed a single demo admin when AUTH_MODE=jwt + SEED_DEMO_ADMIN=true (TMX-AUTH-WALL).
+
+    Makes activating the login wall a config change, not a manual SSH + seed run.
+    Idempotent. A3: refuses to create an account with a blank/guessable password —
+    if the flag is on but DEMO_ADMIN_PASSWORD is unset, it logs and skips. Runs
+    under the default-org tenant context so the auto-filter + insert injection
+    resolve correctly outside an HTTP request.
+    """
+    from app.core.config import settings
+
+    if getattr(settings, "auth_mode", "none") != "jwt":
+        return
+    if not getattr(settings, "seed_demo_admin", False):
+        return
+    email = (getattr(settings, "demo_admin_email", "") or "").strip()
+    password = getattr(settings, "demo_admin_password", "") or ""
+    if not email or not password:
+        logger.warning(
+            "SEED_DEMO_ADMIN is on but DEMO_ADMIN_EMAIL/PASSWORD is unset — "
+            "skipping demo-admin seed (A3: refusing a blank-password account)."
+        )
+        return
+
+    try:
+        from app.core.tenant_context import org_context
+        from app.models.auth import User
+        from app.models.database import DEFAULT_ORG_ID
+        from app.auth.password import hash_password
+        from app.auth.permissions import UserRole
+
+        with org_context(DEFAULT_ORG_ID):
+            db = SessionLocal()
+            try:
+                if db.query(User).filter(User.email == email).first():
+                    logger.info("demo admin already present (%s) — seed skipped.", email)
+                    return
+                db.add(User(
+                    email=email,
+                    name=getattr(settings, "demo_admin_name", "TransMax Admin"),
+                    hashed_password=hash_password(password),
+                    role=UserRole.ADMIN.value,
+                    auth_provider="local",
+                    is_active=True,
+                    organization_id=DEFAULT_ORG_ID,
+                ))
+                db.commit()
+                logger.info("Seeded demo admin %s (TMX-AUTH-WALL).", email)
+            finally:
+                db.close()
+    except Exception as e:  # noqa: BLE001 — seeding must never block boot
+        logger.warning("demo-admin seed failed (%s).", e)
