@@ -68,7 +68,7 @@ DEMO_ADMIN_PASSWORD=<strong password>     # required; no default
 ```
 On boot the backend seeds the demo admin. The frontend auto-detects `auth_mode=jwt` via `/api/auth/config` and gates `/workspace/*` → `/login`. To roll back: unset `AUTH_MODE` (→ none). Additional users: `/api/auth/register` (jwt) or `scripts/seed_users.py`.
 
-- [x] Commit: <SHA at commit> (code pushed; INERT until the flip)
+- [x] Commit: `fc9e6cf` (code pushed; INERT until the flip)
 - [ ] Kapil flips the env vars when ready to close open-access
 - [ ] Follow-ups: rate-limit `/login`, token revocation, login audit event, bcrypt pin
 
