@@ -62,42 +62,53 @@ class PdfRenderExporter:
                 "text": b.text,
                 "element_type": b.element_type.value,
                 "table_grid": b.table_grid,
+                "page_no": b.page_no,
+                "bbox": b.bbox,
+                "coord_origin": (b.meta or {}).get("coord_origin"),
             }
             for b in parsed.blocks
         ]
         return self.render(blocks, translate_fn, target_lang,
-                           source_filename=parsed.source_filename)
+                           source_filename=parsed.source_filename,
+                           source_path=source_path)
 
     def render(self, blocks: list[dict], translate_fn: TranslateFn, target_lang: str,
-               *, source_filename: str = "") -> ExportResult:
-        """Re-typeset IR ``blocks`` (dicts with text/element_type/table_grid) to PDF.
+               *, source_filename: str = "", source_path: Optional[str] = None,
+               glossary: frozenset = frozenset()) -> ExportResult:
+        """Re-typeset IR ``blocks`` to PDF.
 
-        Separated from parsing so it is unit-testable without Docling.
+        Separated from parsing so it is unit-testable without Docling. ``source_path``
+        (when given) lets figures be rasterised from the original via pypdfium2 rather
+        than dropped; ``glossary`` preserves brand/journal names verbatim.
         """
-        # 1) gather every translatable string in order (prose blocks + table cells)
+        from app.services.export.classify import build_ir_repeats, ir_disposition
+
+        repeats = build_ir_repeats(blocks)
         strings: list[str] = []
-        plan: list[tuple] = []   # (kind, block, payload) describing how to render
+        plan: list[dict] = []
         for b in blocks:
             etype = (b.get("element_type") or "text").lower()
             if etype == _FIGURE:
-                plan.append(("figure", b, None))
+                plan.append({"kind": "figure", "block": b})
             elif etype == _TABLE and b.get("table_grid"):
-                grid = b["table_grid"]
                 idxs = []
-                for row in grid:
+                for row in b["table_grid"]:
                     row_idx = []
                     for cell in row:
                         row_idx.append(len(strings))
                         strings.append(str(cell))
                     idxs.append(row_idx)
-                plan.append(("table", b, idxs))
-            elif etype in _CHROME:
-                plan.append(("chrome", b, None))     # dropped from the flow
-            elif etype in _TRANSLATABLE and (b.get("text") or "").strip():
-                plan.append((etype, b, len(strings)))
-                strings.append(b["text"])
+                plan.append({"kind": "table", "idxs": idxs})
             else:
-                plan.append(("skip", b, None))
+                disp = ir_disposition(b, repeats, glossary=glossary)
+                style = etype if etype in _TRANSLATABLE else "text"
+                if disp == "translate":
+                    plan.append({"kind": "para", "style": style, "src": len(strings)})
+                    strings.append(b["text"])
+                elif disp == "verbatim":
+                    plan.append({"kind": "verbatim", "style": style, "text": b["text"]})
+                else:
+                    plan.append({"kind": "drop"})
 
         translations = translate_fn(strings) if strings else []
         if len(translations) != len(strings):
@@ -105,10 +116,7 @@ class PdfRenderExporter:
                 f"translate_fn returned {len(translations)} for {len(strings)} strings"
             )
 
-        # 2) build flowables + verdicts
-        flowables, verdicts = self._build_flowables(plan, translations, target_lang)
-
-        # 3) render to PDF bytes
+        flowables, verdicts = self._build_flowables(plan, translations, source_path)
         data = self._typeset(flowables)
         report = FidelityReport(backend=self.name, source_filename=source_filename,
                                 target_lang=target_lang, verdicts=verdicts)
@@ -160,24 +168,24 @@ class PdfRenderExporter:
             "_body_font": body_font, "_bold_font": bold_font,
         }
 
-    def _build_flowables(self, plan, translations, target_lang):
+    def _build_flowables(self, plan, translations, source_path):
         from reportlab.lib import colors
         from reportlab.platypus import Paragraph, Spacer, Table, TableStyle
 
         st = self._styles()
         flow, verdicts = [], []
-        for kind, b, payload in plan:
+        for item in plan:
+            kind = item["kind"]
+            if kind == "drop":
+                continue
             if kind == "figure":
-                flow.append(self._figure_placeholder(st))
-                verdicts.append(BlockVerdict("figure", 0, Translatability.PRESERVE,
-                                             overflow=True,
-                                             note="figure bitmap not re-rendered (Tier-2 limit)"))
-            elif kind == "chrome":
-                verdicts.append(BlockVerdict("chrome", 0, Translatability.PRESERVE,
-                                             note="running head/footer dropped from reflow"))
+                flowable, verdict = self._figure_flowable(item["block"], source_path, st)
+                flow.append(flowable)
+                flow.append(Spacer(1, 6))
+                verdicts.append(verdict)
             elif kind == "table":
                 data = [[Paragraph(_xml_escape(translations[i]), st["caption"])
-                         for i in row] for row in payload]
+                         for i in row] for row in item["idxs"]]
                 tbl = Table(data, repeatRows=1)
                 tbl.setStyle(TableStyle([
                     ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#9fb3d1")),
@@ -190,17 +198,46 @@ class PdfRenderExporter:
                 flow.append(Spacer(1, 8))
                 verdicts.append(BlockVerdict("table", 0, Translatability.CONTENT,
                                              strategy=FitStrategy.REFLOWED))
-            elif kind == "skip":
-                continue
-            else:  # a translatable prose block
-                text = _xml_escape(translations[payload])
-                style = st.get(kind, st["text"])
-                bullet = "•" if kind == "list_item" else None
-                flow.append(Paragraph(text, style, bulletText=bullet))
-                verdicts.append(BlockVerdict(kind, 0, Translatability.CONTENT,
-                                             strategy=FitStrategy.REFLOWED,
-                                             font_substituted=True))
+            else:  # "para" (translated) or "verbatim" (brand/identifier kept as-is)
+                raw = translations[item["src"]] if kind == "para" else item["text"]
+                style = st.get(item["style"], st["text"])
+                bullet = "•" if item["style"] == "list_item" else None
+                flow.append(Paragraph(_xml_escape(raw), style, bulletText=bullet))
+                verdicts.append(BlockVerdict(
+                    item["style"], 0,
+                    Translatability.CONTENT if kind == "para" else Translatability.PRESERVE,
+                    strategy=FitStrategy.REFLOWED if kind == "para" else None,
+                    font_substituted=(kind == "para"),
+                    note="" if kind == "para" else "kept verbatim (brand/identifier)"))
         return flow, verdicts
+
+    def _figure_flowable(self, block, source_path, st):
+        """Rasterise the figure region from the source (pypdfium2) and embed it; fall
+        back to a flagged placeholder if the bitmap can't be recovered."""
+        from reportlab.platypus import Image as RLImage
+
+        bbox = block.get("bbox")
+        if source_path and bbox:
+            from app.services.export import pdf_raster
+            png = pdf_raster.render_region(
+                source_path, block.get("page_no") or 1, tuple(bbox),
+                coord_origin=block.get("coord_origin"))
+            if png:
+                import io as _io
+                try:
+                    img = RLImage(_io.BytesIO(png))
+                    # cap to the printable frame, preserving aspect ratio
+                    max_w, max_h = 460.0, 660.0
+                    scale = min(max_w / img.drawWidth, max_h / img.drawHeight, 1.0)
+                    img.drawWidth *= scale
+                    img.drawHeight *= scale
+                    return img, BlockVerdict("figure", 0, Translatability.PRESERVE,
+                                             note="figure rasterised from source (pypdfium2)")
+                except Exception:  # noqa: BLE001 — corrupt crop → placeholder
+                    pass
+        return (self._figure_placeholder(st),
+                BlockVerdict("figure", 0, Translatability.PRESERVE, overflow=True,
+                             note="figure bitmap unavailable — placeholder (Tier-2 limit)"))
 
     @staticmethod
     def _figure_placeholder(st):

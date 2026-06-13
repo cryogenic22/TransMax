@@ -88,14 +88,20 @@ def _locate(ttf_filename: str) -> Optional[str]:
     return None
 
 
+@lru_cache(maxsize=8)
+def _cmap(fontfile: str) -> frozenset:
+    """The set of Unicode code points a TTF can render (fontTools, MIT — no fitz)."""
+    from fontTools.ttLib import TTFont
+    return frozenset(TTFont(fontfile).getBestCmap().keys())
+
+
 def _covers(fontfile: Optional[str], text: str) -> bool:
     """True if the chosen face can render every char. DejaVu covers Latin (+ punct,
     œ, guillemets, dashes); base-14 covers only Latin-1."""
     if fontfile:  # DejaVu — broad Latin/punct coverage; CJK/Arabic still excluded
         try:
-            import fitz
-            font = fitz.Font(fontfile=fontfile)
-            return all(font.has_glyph(ord(c)) for c in text if not c.isspace())
+            cm = _cmap(fontfile)
+            return all(ord(c) in cm for c in text if not c.isspace())
         except Exception:  # noqa: BLE001 — if we cannot verify, assume broad coverage
             return True
     try:

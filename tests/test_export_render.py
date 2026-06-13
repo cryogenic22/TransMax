@@ -56,3 +56,55 @@ def test_render_count_mismatch_fails_loud():
 
 def test_pdf_render_registered():
     assert get_exporter("pdf_render").name == "pdf_render"
+
+
+# --- IR disposition (chrome / brand / content) -----------------------------
+
+def test_ir_disposition_translate_verbatim_drop():
+    from app.services.export.classify import build_ir_repeats, ir_disposition
+
+    blocks = [
+        {"text": "The recommended dose is 50 mg.", "element_type": "text", "page_no": 1},
+        {"text": "n engl j med 383;27", "element_type": "text", "page_no": 1},   # repeats
+        {"text": "n engl j med 383;28", "element_type": "text", "page_no": 2},   # repeats
+        {"text": "Running header", "element_type": "page_header", "page_no": 1},  # chrome
+        {"text": "DOI: 10.1056/NEJMoa2034577", "element_type": "text", "page_no": 3},
+        {"text": "The New England Journal of Medicine", "element_type": "text", "page_no": 1},
+    ]
+    repeats = build_ir_repeats(blocks)
+    g = frozenset({"the new england journal of medicine"})
+    assert ir_disposition(blocks[0], repeats) == "translate"
+    assert ir_disposition(blocks[1], repeats) == "drop"        # repeated folio
+    assert ir_disposition(blocks[3], repeats) == "drop"        # page_header type
+    assert ir_disposition(blocks[4], repeats) == "verbatim"    # DOI identifier
+    assert ir_disposition(blocks[5], repeats, glossary=g) == "verbatim"  # brand glossary
+
+
+def test_render_keeps_brand_verbatim_drops_chrome():
+    ir = [
+        {"text": "The New England Journal of Medicine", "element_type": "text", "page_no": 1},
+        {"text": "Page 1", "element_type": "page_footer", "page_no": 1},
+        {"text": "Adults received the vaccine.", "element_type": "text", "page_no": 1},
+    ]
+    res = get_exporter("pdf_render").render(
+        ir, lambda ts: [f"[FR]{t}" for t in ts], target_lang="fr",
+        glossary=frozenset({"the new england journal of medicine"}))
+    text = "".join(p.get_text() for p in fitz.open(stream=res.data, filetype="pdf"))
+    assert "The New England Journal of Medicine" in text   # brand kept, NOT translated
+    assert "[FR]The New England" not in text
+    assert "[FR]Adults received the vaccine." in text       # prose translated
+    assert "Page 1" not in text                             # chrome footer dropped
+
+
+# --- figure rasterisation (pypdfium2, permissive) --------------------------
+
+def test_pdf_raster_renders_region():
+    import os
+    from app.services.export import pdf_raster
+    src = r"C:\Users\kapil\Downloads\sample_files_test\Manucript 1 (1).pdf"
+    if not (pdf_raster.is_available() and os.path.exists(src)):
+        import pytest
+        pytest.skip("pypdfium2 or sample PDF unavailable")
+    png = pdf_raster.render_region(src, 1, (60.0, 700.0, 300.0, 500.0),
+                                   coord_origin="BOTTOMLEFT")
+    assert png is not None and png[:8] == b"\x89PNG\r\n\x1a\n"

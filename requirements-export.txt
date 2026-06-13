@@ -1,12 +1,17 @@
-# TMX-EXPORT-1 / ADR-0006 — opt-in deps for the pdf_overlay export backend.
-# Kept OUT of the main requirements.txt so the default install/CI stays light and
-# the AGPL dependency is an explicit, reviewed opt-in (see ADR-0006 licence gate).
-#
+# TMX-EXPORT-1 / ADR-0006 — opt-in deps for the PDF export backends.
 #   pip install -r requirements-export.txt
 #
-# NOTE: PyMuPDF is AGPL-3.0 — a licence review gates shipping the overlay backend
-# in the commercial product. The docx backend (default) has no such constraint.
-PyMuPDF>=1.26,<2
+# Tier-2 pdf_render (Docling -> reportlab -> pypdfium2) is FULLY PERMISSIVE — no
+# AGPL — and recovers figures via pypdfium2. Prefer it for PDF-only intake.
+pypdfium2>=4,<5          # Apache-2.0 / BSD-3 (Google PDFium) — figure-region raster
+fonttools>=4             # MIT — glyph-coverage check (replaces the fitz has_glyph)
+# reportlab (BSD) + Docling are already in the main/parsing requirements.
+#
+# Tier-1 pdf_overlay (in-place exact-look overlay) needs PyMuPDF, which is
+# AGPL-3.0 OR a paid Artifex commercial licence — a licence review gates shipping
+# it in the commercial product. It is OPTIONAL: the default docx backend and the
+# permissive Tier-2 pdf_render cover the common cases without it.
+PyMuPDF>=1.26,<2         # AGPL-3.0 / commercial — OPTIONAL (Tier-1 overlay only)
 
 # The overlay embeds a Unicode TTF so French/Western-European typography
 # (œ, em-dash, « guillemets », curly quotes) renders — base-14 fonts only cover
