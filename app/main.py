@@ -183,6 +183,11 @@ from app.api.projects import router as projects_router  # noqa: E402  (router im
 
 app.include_router(projects_router)
 
+# Trust posture (TMX-TRUST-POSTURE) — real, honestly-labelled compliance signals.
+from app.api.trust import router as trust_router  # noqa: E402  (router import beside its registration)
+
+app.include_router(trust_router, prefix="/api/trust", tags=["trust"])
+
 
 @app.get("/health")
 async def health_check():

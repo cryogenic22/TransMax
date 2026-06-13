@@ -226,6 +226,19 @@ export interface GlossaryTerm {
     allowed_variants?: string[]
 }
 
+export interface TrustControl {
+    key: string
+    label: string
+    value: string
+    verified: boolean
+    detail: string
+}
+
+export interface TrustPosture {
+    app_env: string
+    controls: TrustControl[]
+}
+
 export interface RuleAnalytics {
     rule_id: string
     source_pattern: string
@@ -353,6 +366,13 @@ class ApiClient {
         }
         return res.json();
     }
+
+    // === Trust posture (real, honestly-labelled compliance signals) ===
+    public trust = {
+        getPosture: async (): Promise<TrustPosture> => {
+            return this.request(`/api/trust/posture`);
+        },
+    };
 
     // === Knowledge Base API (Black Book / Trust Center) ===
     public knowledge = {
