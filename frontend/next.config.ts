@@ -135,13 +135,12 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
 
-      // ── Ambiguous (307) — destination will tighten in follow-up tickets ──
-      // /knowledge -> /workspace/tools per design v1; 307 because the IA may
-      // split knowledge / glossary into separate workspace sections later.
+      // /knowledge is the Black Book (rules + glossaries), which lives in the
+      // Trust Center. (Was wrongly pointing at /workspace/tools, the Toolkit.)
       {
         source: "/knowledge",
-        destination: "/workspace/tools",
-        permanent: false,
+        destination: "/workspace/trust",
+        permanent: true,
       },
     ];
   },

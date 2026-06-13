@@ -120,8 +120,8 @@ export default function Sidebar({
                 {/* Knowledge Base */}
                 <div className="sidebar-section">
                     <Link
-                        href="/workspace/tools"
-                        className={`sidebar-item ${isActive("/workspace/tools") ? "active" : ""}`}
+                        href="/workspace/trust"
+                        className={`sidebar-item ${pathname.startsWith("/workspace/trust") ? "active" : ""}`}
                     >
                         <BookOpen size={18} />
                         <span>Black Book</span>
