@@ -128,9 +128,24 @@ async def validate_request(state: TransMaxState) -> TransMaxState:
             logger.warning(f"Language detection failed: {e}, defaulting to 'en'")
             state['source_language'] = "en"
 
+    # TMX-MQM-5c: stash document content metadata so the MQM engine can resolve
+    # the content-type metric profile (shadow today, verdict at cutover). Safe,
+    # additive: a missing/empty value just falls back to the default profile.
+    try:
+        _doc_meta = get_db_service().get_document_metadata(state['doc_id']) or {}
+        state['content_metadata'] = {
+            k: _doc_meta.get(k)
+            for k in ("content_type", "doc_type", "document_type",
+                      "archetype", "tier", "metric_profile")
+            if _doc_meta.get(k) is not None
+        }
+    except Exception as e:
+        logger.warning(f"Content-metadata load failed (using default profile): {e}")
+        state['content_metadata'] = {}
+
     # Initialize iteration state
     state['iteration_count'] = 0
-    
+
     # TMX-020: Initialize GxP Audit Trail
     # If job_id exists (it should via API), create the chain.
     if state.get('job_id'):

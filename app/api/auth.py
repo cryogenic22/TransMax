@@ -4,6 +4,7 @@ TransMax Auth API Router.
 Endpoints for login, registration, SSO, user management.
 All endpoints are aware of AUTH_MODE and behave accordingly.
 """
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, List
@@ -17,6 +18,8 @@ from app.auth.permissions import UserRole, Permission
 from app.auth.dependencies import get_current_user, require_permission, require_role
 from app.auth.factory import get_auth_provider, _get_auth_mode, _get_user_by_email
 from app.auth.password import hash_password, verify_password
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
@@ -343,9 +346,21 @@ async def update_user_role(
         target = db.query(User).filter(User.id == user_id).first()
         if not target:
             raise HTTPException(status_code=404, detail="User not found")
+        old_role = target.role
         target.role = request.role
         target.updated_at = datetime.now(timezone.utc)
         db.commit()
+        # TMX-AUTH-AUDIT: access-control changes MUST be audited (A1 / A12). The
+        # v1+v2 audit chains are job-scoped, so a job-less access change cannot
+        # use them yet (same constraint routing_policy_service documents); emit a
+        # structured audit log with actor + target + old→new role. The immutable
+        # system-level chain is the follow-up (TMX-AUTH-AUDIT-CHAIN).
+        logger.info(
+            "ACCESS_CHANGE action=role_update actor_id=%s target_user_id=%s "
+            "target=%s old_role=%s new_role=%s at=%s",
+            user.user_id, user_id, target.email, old_role, request.role,
+            datetime.now(timezone.utc).isoformat(),
+        )
         return {"message": f"User {target.email} role updated to {request.role}"}
     finally:
         db.close()

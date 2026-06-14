@@ -17,23 +17,22 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from app.core.config import get_settings
-from app.core.metric_profiles import MetricProfile, MetricProfileRegistry
+from app.core.metric_profiles import MetricProfile
 from app.services.mqm_engine import score_from_violations
 
 logger = logging.getLogger(__name__)
 
 
 def resolve_metric_profile(state: Dict[str, Any]) -> MetricProfile:
-    """Resolve the content-type metric profile for a job.
+    """Resolve the content-type metric profile for a job (TMX-MQM-5c).
 
-    Reconciliation seam: for now this returns the configured default profile.
-    Content-type → profile resolution (mapping document type / archetype to a
-    profile) lands in TMX-MQM-5c, which is also where the two pre-existing
-    profile systems (`regulatory_profiles.py`, `profile_resolver.py`) get wired
-    onto this registry. Until then a single strict default is the safe choice.
+    Maps the document's content metadata (content_type / doc_type / legacy
+    archetype, stashed into state by ``validate_request``) to a metric profile,
+    reconciling the two legacy profile systems onto the registry. Falls back to
+    the configured default when no hint is present.
     """
-    settings = get_settings()
-    return MetricProfileRegistry.load(settings.mqm_default_profile)
+    from app.core.metric_profiles.resolution import resolve_metric_profile as _resolve
+    return _resolve(state.get("content_metadata"))
 
 
 def run_mqm_shadow(
