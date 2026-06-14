@@ -1,0 +1,18 @@
+version: "1.0.0"
+profile_id: pv
+display_name: "Pharmacovigilance narrative"
+description: >
+  Adverse-event narratives and PSUR/DSUR content: accuracy of clinical facts
+  and terminology (MedDRA) carry the risk. 100% evaluation; any Critical
+  auto-fails. Thresholds are starting proposals (vision §5.4).
+
+passing_threshold: 97
+acceptable_penalty_points: 3
+evaluation: full
+sample_size_floor: 500
+critical_auto_fail: true
+
+error_type_weights:
+  default: 1
+  Accuracy: 3
+  Terminology: 3

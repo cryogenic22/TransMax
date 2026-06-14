@@ -1,0 +1,24 @@
+version: "1.0.0"
+profile_id: icf
+display_name: "Informed Consent Form (patient-facing)"
+description: >
+  ICF content is patient-facing and consent-bearing: accuracy and terminology
+  carry the most risk, and audience appropriateness (readability/reading-level)
+  is weighted up because the reader is a trial participant, not a clinician.
+  100% evaluation; any Critical auto-fails. Thresholds are starting proposals
+  to be calibrated against gold data (vision §5.4).
+
+# Passing Threshold — calibrated CQS the document must meet.
+passing_threshold: 97
+# Acceptable Penalty Points per 1,000 words (defines the Scaling Factor).
+acceptable_penalty_points: 3
+evaluation: full
+sample_size_floor: 500
+critical_auto_fail: true
+
+# Error-Type Weights keyed by MqmDimension value (default applies to the rest).
+error_type_weights:
+  default: 1
+  Accuracy: 3
+  Terminology: 3
+  "Audience appropriateness": 2
