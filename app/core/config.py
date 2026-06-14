@@ -83,6 +83,25 @@ class Settings(BaseSettings):
     max_tokens_per_job: Optional[int] = None
     max_cost_usd_per_job: Optional[float] = None
 
+    # TMX-MQM-5 / ADR-0007: MQM-2.0 engine rollout (strangler-fig).
+    #  - `mqm_shadow_enabled` runs the pure MQM engine ALONGSIDE the legacy
+    #    deterministic verdict and logs a shadow comparison. It changes NO
+    #    verdict — it only collects the distribution diff that review condition
+    #    4 requires before any cutover. Safe to leave on (observational).
+    #  - `mqm_engine_enabled` is the future cutover flag (default OFF; flipped
+    #    per-tenant only after the shadow diff is signed off — TMX-MQM-5b).
+    #  - `mqm_default_profile` is the content-type metric profile used until
+    #    content→profile resolution lands (TMX-MQM-5c).
+    mqm_shadow_enabled: bool = True
+    mqm_engine_enabled: bool = False
+    mqm_default_profile: str = "smpc_pil"
+
+    # TMX-MQM-CAPTURE: when a reviewer overrides an MT segment, feed the change
+    # into the learning bridge as a PROPOSED Black-Book candidate (the gold
+    # signal for Phase-2 judge calibration). Default on; turn off to avoid the
+    # per-override rule-extraction LLM call.
+    enable_hitl_learning_capture: bool = True
+
     # Feature Flags (Epic 4: Surgical Reality)
     enable_real_pdf_parsing: bool = True  # Enabled for demo
     enable_live_llm_inference: bool = True

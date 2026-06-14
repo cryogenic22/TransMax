@@ -401,7 +401,14 @@ async def run_quality_gates(state: TransMaxState) -> TransMaxState:
             "status": status,
             "scorecard": scorecard_data
         }
-        
+
+        # TMX-MQM-5 (shadow): score the SAME violations through the pure MQM
+        # engine alongside the legacy verdict and log the diff. Changes NO
+        # verdict — collects the distribution comparison required before any
+        # cutover (ADR-0007 / review cond. 4). Self-contained + fail-safe.
+        from app.agents.nodes.mqm_shadow import run_mqm_shadow
+        run_mqm_shadow(state, violations, status)
+
     except Exception as e:
         logger.error(f"Quality Gate Error: {e}")
         state['error'] = f"Quality Gate Failed: {e}"
