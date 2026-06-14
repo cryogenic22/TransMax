@@ -139,7 +139,10 @@ class DatabaseService:
                     "term": rule.source_pattern,
                     "target": rule.target_correction,
                     "reason": f"Agency Rule ({rule.context_tag}): {rule.rule_id}",
-                    "confidence": rule.confidence_score
+                    "confidence": rule.confidence_score,
+                    # TMX-BB-STRICT: carry the "block if violated" flag through to
+                    # the gate so a locked rule is enforced (CRITICAL), not dropped.
+                    "is_strict": bool(getattr(rule, "is_strict", False)),
                 })
             
             # 2. Fetch TM Matches (Vector Search)
