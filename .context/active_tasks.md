@@ -19,10 +19,12 @@ From the 24-agent vision-gap audit (`docs/product_vision_features/VISION-GAP-ANA
 | TMX-MQM-2 | Content-type metric profile registry + 5 §5.4 profiles | Quality | **[Done, pending push]** | mirrors `PromptRegistry`; reconciles the two profile forks; 8 tests; see `.context/loops/TMX-MQM-2.md` |
 | TMX-MQM-3 | Pure MQM-2.0 engine + shadow harness | Quality+Agent | **[Done, pending push]** | spec-binding (RQS=99; SmPC/Promo boundaries); engine-derived auto-fail; insufficient_sample separate; `ConfidenceService` untouched; 14 tests; see `.context/loops/TMX-MQM-3.md` |
 | TMX-MQM-1a | Persist `mqm_annotations` table + Alembic revision | Quality+Auth | **[READY]** | deferred from MQM-1 (engine/judge need only the in-memory object) |
-| TMX-MQM-4 | Independent judge node; wire the dead `reviewer` prompt → §5.7 output | Agent | **[BLOCKED — needs Kapil: model-family independence decision]** | ADR-0007 open decision: ≥2 independent in-boundary models, or compensating controls? |
-| TMX-MQM-5 | Graph rewire (engine = sole decider) + `ConfidenceService`→adapter **after shadow diff** + unify SDK fork | Agent+Quality | **[READY]** | one-way blast radius; per-tenant `mqm_engine_enabled` flag; red-team hardest |
-| TMX-MQM-6 | Bounded revise w/ conservation diff-reject + ensemble + disagreement escalation | Agent | **[READY]** | depends on MQM-4/5; cap Tier-0/1 iterations (cost reckoning in plan §5) |
-| TMX-MQM-CAPTURE | Wire reviewer confirm/override → `human_decision` (gold for Phase 2 κ) | Frontend+Quality | **[READY]** | cheap now, expensive to backfill (review cond. 6) |
+| TMX-MQM-4 | Independent judge node; wire the dead `reviewer` prompt → §5.7 output | Agent | **[READY]** | UNBLOCKED 2026-06-14: Kapil chose **model-agnostic** — build behind config, default single-model + compensating controls (planted-defect gates / disagreement escalation / cross-prompt adversarial), flip to dual-model when a 2nd in-boundary model is validated (ADR-0007 open decision resolved this way) |
+| TMX-MQM-5 (phase a) | Graph rewire — MQM engine **shadow** alongside the legacy verdict | Agent+Quality | **[Done, pending push]** | observational, changes no verdict; `mqm_shadow_enabled`; logs legacy-vs-MQM diff; 4 tests; see `.context/loops/TMX-MQM-5.md` |
+| TMX-MQM-5 (phase b) | Verdict cutover (engine = sole decider) + strip self-cert + gates→annotators + `ConfidenceService`→adapter + unify SDK fork | Agent+Quality | **[READY]** | one-way; per-tenant `mqm_engine_enabled` flag; **gated on reviewing the shadow diff**; red-team hardest |
+| TMX-MQM-5c | Content-type → metric-profile resolution (reconcile `regulatory_profiles`/`profile_resolver` onto the registry) | Quality | **[READY]** | replaces the default-profile seam in `mqm_shadow.resolve_metric_profile` |
+| TMX-MQM-6 | Bounded revise w/ conservation diff-reject + ensemble + disagreement escalation | Agent | **[READY]** | depends on MQM-4/5b; cap Tier-0/1 iterations (cost reckoning in plan §5) |
+| TMX-MQM-CAPTURE | Reviewer override → learning bridge (gold for Phase 2 κ) | Frontend+Quality | **[Done, pending push]** | reconnects the orphaned `process_learning_event`; background-task + tenant-context; `enable_hitl_learning_capture`; 3 tests; see `.context/loops/TMX-MQM-CAPTURE.md` |
 
 ---
 
