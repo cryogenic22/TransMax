@@ -26,6 +26,25 @@ From the 24-agent vision-gap audit (`docs/product_vision_features/VISION-GAP-ANA
 | TMX-MQM-6 | Bounded revise w/ conservation diff-reject + ensemble + disagreement escalation | Agent | **[READY]** | depends on MQM-4/5b; cap Tier-0/1 iterations (cost reckoning in plan §5) |
 | TMX-MQM-CAPTURE | Reviewer override → learning bridge (gold for Phase 2 κ) | Frontend+Quality | **[Done, pending push]** | reconnects the orphaned `process_learning_event`; background-task + tenant-context; `enable_hitl_learning_capture`; 3 tests; see `.context/loops/TMX-MQM-CAPTURE.md` |
 
+### Session 2026-06-15 — 10 loops shipped on `feat/mqm-keystone` (PR #14)
+
+All additive / shadow / flag-gated; live verdict unchanged. Branch pushed; PR open. Reuse-and-reconcile.
+
+| Loop | Status | One-line |
+|---|---|---|
+| TMX-MQM-5c | **[Done]** | content-type → metric-profile resolution (reconciles the two profile forks); shadow scores the right profile |
+| TMX-BB-STRICT | **[Done]** | `is_strict` locked rules now enforced (CRITICAL/block) — closed the vacuous-green trap where they did nothing |
+| TMX-AUTH-AUDIT | **[Done]** | structured `ACCESS_CHANGE` audit on role updates (A1/A12); immutable-chain follow-up = TMX-AUTH-AUDIT-CHAIN |
+| TMX-MQM-4 | **[Done]** | independent judge in SHADOW (model-agnostic; §5.7 prompt wired; emits annotations, can't set verdict); default-off |
+| TMX-MQM-6 | **[Done]** | ensemble (most-severe + disagreement escalation) + conservation diff-reject — pure helpers |
+| TMX-MQM-5a-emit | **[Done]** | shadow diff + judge findings → v2 audit chain (durable for the cutover gate + Phase-2 κ) |
+| TMX-MQM-EVAL | **[Done]** | judge-reliability metric (planted-defect recall + precision) — the Phase-2 CI gate's measure |
+| TMX-DASH-JUDGE-LABEL | **[Done]** | dashboard no longer mislabels the deterministic gate as "Reviewer agent" (A2) |
+| TMX-MQM-SHADOW-REPORT | **[Done]** | read-only `scripts/mqm_shadow_report.py` — the phase-b cutover evidence tool |
+| TMX-MQM-EVAL-CASES | **[Done]** | planted-defect judge gold set + recall-gate demonstration (E13.S2 seed) |
+
+Commits: Batch 1 (5c/BB-STRICT/AUTH-AUDIT), Batch 2 (4/6/5a-emit), Batch 3 (EVAL/DASH/REPORT/EVAL-CASES). Spawned follow-ups: **TMX-AUTH-AUDIT-CHAIN** (job-less immutable audit trail), **TMX-MQM-1a** (annotation table + Alembic — judge findings already durable in the v2 chain, so deferred), **TMX-MQM-5b** (verdict cutover — gated on the shadow-report review), **TMX-QRD-WIRE** (resolve a regulatory_profiles key into check_segment so QRD/date checks fire — flag-gate; deferred as it can change live verdicts).
+
 ---
 
 ## Feedback-loop initiative (in-app issue → triage → auto-deploy) — started 2026-06-04
