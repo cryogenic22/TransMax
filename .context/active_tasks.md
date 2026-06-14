@@ -9,6 +9,23 @@ This file replaces the legacy ticket list (Tickets 10-23) which were Phase 1-3 h
 
 ---
 
+## MQM Keystone — defensibility core (Phase 1) — started 2026-06-14
+
+From the 24-agent vision-gap audit (`docs/product_vision_features/VISION-GAP-ANALYSIS-AND-ROADMAP.md`): the three defensibility pillars (MQM engine / independent judge / Black Book) are Divergent or absent. Phase 1 builds the keystone triad — **annotation → engine → judge** — strangler-fig over the existing code (ADR-0007; plan: `PHASE-1-KEYSTONE-BUILD-PLAN.md`). Engine ships in shadow; live pipeline unchanged until the flagged K5 cutover.
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-MQM-1 | MQM annotation object (§5.7) + taxonomy reconciliation (NEUTRAL, 7 dims, SPM, category→dim bridge) | Quality+Agent | **[Done, pending push]** | reuses `defect_taxonomy.py`; 12 tests; `feat/mqm-keystone`; see `.context/loops/TMX-MQM-1.md` |
+| TMX-MQM-2 | Content-type metric profile registry + 5 §5.4 profiles | Quality | **[Done, pending push]** | mirrors `PromptRegistry`; reconciles the two profile forks; 8 tests; see `.context/loops/TMX-MQM-2.md` |
+| TMX-MQM-3 | Pure MQM-2.0 engine + shadow harness | Quality+Agent | **[Done, pending push]** | spec-binding (RQS=99; SmPC/Promo boundaries); engine-derived auto-fail; insufficient_sample separate; `ConfidenceService` untouched; 14 tests; see `.context/loops/TMX-MQM-3.md` |
+| TMX-MQM-1a | Persist `mqm_annotations` table + Alembic revision | Quality+Auth | **[READY]** | deferred from MQM-1 (engine/judge need only the in-memory object) |
+| TMX-MQM-4 | Independent judge node; wire the dead `reviewer` prompt → §5.7 output | Agent | **[BLOCKED — needs Kapil: model-family independence decision]** | ADR-0007 open decision: ≥2 independent in-boundary models, or compensating controls? |
+| TMX-MQM-5 | Graph rewire (engine = sole decider) + `ConfidenceService`→adapter **after shadow diff** + unify SDK fork | Agent+Quality | **[READY]** | one-way blast radius; per-tenant `mqm_engine_enabled` flag; red-team hardest |
+| TMX-MQM-6 | Bounded revise w/ conservation diff-reject + ensemble + disagreement escalation | Agent | **[READY]** | depends on MQM-4/5; cap Tier-0/1 iterations (cost reckoning in plan §5) |
+| TMX-MQM-CAPTURE | Wire reviewer confirm/override → `human_decision` (gold for Phase 2 κ) | Frontend+Quality | **[READY]** | cheap now, expensive to backfill (review cond. 6) |
+
+---
+
 ## Feedback-loop initiative (in-app issue → triage → auto-deploy) — started 2026-06-04
 
 Replicates market_zero's in-app feedback loop, adapted to TransMax's 8-stage loop + reversibility gates. Users submit bug/issue/enhancement/feature reports from the UI; a `/schedule` cron triages and (for two-way Auto-fix-safe items) runs the loop and auto-deploys; one-way/risky fixes land on a `feedback/<id>` branch and are surfaced to Kapil. Everything logged.
