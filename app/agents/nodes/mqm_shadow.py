@@ -76,13 +76,81 @@ def run_mqm_shadow(
             mqm.insufficient_sample,
             block_agreement,
         )
-        return {
+        comparison = {
             "profile": f"{profile.profile_id}@{profile.version}",
             "ewc": ewc,
             "legacy_status": legacy_status,
             "mqm": mqm.to_dict(),
             "block_agreement": block_agreement,
         }
+
+        # TMX-MQM-5a-emit: persist the diff to the v2 audit chain so the
+        # distribution comparison is durable + queryable for the phase-b cutover
+        # gate review and Phase-2 calibration. The emit helper is itself fail-safe.
+        job_id = state.get("job_id")
+        if job_id:
+            from app.agents._audit_v2_emit import emit_v2_audit_event
+            emit_v2_audit_event(
+                job_id=job_id,
+                event_type="MQM_SHADOW_SCORE",
+                actor_id=None,
+                actor_kind="agent",
+                payload={"_actor_node": "mqm_engine_shadow", **comparison},
+            )
+        return comparison
     except Exception as e:  # never let the shadow break the gate
         logger.warning("MQM shadow scoring failed (non-fatal, verdict unaffected): %s", e)
+        return None
+
+
+async def run_judge_shadow(state: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Run the INDEPENDENT judge in shadow (TMX-MQM-4): emit §5.7 annotations +
+    a judge-only MQM score to the audit chain. Changes no verdict. Default OFF
+    (one extra LLM call/job); enable for the pilot tenant to gather judge-vs-gate
+    data before the cutover. Fully fail-safe."""
+    settings = get_settings()
+    if not settings.mqm_judge_shadow_enabled:
+        return None
+    try:
+        from app.services.mqm_engine import score as _score
+        from app.services.mqm_judge import judge_segments
+
+        segs = [s for s in state.get("segments", []) if s.get("translated_text")]
+        if not segs:
+            return None
+        content_type = (state.get("content_metadata") or {}).get("content_type", "") or ""
+        annotations = await judge_segments(
+            segs,
+            state.get("source_language", "en"),
+            state.get("target_language", "en"),
+            content_type=content_type,
+            grounding=state.get("constraint_pack"),
+        )
+        profile = resolve_metric_profile(state)
+        ewc = sum(len((s.get("source_text") or "").split()) for s in segs)
+        judge_score = _score(annotations, profile, max(ewc, 1))
+
+        critical = sum(1 for a in annotations if a.severity.value == "CRITICAL")
+        logger.info(
+            "MQM_JUDGE_SHADOW job=%s judge_annotations=%s critical=%s judge_passed=%s",
+            state.get("job_id"), len(annotations), critical, judge_score.passed,
+        )
+        job_id = state.get("job_id")
+        if job_id:
+            from app.agents._audit_v2_emit import emit_v2_audit_event
+            emit_v2_audit_event(
+                job_id=job_id,
+                event_type="MQM_JUDGE_SHADOW",
+                actor_id=None,
+                actor_kind="agent",
+                payload={
+                    "_actor_node": "judge",
+                    "judge_annotation_count": len(annotations),
+                    "judge_critical_count": critical,
+                    "judge_mqm": judge_score.to_dict(),
+                },
+            )
+        return {"annotation_count": len(annotations), "judge_mqm": judge_score.to_dict()}
+    except Exception as e:
+        logger.warning("MQM judge shadow failed (non-fatal, verdict unaffected): %s", e)
         return None

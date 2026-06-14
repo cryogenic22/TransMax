@@ -95,6 +95,11 @@ class Settings(BaseSettings):
     mqm_shadow_enabled: bool = True
     mqm_engine_enabled: bool = False
     mqm_default_profile: str = "smpc_pil"
+    # TMX-MQM-4: run the independent judge in SHADOW (an extra LLM call per job
+    # that emits §5.7 annotations + a judge-only MQM score to the audit chain,
+    # changing no verdict). Default OFF because of the per-job cost; turn on for
+    # the pilot tenant to collect judge-vs-gate data before the cutover.
+    mqm_judge_shadow_enabled: bool = False
 
     # TMX-MQM-CAPTURE: when a reviewer overrides an MT segment, feed the change
     # into the learning bridge as a PROPOSED Black-Book candidate (the gold
