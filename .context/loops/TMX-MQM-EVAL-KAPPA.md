@@ -1,10 +1,10 @@
 # TMX-MQM-EVAL-KAPPA — judge↔rater agreement (Cohen's κ) primitive + durable per-segment judge labels
 
-**State**: `[WIP]`
+**State**: `[Done]`
 **Owner**: Quality & Regulatory
 **Sprint**: MQM Keystone / Phase 2 (judge reliability)
 **Started**: 2026-06-15
-**Closed**: —
+**Closed**: 2026-06-15
 **Reversibility**: `two-way` (pure additive metric + a wider audit payload; revertable by deleting the new symbols and narrowing the payload)
 **Pre-mortem**: if this fails in production, the failure mode is *a κ number that looks authoritative but is computed over a biased/insufficient label set* — guarded by an explicit `insufficient` flag (A3, never fabricate agreement).
 **Blast radius**: `app/services/judge_eval.py` (new pure functions), `app/agents/nodes/mqm_shadow.py` (widen the `MQM_JUDGE_SHADOW` payload with per-segment labels). No live verdict. New tests only otherwise.
@@ -68,9 +68,9 @@ Deleted `severity_label_map` + the duplicated `_SEVERITY_RANK` + its test (the b
 
 ## 8. Deploy
 
-- [ ] Commit: <SHA after commit>
-- [ ] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
-- [ ] `.context/active_tasks.md` + `MQM-DELIVERY-BACKLOG.md` updated
+- [x] Commit: `6536939` (batch w/ ENSEMBLE-RUN + EVAL-CI)
+- [x] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
+- [x] `.context/active_tasks.md` + `MQM-DELIVERY-BACKLOG.md` updated
 
 ---
 
@@ -79,3 +79,4 @@ Deleted `severity_label_map` + the duplicated `_SEVERITY_RANK` + its test (the b
 | When (UTC) | From | To | Note |
 |---|---|---|---|
 | 2026-06-15T00:00Z | — | `[WIP]` | Created from the next-10 resume batch; κ primitive + durable judge labels; human join deferred to TMX-MQM-1a |
+| 2026-06-15T00:00Z | `[WIP]` | `[Done]` | Shipped in `6536939`; red team deleted the dangling `severity_label_map`; spawned TMX-MQM-EVAL-KAPPA-JOIN |
