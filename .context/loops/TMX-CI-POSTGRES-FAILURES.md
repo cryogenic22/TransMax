@@ -75,8 +75,17 @@ Key question: does any fix MASK a real app bug? No. (a) The app generates 36-cha
 
 ## 8. Deploy
 
-- [ ] Commit: (this commit) — segments+dashboard+vectors+ci.yml+worksheet
-- [ ] Push → CI validates the 3 CI-env failures (not locally reproducible)
+- [x] Commit `c189b99` — segments+dashboard+vectors+ci.yml+worksheet
+- [x] Push → CI (PR #20) validated: **1369 passed, 1 failed, 5 skipped** (was crash/0). The 12 errors + vectors + both git CI-env tests are GREEN. Only `test_auth_wall_seed` remained.
+
+## 9. Addendum — TMX-CI-BCRYPT (the last failure was a real auth bug, not test-env)
+
+`test_auth_wall_seed` failed in CI but passed in every local run. Surfacing the seed's *swallowed* exception (`database.py:230 except Exception`) via the CI log revealed the true cause: **`requirements.txt` pinned `passlib[bcrypt]` with no version**, so CI's fresh install pulled bcrypt 4.x. passlib 1.7.4 (unmaintained since 2020) is incompatible with bcrypt 4.1+ (which removed `bcrypt.__about__`) — its backend self-test hashes a >72-byte probe that bcrypt 4.x rejects, so passlib marks bcrypt unusable and EVERY `hash()` call fails with a spurious "password cannot be longer than 72 bytes". This is a **production auth bug** (login/register/seed would break on any fresh deploy that pulls bcrypt 4.x), not a test issue.
+
+Fix: migrate `app/auth/password.py` off passlib to **bcrypt directly** (`requirements.txt`: `passlib[bcrypt]` → `bcrypt`). Proven byte-compatible: a real passlib-made `$2b$12$…` hash verifies under `bcrypt.checkpw` (frozen regression pin in `tests/test_password_hashing.py`), same ident/cost(12)/72-byte truncation. Adversarial auth red-team (agent `a9cc13d4`) verdict **SHIP** — no defect across backward-compat / truncation / fail-closed / work-factor. 41 auth tests + 5 new password tests green on Postgres.
+
+- [ ] Commit (this) — password.py + requirements.txt + test_password_hashing.py
+- [ ] Push → CI validates auth_wall_seed now passes (full green expected)
 
 ---
 
