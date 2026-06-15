@@ -30,7 +30,7 @@ aiofiles
 httpx
 tenacity
 python-jose[cryptography]
-passlib[bcrypt]
+bcrypt
 redis
 pint
 langdetect
