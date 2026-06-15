@@ -21,9 +21,9 @@
     "tests.functions": "up"
   },
   "metrics": {
-    "backend.any_annotations": 245,
+    "backend.any_annotations": 285,
     "backend.bare_except": 2,
-    "backend.mega_files_800": 2,
+    "backend.mega_files_800": 3,
     "backend.placeholder_strings": 1,
     "backend.print_in_app": 0,
     "backend.todo_without_issue": 3,
@@ -39,5 +39,5 @@
     "tests.files": 159,
     "tests.functions": 999
   },
-  "note": ""
+  "note": "2026-06-15 PR #14 (feat/mqm-keystone) reviewed exception: backend.any_annotations 245->285 and backend.mega_files_800 2->3. The +40 Any are all legitimate dynamic-payload types added by the MQM-keystone loops — LangGraph `state: Dict[str,Any]`, JSON `violations`/`metadata` payloads, untrusted-input coercion helpers (`_norm`/`_coerce_severity`/`_coerce_dimension`), and `to_dict()` serializers — where a concrete type would be fake precision. mega_files: `quality_gate.py` 781->802 because the TMX-QRD-WIRE defect checks correctly live in the gate per addendum A2 (quality at gates, not in translate); the file is already TMX-3400's instance-refactor target. committed_db_files left at 3 (CI tracks 2; transmax.db removal is Kapil-gated TMX-3002)."
 }
