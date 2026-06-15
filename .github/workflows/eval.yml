@@ -99,3 +99,48 @@ jobs:
               issue_number: context.issue.number,
               body: lines
             });
+
+  # TMX-MQM-EVAL-CI — judge-reliability gate. Structure tier (no keys) always
+  # blocks a missing/empty/lopsided gold set; judge tier (keys present) blocks
+  # below the recall floor.
+  judge-gate:
+    name: Judge-reliability gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Determine judge scope
+        id: scope
+        env:
+          HAS_OPENAI: ${{ secrets.OPENAI_API_KEY != '' }}
+          HAS_ANTHROPIC: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        run: |
+          if [ "$HAS_OPENAI" = "true" ] || [ "$HAS_ANTHROPIC" = "true" ]; then
+            echo "require=--require-judge" >> "$GITHUB_OUTPUT"
+          else
+            echo "require=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run judge-reliability gate
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python -m scripts.judge_eval_gate check ${{ steps.scope.outputs.require }} --report-json eval_results/judge_gate.json
+
+      - name: Upload judge-gate report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judge-gate-report-${{ github.run_id }}
+          path: eval_results/judge_gate.json
+          if-no-files-found: warn

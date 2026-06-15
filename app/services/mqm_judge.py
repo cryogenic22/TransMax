@@ -24,7 +24,6 @@ import logging
 from typing import Any, Dict, List, Optional, Sequence
 
 from app.agents.prompts.registry import PromptRegistry
-from app.core.config import get_settings
 from app.core.defect_taxonomy import DefectSeverity, MqmDimension
 from app.core.mqm_annotation import MqmAnnotation, Span
 from app.services.json_parser import RobustParser
@@ -136,7 +135,7 @@ async def judge_segments(
 
     from langchain_core.messages import HumanMessage, SystemMessage
 
-    from app.services.llm import get_llm
+    from app.services.llm import get_llm, resolve_model
 
     llm = get_llm(task="judge")  # model-agnostic; router off ⇒ default model
     resp = await llm.ainvoke([SystemMessage(content=prompt.system), HumanMessage(content=user)])
@@ -146,5 +145,8 @@ async def judge_segments(
         raw,
         judge_id=judge_id,
         prompt_version=f"judge@{prompt.version}",
-        model_version=getattr(get_settings(), "default_gpt_model", None),
+        # Record the REAL resolved model (A6) — identical to the default until
+        # `enable_llm_router` maps task="judge" to a 2nd lineage, at which point
+        # an ensemble's per-judge provenance must not lie.
+        model_version=resolve_model(task="judge"),
     )

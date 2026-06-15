@@ -1,16 +1,12 @@
 """TMX-MQM-EVAL-CASES — the planted-defect recall gate over real fixtures (E13.S2 seed)."""
-import json
-import pathlib
-
 from app.core.defect_taxonomy import DefectSeverity, MqmDimension
 from app.core.mqm_annotation import MqmAnnotation
-from app.services.judge_eval import compute_judge_reliability
-
-CASES = pathlib.Path(__file__).parent / "evals" / "judge" / "planted_critical.jsonl"
+from app.services.judge_eval import compute_judge_reliability, load_judge_gold
 
 
 def _load():
-    return [json.loads(ln) for ln in CASES.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    # TMX-MQM-EVAL-CI: one canonical loader, shared with the CI gate.
+    return load_judge_gold()
 
 
 def _critical(seg):

@@ -100,6 +100,14 @@ class Settings(BaseSettings):
     # changing no verdict). Default OFF because of the per-job cost; turn on for
     # the pilot tenant to collect judge-vs-gate data before the cutover.
     mqm_judge_shadow_enabled: bool = False
+    # TMX-MQM-ENSEMBLE-RUN: run the judge N times in SHADOW and combine with the
+    # most-severe + disagreement-escalation aggregator (no averaging). Default
+    # OFF (N× the per-job judge cost). `mqm_ensemble_size` is the judge count
+    # (>=2). NOTE: with `enable_llm_router` off, all judges share one model — the
+    # emitted `single_lineage` flag + inter-judge κ keep that honest (it is
+    # self-consistency, not independent corroboration, until routing flips).
+    mqm_ensemble_shadow_enabled: bool = False
+    mqm_ensemble_size: int = 2
 
     # TMX-MQM-CAPTURE: when a reviewer overrides an MT segment, feed the change
     # into the learning bridge as a PROPOSED Black-Book candidate (the gold
