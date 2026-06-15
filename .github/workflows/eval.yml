@@ -55,7 +55,7 @@ jobs:
 
       - name: Upload eval report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: eval-report-${{ github.run_id }}
           path: eval_results/latest.json
@@ -139,7 +139,7 @@ jobs:
 
       - name: Upload judge-gate report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: judge-gate-report-${{ github.run_id }}
           path: eval_results/judge_gate.json
