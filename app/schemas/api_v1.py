@@ -1,7 +1,12 @@
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 from typing import Optional, Dict, Any, List
 from datetime import datetime
-from app.core.profile_enums import TranslationArchetype, ContentRiskTier, OutputModality
+from app.core.profile_enums import (
+    ContentRiskTier,
+    OutputModality,
+    TranslationArchetype,
+    is_tier_archetype_compatible,
+)
 
 class JobProfileRequest(BaseModel):
     """
@@ -16,13 +21,11 @@ class JobProfileRequest(BaseModel):
     @classmethod
     def validate_tier_archetype_compatibility(cls, v, info):
         """
-        Enforce Governance Invariants at the Edge.
+        Enforce Governance Invariants at the Edge (TMX-SSOT-TIER: one predicate).
         Example: INFORMATIONAL cannot be TIER_A.
         """
-        if 'archetype' in info.data:
-            arch = info.data['archetype']
-            if arch == TranslationArchetype.INFORMATIONAL and v == ContentRiskTier.TIER_A:
-                raise ValueError("Informational Archetype cannot be Tier A (Critical).")
+        if 'archetype' in info.data and not is_tier_archetype_compatible(info.data['archetype'], v):
+            raise ValueError("Informational Archetype cannot be Tier A (Critical).")
         return v
 
 class JobCreateRequest(BaseModel):

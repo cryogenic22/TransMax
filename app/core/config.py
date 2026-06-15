@@ -115,6 +115,16 @@ class Settings(BaseSettings):
     # per-override rule-extraction LLM call.
     enable_hitl_learning_capture: bool = True
 
+    # TMX-ORCH-CHECKPOINT (Loop A): the stuck-PROCESSING job sweeper. A worker
+    # killed mid-run (deploy/OOM/crash) leaves a Document orphaned in
+    # `processing` forever. The sweeper (scripts/stuck_job_sweeper.py) flips such
+    # docs to IN_REVIEW with a JOB_SWEPT_STUCK audit event. Default OFF: the
+    # script refuses to MUTATE unless this is True (--dry-run previews regardless),
+    # so it is safe to schedule before a tenant opts in. Timeout is generous
+    # (4× the translate timeout) so a slow-but-alive early-stage job is never swept.
+    stuck_job_sweep_enabled: bool = False
+    stuck_job_timeout_seconds: int = 1200
+
     # Feature Flags (Epic 4: Surgical Reality)
     enable_real_pdf_parsing: bool = True  # Enabled for demo
     enable_live_llm_inference: bool = True

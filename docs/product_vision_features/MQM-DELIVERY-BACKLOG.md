@@ -34,10 +34,10 @@ Legend: `[Done]` shipped · `[Next-10]` the immediate resume batch · `[Gated]` 
 | TMX-BB-STRICT | `is_strict` locked rules enforce/block | — | two-way | **[Done]** |
 | TMX-AUTH-AUDIT | Structured ACCESS_CHANGE audit on role updates | — | two-way | **[Done]** |
 | TMX-DASH-JUDGE-LABEL | Dashboard stops mislabelling the gate as "Reviewer agent" | — | two-way | **[Done]** |
-| **TMX-ORCH-CHECKPOINT** | LangGraph checkpointer + stuck-PROCESSING sweeper (no orphaned jobs, A8) | — | two-way | **[Next-10]** |
+| TMX-ORCH-CHECKPOINT (Loop A) | Stuck-PROCESSING sweeper (no orphaned jobs, A8) — Document+Segment activity anchor | — | two-way | **[Done]** (default-OFF; Loop B checkpointer deferred, one-way) |
 | **TMX-AUTH-AUDIT-CHAIN** | Job-less immutable audit trail (system-level chain) for access/config changes | — | one-way | **[Next-10]** |
 | **TMX-LOGIN-AUDIT** | Audit login/register/refresh/SSO (extend AUTH-AUDIT) | AUTH-AUDIT-CHAIN | two-way | **[Next-10]** |
-| **TMX-SSOT-TIER** | Collapse the two dead tier vocabularies + the tier-blind live gate into one | — | two-way | **[Next-10]** |
+| TMX-SSOT-TIER (steps 1-3) | Fix the dead metadata funnel + tier→MetricProfile refinement + unify the governance rule | — | two-way | **[Done]** (step 4 dead-field removal deferred, one-way) |
 | TMX-OIDC-CSRF | Verify OIDC `state` on callback (CSRF gap, A12) | — | two-way | [ ] |
 | TMX-RBAC-SWEEP | Apply `require_permission` uniformly across all routers | — | two-way | [ ] |
 

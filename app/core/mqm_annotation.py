@@ -68,6 +68,9 @@ class MqmAnnotation(BaseModel):
     segment_id: Optional[str] = None
     locale: Optional[str] = None
     content_type: Optional[str] = None
+    # DEAD — never assigned/read; the live tier signal is the metric profile
+    # (ContentRiskTier → profile via resolution.py, TMX-SSOT-TIER). Removal +
+    # the matching mqm_engine docstring fix are TMX-SSOT-TIER step 4 (one-way).
     risk_tier: Optional[int] = None
 
     source_span: Optional[Span] = None
