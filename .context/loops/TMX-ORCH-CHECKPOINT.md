@@ -1,10 +1,10 @@
 # TMX-ORCH-CHECKPOINT (Loop A) — stuck-PROCESSING job sweeper
 
-**State**: `[WIP]`
+**State**: `[Done]`
 **Owner**: Platform & Observability
 **Sprint**: MQM Keystone / Phase 0 (lifecycle integrity)
 **Started**: 2026-06-15
-**Closed**: —
+**Closed**: 2026-06-15
 **Reversibility**: `two-way` (new read-only-by-default script + 2 default-OFF settings; revertable by deleting them)
 **Pre-mortem**: if this fails in production, the failure mode is *it sweeps a still-alive job*. The red team showed the engine does NOT heartbeat the Document row during translate (only Segment rows), so `Document.updated_at` is frozen while a job is alive — anchoring on it alone WOULD wrongly sweep a long translate. Fixed: "stuck" requires no recent activity on the Document **or any of its Segments** (Segments are written throughout translate), so a live-but-slow job is never swept. Further guarded by a generous timeout, a default-OFF mutation gate (in `sweep()`, not just the CLI), and an AC pinning the live-but-slow case.
 **Blast radius**: new `scripts/stuck_job_sweeper.py`, 2 `config.py` settings. No request-path code; no happy-path change. Only ever touches docs already abandoned in `processing` past the timeout.
@@ -67,9 +67,9 @@ mutate; idempotent; dry-run writes nothing; per-doc isolation. Full regression 2
 
 ## 8. Deploy
 
-- [ ] Commit: <SHA after commit>
-- [ ] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
-- [ ] `.context/active_tasks.md` + `MQM-DELIVERY-BACKLOG.md` updated
+- [x] Commit: `c265913` (batch w/ TMX-SSOT-TIER)
+- [x] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
+- [x] `.context/active_tasks.md` + `MQM-DELIVERY-BACKLOG.md` updated
 
 ---
 
@@ -78,3 +78,4 @@ mutate; idempotent; dry-run writes nothing; per-doc isolation. Full regression 2
 | When (UTC) | From | To | Note |
 |---|---|---|---|
 | 2026-06-15T00:00Z | — | `[WIP]` | Created (batch 3); Loop A sweeper only; Loop B checkpointer deferred (one-way) |
+| 2026-06-15T00:00Z | `[WIP]` | `[Done]` | Shipped in `c265913`; red team fixed staleness anchor (Segment activity) + A1 ordering + gate-in-sweep() |
