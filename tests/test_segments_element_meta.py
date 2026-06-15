@@ -31,9 +31,11 @@ client = TestClient(app)
 @pytest.fixture
 def seeded_doc_with_revisions():
     """Document + segments where one carries DOCX revision metadata."""
-    doc_id = f"doc-{uuid.uuid4()}"
-    seg_with_id = f"seg-{uuid.uuid4()}"
-    seg_without_id = f"seg-{uuid.uuid4()}"
+    # IDs must fit the VARCHAR(36) id columns — Postgres enforces the length
+    # (SQLite ignores it). Mirror the app, which uses str(uuid4()) (36 chars).
+    doc_id = str(uuid.uuid4())
+    seg_with_id = str(uuid.uuid4())
+    seg_without_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc)
     session = SessionLocal()
     try:
