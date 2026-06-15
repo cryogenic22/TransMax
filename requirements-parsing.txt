@@ -11,10 +11,10 @@
 
 docling>=2.84
 
-# Load-bearing pin: docling's transformers dep requires tokenizers<0.22; a
+# Load-bearing pin: docling's transformers dep requires tokenizers<0.24; a
 # floating 0.22.x breaks `import docling` (transformers version guard). See
 # ADR-0005 / TMX-PARSE-1.
-tokenizers<0.22
+tokenizers<0.24
 
 # Cloud connectors (azure / google parser backends) — install only if used:
 #   pip install azure-ai-documentintelligence
