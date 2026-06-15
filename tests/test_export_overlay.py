@@ -4,11 +4,12 @@ Builds a synthetic 2-page PDF (repeated masthead + body) so the test is
 self-contained and asserts the registry-level behaviour end to end with an
 injected (no-LLM) translator.
 """
-import fitz
 import pytest
 
 from app.services.export.base import Translatability
 from app.services.export.registry import get_exporter
+
+fitz = pytest.importorskip("fitz")  # PyMuPDF is optional (AGPL); skip module if absent
 
 
 @pytest.fixture
