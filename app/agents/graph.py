@@ -8,6 +8,7 @@ from langgraph.graph import StateGraph, END
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from app.agents.prompts import PromptRegistry
+from app.core.config import get_settings
 from app.services.tracing import traced
 from app.services.quality_gate import QualityGateService
 from app.services.db_service import DatabaseService
@@ -136,7 +137,7 @@ async def validate_request(state: TransMaxState) -> TransMaxState:
         state['content_metadata'] = {
             k: _doc_meta.get(k)
             for k in ("content_type", "doc_type", "document_type",
-                      "archetype", "tier", "metric_profile")
+                      "archetype", "tier", "metric_profile", "regulatory_profile")
             if _doc_meta.get(k) is not None
         }
     except Exception as e:
@@ -297,7 +298,17 @@ async def run_quality_gates(state: TransMaxState) -> TransMaxState:
         violations = []
         constraint_pack = state.get('constraint_pack', {})
         updates = []
-        
+
+        # TMX-QRD-WIRE: resolve the regulatory profile (authority date/header
+        # rules) the gate should enforce — ONLY when enable_qrd_checks is on
+        # (default OFF ⇒ None ⇒ the QRD block in check_segment never runs, so the
+        # verdict is byte-identical). A pilot tenant tags a job with a known
+        # `regulatory_profile`; unknown/absent resolves to None (A3).
+        from app.core.regulatory_profiles import regulatory_profile_for_gate
+        qrd_profile_id = regulatory_profile_for_gate(
+            state.get('content_metadata'), enabled=get_settings().enable_qrd_checks
+        )
+
         # 1. Run Checks per Segment
         for seg in state['segments']:
             if not seg.get('translated_text'):
@@ -307,7 +318,8 @@ async def run_quality_gates(state: TransMaxState) -> TransMaxState:
                 target_text=seg['translated_text'],
                 constraints=constraint_pack,
                 target_lang=state['target_language'],
-                source_lang=state.get('source_language', 'en')
+                source_lang=state.get('source_language', 'en'),
+                profile_id=qrd_profile_id,
             )
             
             gate_results = {

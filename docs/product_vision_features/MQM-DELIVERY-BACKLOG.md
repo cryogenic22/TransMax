@@ -75,7 +75,7 @@ Legend: `[Done]` shipped · `[Next-10]` the immediate resume batch · `[Gated]` 
 
 | Ticket | Scope | Depends | Rev | Status |
 |---|---|---|---|---|
-| TMX-QRD-WIRE | Resolve a regulatory_profiles key → check_segment so QRD/date checks fire (flag-gated) | 5c | two-way | **[Next-10]** |
+| TMX-QRD-WIRE | Resolve a regulatory_profiles key → check_segment so QRD/date checks fire (flag-gated, exercisable via optional `regulatory_profile`) | 5c | two-way | **[Done]** (`enable_qrd_checks` default-OFF) |
 | TMX-TIER-1 | Content-derived Tier 0-3 engine (from content type/section/signals) | 5c | one-way | [ ] |
 | TMX-TIER-2 | Tier drives evaluation depth (100% vs sampled) + gate selection + model strength | TIER-1 | two-way | [ ] |
 | TMX-TIER-3 | Tier drives human-review routing (Tier-0 mandatory signed; forced review on insufficient-sample) | TIER-1 | two-way | [ ] |

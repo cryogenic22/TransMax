@@ -16,6 +16,12 @@ class JobProfileRequest(BaseModel):
     archetype: TranslationArchetype = Field(..., description="Governance Archetype")
     tier: ContentRiskTier = Field(..., description="Risk Tier (A=Highest, C=Lowest)")
     modality: OutputModality = Field(..., description="Target format/modality")
+    # TMX-QRD-WIRE: optional regulatory profile id (e.g. "EMA_SMPC_EN_GB").
+    # Backwards-compatible (defaults None). When set + enable_qrd_checks is on,
+    # the gate enforces that authority's date-format + mandatory-header rules.
+    regulatory_profile: Optional[str] = Field(
+        None, description="Optional regulatory profile id enabling QRD checks (e.g. EMA_SMPC_EN_GB)"
+    )
     
     @field_validator('tier')
     @classmethod
