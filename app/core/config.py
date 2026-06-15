@@ -34,6 +34,23 @@ _INSECURE_SECRET_KEYS: frozenset[str] = frozenset({
 })
 
 
+# Known non-production environment names. `assert_production_safe()` exempts ONLY
+# these (an allow-list, normalised case/space). Any other value — including a
+# typo, a brand-new env name, or `production`/`prod`/`staging` — is still checked
+# and fails loud (fail-safe default). The contract is documented on `app_env`
+# below: production deployments MUST set `APP_ENV=production` (or `staging`).
+# `test`/`ci` are here because the CI suite runs with `APP_ENV=test` and the
+# dev-default `auth_mode="none"`; exempting `dev` alone crashed test collection.
+_NON_PRODUCTION_ENVS: frozenset[str] = frozenset({
+    "dev",
+    "development",
+    "test",
+    "testing",
+    "ci",
+    "local",
+})
+
+
 class Settings(BaseSettings):
     # Environment mode — drives production-safety guard. Default `dev` so
     # backward-compat with developer machines + CI is preserved; production
@@ -207,12 +224,14 @@ class Settings(BaseSettings):
         TMX-3003 / addendum A3 (no silent fallbacks in regulated paths).
 
         Raises:
-            InsecureProductionConfigError: when `app_env != "dev"` AND either
+            InsecureProductionConfigError: when `app_env` is NOT a known
+                non-production env (`_NON_PRODUCTION_ENVS`) AND either
                 `secret_key` is a known placeholder or `auth_mode == "none"`.
                 The error message names the failing setting and gives a one-
                 line remediation hint, so the startup log is self-explanatory.
+                An unknown `app_env` is treated as production (fail-safe).
         """
-        if self.app_env == "dev":
+        if self.app_env.strip().lower() in _NON_PRODUCTION_ENVS:
             return
 
         if self.secret_key in _INSECURE_SECRET_KEYS:
