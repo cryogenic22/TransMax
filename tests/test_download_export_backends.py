@@ -1,8 +1,9 @@
 """TMX-EXPORT-WIRE — download route routes PDF formats through the export registry."""
-import fitz
 import pytest
 
 from app.api.documents import _export_via_backend
+
+fitz = pytest.importorskip("fitz")  # PyMuPDF is optional (AGPL); skip module if absent
 
 
 class _Doc:

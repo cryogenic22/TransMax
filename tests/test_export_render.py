@@ -4,11 +4,11 @@ Drives the render() path with synthetic IR blocks + an injected translator, so i
 is fast and deterministic. Asserts structural fidelity (content + tables present,
 translated) and the honest figure-loss flag.
 """
-import fitz  # only to read back the produced PDF text
 import pytest
 
-from app.services.export.base import Translatability
 from app.services.export.registry import get_exporter
+
+fitz = pytest.importorskip("fitz")  # PyMuPDF is optional (AGPL); only to read PDF text
 
 IR = [
     {"text": "Safety and Efficacy of the Vaccine", "element_type": "title"},
