@@ -9,7 +9,7 @@
 # Then set `parser_backend = "docling"` (and `parser_ocr_enabled = true` only
 # for scanned PDFs — OCR off is much faster for born-digital).
 
-docling>=2.84
+docling>=2.102.1
 
 # Load-bearing pin: docling's transformers dep requires tokenizers<0.22; a
 # floating 0.22.x breaks `import docling` (transformers version guard). See
