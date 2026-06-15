@@ -98,6 +98,19 @@ Auth-boundary hardening (Phase 0). Both two-way, behaviour-neutral under the liv
 
 Red-teamed (single agent `a6d96114`, verdict **ship** — zero real defects; verified no secret leak across all 12 call sites + the fail-safe holds since every `identity.email` actor is a non-None provider or None-guarded). Fixes applied: audited the register-409 (duplicate-registration enumeration signal); tightened the A3 test to a real password value. Worksheet `.context/loops/TMX-LOGIN-AUDIT.md`. The auth-hardening arc (OIDC-CSRF → RBAC-SWEEP → LOGIN-AUDIT) is now coherent.
 
+### Session 2026-06-15 (CI hardening) — "push to main" revealed main's CI was RED for a month
+
+| Loop | Status | One-line |
+|---|---|---|
+| TMX-CI-PRODSAFE-ENV | **[Done]** `c8b1074` | `assert_production_safe()` exempted only `app_env=="dev"`; CI's `APP_ENV=test` + default `auth_mode=none` crashed pytest *collection* for the whole suite since 2026-05-10. Fix = allow-list `dev/development/test/testing/ci/local`; prod still fails loud (red-teamed SHIP). Resolved own ratchet regression via PR-reviewed baseline exception. Worksheet `.context/loops/TMX-CI-PRODSAFE-ENV.md`. |
+| TMX-CI-FITZ-OPTIONAL | **[Done]** `9c5ed39` | 3 export tests imported optional `fitz` (PyMuPDF/AGPL, not in CI) unconditionally → `importorskip` skip. Unblocks the last collection errors. |
+| TMX-3000 | **[Blocked — needs Kapil]** | (existing) rotate `.env` OpenAI key + purge → unblocks the **secret-scan** CI gate (still red). |
+| TMX-RUFF-SWEEP | **[READY]** | 280 repo-wide ruff errors (218 autofixable) fail the **Quality Gate** CI job — pre-existing debt; `ruff check --fix` sweep + manual remainder. |
+| TMX-FE-SNAPSHOT | **[READY]** | the **Frontend** CI job's 1 failure is a missing Playwright visual baseline (`design-system-visual` chromium-linux PNG) — regenerate via CI `--update-snapshots`. |
+| TMX-PRODSAFE-DEPLOY-ENV | **[READY]** | red-team finding: the live Railway pilot runs `app_env=dev`/`auth_mode=none` (OPEN ACCESS) because no deploy config sets `APP_ENV`; set `APP_ENV=production` in Railway + add `change_this_unsafe_secret` to `_INSECURE_SECRET_KEYS` (latter coupled to TMX-3000). |
+
+After these fixes CI on the branch: **Ratchet GREEN (was red), Unit Tests collects 1372 (was 0/crash), eval + 2nd-pass GREEN.** Residual red (secret-scan, Quality Gate, Frontend) is all pre-existing on `main` and either Kapil-gated or a separate sweep. Merge to main does not regress main (already red) and improves it.
+
 ---
 
 ## Feedback-loop initiative (in-app issue → triage → auto-deploy) — started 2026-06-04
