@@ -9,13 +9,12 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from pydantic import BaseModel, EmailStr
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
+from pydantic import BaseModel
 
-from app.auth.providers import AuthenticatedIdentity, TokenPair
+from app.auth.providers import AuthenticatedIdentity
 from app.auth.permissions import UserRole, Permission
-from app.auth.dependencies import get_current_user, require_permission, require_role
+from app.auth.dependencies import get_current_user, require_permission
 from app.auth.factory import get_auth_provider, _get_auth_mode, _get_user_by_email
 from app.auth.password import hash_password, verify_password
 
@@ -251,8 +250,16 @@ async def refresh_token(request: RefreshRequest):
 
 # --- SSO Endpoints ---
 
+# TMX-OIDC-CSRF: the OAuth `state` is bound to the browser via this short-lived
+# cookie at /authorize and verified at /callback (cookie double-submit). Path-
+# scoped to the SSO routes so it is not broadcast on every request.
+_OIDC_STATE_COOKIE = "oidc_state"
+_OIDC_STATE_COOKIE_PATH = "/api/auth/sso"
+_OIDC_STATE_TTL_SECONDS = 600
+
+
 @router.get("/sso/{provider}/authorize")
-async def sso_authorize(provider: str):
+async def sso_authorize(provider: str, response: Response):
     """Redirect to SSO provider's authorization page."""
     mode = _get_auth_mode()
     if mode != "oidc":
@@ -265,12 +272,28 @@ async def sso_authorize(provider: str):
 
     state = str(uuid.uuid4())
     url = await auth_provider.get_authorization_url(state)
+    # TMX-OIDC-CSRF: bind `state` to the browser so the callback can verify it.
+    response.set_cookie(
+        key=_OIDC_STATE_COOKIE,
+        value=state,
+        max_age=_OIDC_STATE_TTL_SECONDS,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        path=_OIDC_STATE_COOKIE_PATH,
+    )
     return {"authorization_url": url, "state": state}
 
 
 @router.get("/sso/{provider}/callback")
-async def sso_callback(provider: str, code: str, state: Optional[str] = None):
-    """OIDC callback — exchange code, provision user, return tokens."""
+async def sso_callback(
+    provider: str,
+    code: str,
+    response: Response,
+    state: Optional[str] = None,
+    oidc_state: Optional[str] = Cookie(None),
+):
+    """OIDC callback — verify the CSRF state, exchange code, return tokens."""
     mode = _get_auth_mode()
     if mode != "oidc":
         raise HTTPException(status_code=400, detail="SSO not enabled")
@@ -279,6 +302,22 @@ async def sso_callback(provider: str, code: str, state: Optional[str] = None):
     from app.auth.providers import OIDCAuthProvider
     if not isinstance(auth_provider, OIDCAuthProvider):
         raise HTTPException(status_code=500, detail="OIDC provider not configured")
+
+    # TMX-OIDC-CSRF: verify the `state` round-trip BEFORE any code exchange. A
+    # forged/replayed callback has no matching cookie ⇒ reject loud (A3). The
+    # legitimate same-origin flow always set + returns the cookie.
+    if not state or not oidc_state or oidc_state != state:
+        logger.warning(
+            "OIDC callback rejected: state mismatch or absent (provider=%s, has_cookie=%s)",
+            provider, bool(oidc_state),
+        )
+        raise HTTPException(status_code=400, detail="Invalid or missing OAuth state")
+    # Match the attrs of the set cookie so the clear reliably overwrites it
+    # across browsers (a non-Secure clear may not replace a Secure cookie).
+    response.delete_cookie(
+        _OIDC_STATE_COOKIE, path=_OIDC_STATE_COOKIE_PATH,
+        httponly=True, secure=True, samesite="lax",
+    )
 
     try:
         identity, tokens = await auth_provider.handle_callback(code)

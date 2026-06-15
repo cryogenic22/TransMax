@@ -10,9 +10,13 @@ from typing import Any
 
 from app.core.database import get_db
 from app.models.database import Document, Segment
+from app.auth.dependencies import get_current_user
 from app.models.models import AuditRecord, AuditLogEntry
 
-router = APIRouter()
+# TMX-RBAC-SWEEP: every dashboard route is an authenticated KPI/audit-activity
+# read — gate the whole router on a valid identity (A12). No-op under
+# AUTH_MODE=none (virtual admin).
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 # ─── Activity Feed wire-shape (TMX-3603-wire) ────────────────────────────

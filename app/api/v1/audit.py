@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from app.auth.dependencies import require_permission
+from app.auth.permissions import Permission
 import app.core.database as core_db
 from app.core.database import get_db
 from app.core.tenant_context import TenantContextMissing, current_org_id
@@ -15,7 +17,10 @@ from app.schemas.api_v1 import (
 from app.services.audit_service import AuditService
 from app.services.audit_verifier_v2 import AuditVerifierV2
 
-router = APIRouter()
+# TMX-RBAC-SWEEP: every route here is a regulator-facing audit read — gate the
+# whole router on AUDIT_READ (held by all roles incl. VIEWER; A12). Tenant-scope
+# is orthogonal and untouched. No-op under AUTH_MODE=none.
+router = APIRouter(dependencies=[Depends(require_permission(Permission.AUDIT_READ))])
 
 
 # NB: registered BEFORE the `/{audit_id}` parametrised routes so the static
