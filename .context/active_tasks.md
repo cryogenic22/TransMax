@@ -70,6 +70,14 @@ Lifecycle + governance hygiene. Default-OFF / shadow-safe; 4-lens red-teamed bef
 
 Red-team fixes: sweeper staleness anchor (Document.updated_at alone was unsound — engine doesn't heartbeat the Document during translate → added Segment-activity check); sweeper A1 ordering + gate-in-`sweep()`; SSOT source-language resurrection (made deterministic via the declared column, not auto-detect); `resolve_profile_id` enum-member normalization (`.value`). Worksheets: `.context/loops/TMX-{ORCH-CHECKPOINT,SSOT-TIER}.md`. Deferred follow-ups: **TMX-ORCH-CHECKPOINT Loop B** (checkpointer, one-way), **TMX-SSOT-TIER step 4** (dead-field removal, one-way), **TMX-QRD-WIRE** (now unblocked — the funnel is live; flag-gated).
 
+### Session 2026-06-15 (batch 4) — 1 loop shipped on `feat/mqm-keystone` (PR #14)
+
+| Loop | Status | One-line |
+|---|---|---|
+| TMX-QRD-WIRE | **[Done]** | fires the dead-but-tested QRD date/header checks behind default-OFF `enable_qrd_checks` — one pure `regulatory_profile_for_gate` helper (graph-only flag gate, preserves `check_segment` contract + `test_profile_gates`); EXERCISABLE via a new optional `JobProfileRequest.regulatory_profile` flowing the now-live funnel → check_segment. Byte-identical when off. |
+
+3-lens red-teamed (`w2x2a4wv4`): 2 lenses ship (zero defects, claims verified by tracing + running tests); fixed 1 low defect (worksheet/config overclaimed "per-tenant" → reframed as a global rollout flag) + a non-str-tag hardening (A3). Worksheet `.context/loops/TMX-QRD-WIRE.md`. Deferred: **TMX-QRD-CAPTURE** (auto-resolve authority/locale at upload), **TMX-QRD-MULTILINGUAL** (EN-only header regex), **TMX-QRD-PER-TENANT** (per-tenant flag keying, shared w/ mqm_engine_enabled).
+
 ---
 
 ## Feedback-loop initiative (in-app issue → triage → auto-deploy) — started 2026-06-04

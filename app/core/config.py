@@ -125,6 +125,16 @@ class Settings(BaseSettings):
     stuck_job_sweep_enabled: bool = False
     stuck_job_timeout_seconds: int = 1200
 
+    # TMX-QRD-WIRE: enforce authority QRD format rules (date format + mandatory
+    # section headers, per app/core/regulatory_profiles.py) in the live gate when
+    # a job is tagged with a `regulatory_profile`. Default OFF: it can flip a
+    # verdict (a non-standard header → STRUCTURE_ERROR MAJOR → REVIEW_REQUIRED; a
+    # wrong date format → FORMATTING_ERROR MINOR → lower confidence band), so a
+    # deployment opts in. NB: this is a GLOBAL (process-wide) rollout flag like
+    # mqm_engine_enabled — true per-tenant keying is a follow-up. Flag off ⇒ the
+    # gate runs ZERO QRD checks (byte-identical).
+    enable_qrd_checks: bool = False
+
     # Feature Flags (Epic 4: Surgical Reality)
     enable_real_pdf_parsing: bool = True  # Enabled for demo
     enable_live_llm_inference: bool = True
