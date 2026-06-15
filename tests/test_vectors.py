@@ -11,6 +11,13 @@ from app.core.config import settings
 def test_vector_integration():
     print("--- Testing Vector Integration (Postgres) ---")
 
+    # This is an opt-in INTEGRATION test: it makes live OpenAI embedding calls
+    # and needs Postgres+pgvector + a tenant context. It must not run in the
+    # default unit-test CI (it would spend money on a live key — and the
+    # committed key is the TMX-3000 one pending rotation). Enable explicitly.
+    if not os.environ.get("RUN_VECTOR_INTEGRATION"):
+        pytest.skip("Vector integration test is opt-in; set RUN_VECTOR_INTEGRATION=1 to run.")
+
     # 1. Check Env
     if not settings.openai_api_key or "placeholder" in settings.openai_api_key:
         pytest.skip("Skipping Vector Test: OPENAI_API_KEY missing or placeholder.")
