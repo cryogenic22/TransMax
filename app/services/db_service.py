@@ -859,6 +859,42 @@ class DatabaseService:
         finally:
             session.close()
 
+    def get_document_metadata(self, doc_id: str) -> Dict[str, Any]:
+        """Return a document's metadata for the graph's resolution nodes:
+        the governance profile (``meta_json`` — archetype/tier/modality, drives
+        the content-type/tier → metric-profile funnel) PLUS the DECLARED
+        ``source_language`` column (the value the API set).
+
+        Returns ``{}`` only when the document is unknown (A3: never fabricate
+        metadata). Tenant-scoped like every Document read here.
+
+        TMX-SSOT-TIER: the graph CALLED this method before it existed, so the
+        ``AttributeError`` was swallowed at BOTH call sites:
+        (1) ``content_metadata`` was always ``{}`` → the MQM shadow always scored
+            the default profile (the dead funnel this fixes); and
+        (2) the source-language node always fell back to ``'en'`` — its
+            ``detect_language`` branch was unreachable.
+        Surfacing ``source_language`` here makes the source-language node
+        DETERMINISTIC on the declared column instead of resurrecting fragile
+        auto-detection: for an en-source document (the common/pilot case) it
+        resolves to ``'en'`` exactly as before; a declared NON-en source is now
+        honoured instead of the latent always-``'en'`` (a correctness fix — NOT
+        byte-identical for those docs). The verdict authority itself
+        (``evaluate_verdict``) reads neither field; only the source language pack
+        + the shadow profile change.
+        """
+        session = self.get_session()
+        try:
+            doc = session.query(Document).filter(Document.id == doc_id).first()
+            if not doc:
+                return {}
+            meta = dict(doc.meta_json) if isinstance(doc.meta_json, dict) else {}
+            if doc.source_language and "source_language" not in meta:
+                meta["source_language"] = doc.source_language
+            return meta
+        finally:
+            session.close()
+
     def get_segments_for_doc(self, doc_id: str) -> List[Dict[str, Any]]:
         """
         Fetches all segments for a document, ordered by index.

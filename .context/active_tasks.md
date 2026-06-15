@@ -59,6 +59,17 @@ The "make the judge measured / no vacuous green" cluster (Phase 2). All additive
 
 Red-team fixes: precision floor was a no-op (0.0→0.5 enforced); corrupt gold line now → structured FAIL_INTEGRITY not a crash; `inter_judge_kappa`→`inter_judge_kappa_first_pair` (+`kappa_pair`); deleted dangling `severity_label_map` + its forked `_SEVERITY_RANK` (anti-bloat/SSOT). Worksheets: `.context/loops/TMX-MQM-{ENSEMBLE-RUN,EVAL-KAPPA,EVAL-CI}.md`. Spawned: **TMX-MQM-EVAL-KAPPA-JOIN** (judge↔human κ once the annotation table lands).
 
+### Session 2026-06-15 (batch 3) — 2 loops shipped on `feat/mqm-keystone` (PR #14)
+
+Lifecycle + governance hygiene. Default-OFF / shadow-safe; 4-lens red-teamed before commit (4 real defects found + fixed).
+
+| Loop | Status | One-line |
+|---|---|---|
+| TMX-ORCH-CHECKPOINT (Loop A) | **[Done]** | `scripts/stuck_job_sweeper.py` recovers jobs orphaned in `processing` → IN_REVIEW + `JOB_SWEPT_STUCK` audit; staleness anchored on Document **+ Segment** activity (live-but-slow jobs safe); A1 emit-before-flip; default-OFF gate in `sweep()`. Loop B (LangGraph checkpointer) deferred (one-way). |
+| TMX-SSOT-TIER (steps 1-3) | **[Done]** | fixed the **dead metadata funnel** (`get_document_metadata` was called-but-undefined → `content_metadata` always `{}`; MQM shadow always scored the default profile) + tier→canonical-MetricProfile refinement + unified the duplicated `INFORMATIONAL!=TIER_A` rule into one predicate. Shadow-safe except the source-language node now uses the **declared** `Document.source_language` (en unchanged; non-en corrected — disclosed). Step 4 (remove dead `MqmAnnotation.risk_tier:int` + fix engine docstring) deferred (one-way, Kapil). |
+
+Red-team fixes: sweeper staleness anchor (Document.updated_at alone was unsound — engine doesn't heartbeat the Document during translate → added Segment-activity check); sweeper A1 ordering + gate-in-`sweep()`; SSOT source-language resurrection (made deterministic via the declared column, not auto-detect); `resolve_profile_id` enum-member normalization (`.value`). Worksheets: `.context/loops/TMX-{ORCH-CHECKPOINT,SSOT-TIER}.md`. Deferred follow-ups: **TMX-ORCH-CHECKPOINT Loop B** (checkpointer, one-way), **TMX-SSOT-TIER step 4** (dead-field removal, one-way), **TMX-QRD-WIRE** (now unblocked — the funnel is live; flag-gated).
+
 ---
 
 ## Feedback-loop initiative (in-app issue → triage → auto-deploy) — started 2026-06-04
