@@ -1,10 +1,10 @@
 # TMX-RBAC-SWEEP — apply the existing permission guards to the unprotected privileged routes
 
-**State**: `[WIP]`
+**State**: `[Done]` (4 swept routers + the 3 legacy translate verbs; other routers → TMX-RBAC-SWEEP-2)
 **Owner**: Auth & Tenancy
 **Sprint**: MQM Keystone / Phase 0 (substrate security)
 **Started**: 2026-06-15
-**Closed**: —
+**Closed**: 2026-06-15
 **Reversibility**: `two-way` (additive `Depends` guards reusing the existing primitive; revertable)
 **Pre-mortem**: if this fails in production, the failure mode is *over-gating a route the UI calls* (a real user gets a spurious 403). Mitigated: every read is gated on the WEAKEST permission VIEWER already holds (`DOCUMENT_READ`/`AUDIT_READ`/`KNOWLEDGE_READ`), so no role loses read access; only two routes change behaviour for a low-priv user when the wall is on (POST translate → `TRANSLATE_EXECUTE`, certificate → `AUDIT_EXPORT`), which is the INTENDED hardening. Under the live default `AUTH_MODE=none` the `NoAuthProvider` returns a virtual ADMIN, so every guard evaluates allow — the sweep is verified behaviour-neutral today.
 **Blast radius**: `app/api/dashboard.py`, `app/api/v1/audit.py`, `app/api/v1/translations.py`, `app/api/endpoints.py` (decorator/router deps only). No model/schema/UI change; the existing tenant-scope is orthogonal and untouched (A4).
@@ -68,9 +68,9 @@ Behaviour-neutral under AUTH_MODE=none (NoAuthProvider = virtual ADMIN).
 
 ## 8. Deploy
 
-- [ ] Commit: <SHA after commit>
-- [ ] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
-- [ ] `.context/active_tasks.md` updated
+- [x] Commit: `e2426eb` (batch w/ TMX-OIDC-CSRF)
+- [x] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
+- [x] `.context/active_tasks.md` updated
 
 ---
 
@@ -79,3 +79,4 @@ Behaviour-neutral under AUTH_MODE=none (NoAuthProvider = virtual ADMIN).
 | When (UTC) | From | To | Note |
 |---|---|---|---|
 | 2026-06-15T00:00Z | — | `[WIP]` | Created (batch 5); 17-endpoint additive RBAC sweep; behaviour-neutral under AUTH_MODE=none; hardens for the wall flip |
+| 2026-06-15T00:00Z | `[WIP]` | `[Done]` | Shipped in `e2426eb` (20 endpoints incl. the 3 legacy translate verbs); red team added gating-proof + positive-control tests; G3 honestly rescoped; SWEEP-2 deferred |

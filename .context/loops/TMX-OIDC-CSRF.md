@@ -1,10 +1,10 @@
 # TMX-OIDC-CSRF — verify the OAuth `state` on the OIDC callback (close the CSRF gap)
 
-**State**: `[WIP]`
+**State**: `[Done]`
 **Owner**: Auth & Tenancy
 **Sprint**: MQM Keystone / Phase 0 (substrate security)
 **Started**: 2026-06-15
-**Closed**: —
+**Closed**: 2026-06-15
 **Reversibility**: `two-way` (additive state verification on an off-by-default path; revertable)
 **Pre-mortem**: if this fails in production, the failure mode is *a forged OIDC callback logs a victim into an attacker-chosen identity (login CSRF)* — which is exactly what this loop closes. The fix itself can only fail safe: a missing/mismatched cookie raises 400 BEFORE any code exchange (A3 fail-loud); a legitimate same-origin flow always sets+returns the cookie, so only forged/replayed callbacks are rejected.
 **Blast radius**: `app/api/auth.py` only (the two SSO endpoints). No model/schema/dep change (A4). Entirely behind `AUTH_MODE=oidc` (default `none`) — zero effect on the live `none`/`jwt` paths.
@@ -67,9 +67,9 @@ fixture issue, not this loop. Also autofixed 6 pre-existing unused imports in au
 
 ## 8. Deploy
 
-- [ ] Commit: <SHA after commit>
-- [ ] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
-- [ ] `.context/active_tasks.md` updated
+- [x] Commit: `e2426eb` (batch w/ TMX-RBAC-SWEEP)
+- [x] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
+- [x] `.context/active_tasks.md` updated
 
 ---
 
@@ -78,3 +78,4 @@ fixture issue, not this loop. Also autofixed 6 pre-existing unused imports in au
 | When (UTC) | From | To | Note |
 |---|---|---|---|
 | 2026-06-15T00:00Z | — | `[WIP]` | Created (batch 5); real CSRF gap in wired OIDC code; cookie double-submit; ships dark behind AUTH_MODE=oidc |
+| 2026-06-15T00:00Z | `[WIP]` | `[Done]` | Shipped in `e2426eb`; red team verified no bypass / no exchange-on-mismatch; delete_cookie attrs matched |
