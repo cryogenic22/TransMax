@@ -1,10 +1,10 @@
 # TMX-LOGIN-AUDIT — structured audit of login / register / refresh / SSO (success + failure)
 
-**State**: `[WIP]`
+**State**: `[Done]`
 **Owner**: Auth & Tenancy
 **Sprint**: MQM Keystone / Phase 0 (substrate security + audit-by-default)
 **Started**: 2026-06-15
-**Closed**: —
+**Closed**: 2026-06-15
 **Reversibility**: `two-way` (additive structured audit-log lines via one helper; revertable)
 **Pre-mortem**: if this fails in production, the failure mode is *a credential leaks into the audit log* — guarded by logging only the actor identifier / attempted email + outcome + provider, NEVER the password or token (A3 — no secret in the log).
 **Blast radius**: `app/api/auth.py` only (one `_audit_auth_event` helper + calls at the auth-flow outcome points). No model/schema/dep change (A4). Behaviour-neutral — adds log lines, changes no response or status code.
@@ -66,9 +66,9 @@ Added the `register` 409 failure audit (`detail=email_already_registered` — a 
 
 ## 8. Deploy
 
-- [ ] Commit: <SHA after commit>
-- [ ] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
-- [ ] `.context/active_tasks.md` updated
+- [x] Commit: `c6ad4bc`
+- [x] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
+- [x] `.context/active_tasks.md` updated
 
 ---
 
@@ -77,3 +77,4 @@ Added the `register` 409 failure audit (`detail=email_already_registered` — a 
 | When (UTC) | From | To | Note |
 |---|---|---|---|
 | 2026-06-15T00:00Z | — | `[WIP]` | Created (batch 6); extends TMX-AUTH-AUDIT structured-log to login/register/refresh/SSO; immutable chain deferred to TMX-AUTH-AUDIT-CHAIN |
+| 2026-06-15T00:00Z | `[WIP]` | `[Done]` | Shipped in `c6ad4bc`; red team verdict ship (no secret leak, fail-safe holds); register-409 audit + A3 real-password test added |
