@@ -1,10 +1,10 @@
 # TMX-QRD-WIRE — fire the dead-but-tested QRD date/header checks (flag-gated, exercisable)
 
-**State**: `[WIP]`
+**State**: `[Done]`
 **Owner**: Quality & Regulatory
 **Sprint**: MQM Keystone / Phase 4 (compliance)
 **Started**: 2026-06-15
-**Closed**: —
+**Closed**: 2026-06-15
 **Reversibility**: `two-way` (new default-OFF flag + a pure resolver + an OPTIONAL backwards-compatible API field + a flag-gated graph wire; revertable)
 **Pre-mortem**: if this fails in production, the failure mode is *the QRD checks flip a verdict unexpectedly* — guarded by a default-OFF flag (`enable_qrd_checks`); with it off, `regulatory_profile_for_gate` returns `None`, so `check_segment` runs ZERO QRD checks → byte-identical. The verdict delta when ON is documented (header→REVIEW_REQUIRED, date→band drop), so a deployment opts in knowingly. NB: `enable_qrd_checks` is a GLOBAL (process-wide) rollout flag, same posture as `mqm_engine_enabled` — true per-tenant keying is a follow-up, not claimed here.
 **Blast radius**: `app/core/config.py` (1 flag), `app/core/regulatory_profiles.py` (1 pure helper), `app/schemas/api_v1.py` (1 optional field), `app/agents/graph.py` (import + 1 content_metadata key + the gate's `check_segment` call). No `quality_gate.py` change (the checks already exist + are tested).
@@ -69,9 +69,9 @@ Full regression 234 passed.
 
 ## 8. Deploy
 
-- [ ] Commit: <SHA after commit>
-- [ ] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
-- [ ] `.context/active_tasks.md` + `MQM-DELIVERY-BACKLOG.md` updated
+- [x] Commit: `7e3fa1c`
+- [x] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
+- [x] `.context/active_tasks.md` + `MQM-DELIVERY-BACKLOG.md` updated
 
 ---
 
@@ -80,3 +80,4 @@ Full regression 234 passed.
 | When (UTC) | From | To | Note |
 |---|---|---|---|
 | 2026-06-15T00:00Z | — | `[WIP]` | Created (batch 4); unblocked by the TMX-SSOT-TIER funnel fix; flag-gated + exercisable via the optional regulatory_profile field |
+| 2026-06-15T00:00Z | `[WIP]` | `[Done]` | Shipped in `7e3fa1c`; red team verified byte-identical-off + end-to-end fire; fixed per-tenant overclaim + non-str hardening |
