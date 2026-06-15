@@ -16,8 +16,9 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.core.database import SessionLocal
+from app.core.tenant_context import org_context
 from app.models.database import DEFAULT_ORG_ID, Document
-from app.models.models import AuditRecord, AuditLogEntry
+from app.models.models import AuditRecord, AuditLogEntry, TranslationJobQueue
 
 
 client = TestClient(app)
@@ -31,6 +32,17 @@ def seeded_audit():
     now = datetime.now(timezone.utc)
     session = SessionLocal()
     try:
+        # AuditRecord.job_id is an enforced FK to translation_jobs_queue on
+        # Postgres (SQLite skips FK checks) — seed the parent job first.
+        session.add(TranslationJobQueue(
+            job_id=job_id,
+            organization_id=DEFAULT_ORG_ID,
+            request_id=str(uuid.uuid4()),
+            source_language="en",
+            target_language="de",
+            request_json={},
+        ))
+        session.flush()
         rec = AuditRecord(
             audit_id=audit_id,
             organization_id=DEFAULT_ORG_ID,
@@ -61,9 +73,14 @@ def seeded_audit():
         session.commit()
         yield {"audit_id": audit_id, "entry_count": 3}
     finally:
-        session.query(AuditLogEntry).filter(AuditLogEntry.audit_id == audit_id).delete()
-        session.query(AuditRecord).filter(AuditRecord.audit_id == audit_id).delete()
-        session.commit()
+        # Tenant context: the bulk .delete() resolves matching rows via a SELECT
+        # against tenant-scoped tables, which Postgres' tenant guard rejects
+        # without an org context (SQLite tolerates it).
+        with org_context(DEFAULT_ORG_ID):
+            session.query(AuditLogEntry).filter(AuditLogEntry.audit_id == audit_id).delete()
+            session.query(AuditRecord).filter(AuditRecord.audit_id == audit_id).delete()
+            session.query(TranslationJobQueue).filter(TranslationJobQueue.job_id == job_id).delete()
+            session.commit()
         session.close()
 
 
@@ -149,10 +166,19 @@ def seeded_audit_with_doc():
     """Seed: 1 Document + 1 AuditRecord + JOB_STARTED entry referencing it."""
     audit_id = str(uuid.uuid4())
     job_id = str(uuid.uuid4())
-    doc_id = f"doc-test-{uuid.uuid4()}"
+    doc_id = str(uuid.uuid4())  # must fit VARCHAR(36) — Postgres enforces the length
     now = datetime.now(timezone.utc)
     session = SessionLocal()
     try:
+        session.add(TranslationJobQueue(
+            job_id=job_id,
+            organization_id=DEFAULT_ORG_ID,
+            request_id=str(uuid.uuid4()),
+            source_language="en",
+            target_language="de",
+            request_json={},
+        ))
+        session.flush()
         doc = Document(
             id=doc_id,
             organization_id=DEFAULT_ORG_ID,
@@ -195,10 +221,12 @@ def seeded_audit_with_doc():
         session.commit()
         yield {"audit_id": audit_id, "doc_id": doc_id, "doc_name": "Cardivex SmPC v2.1"}
     finally:
-        session.query(AuditLogEntry).filter(AuditLogEntry.audit_id == audit_id).delete()
-        session.query(AuditRecord).filter(AuditRecord.audit_id == audit_id).delete()
-        session.query(Document).filter(Document.id == doc_id).delete()
-        session.commit()
+        with org_context(DEFAULT_ORG_ID):
+            session.query(AuditLogEntry).filter(AuditLogEntry.audit_id == audit_id).delete()
+            session.query(AuditRecord).filter(AuditRecord.audit_id == audit_id).delete()
+            session.query(Document).filter(Document.id == doc_id).delete()
+            session.query(TranslationJobQueue).filter(TranslationJobQueue.job_id == job_id).delete()
+            session.commit()
         session.close()
 
 
