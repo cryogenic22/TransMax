@@ -89,6 +89,15 @@ Auth-boundary hardening (Phase 0). Both two-way, behaviour-neutral under the liv
 
 3-lens red-teamed (`whta73fm1`): OIDC + RBAC lenses **ship** (zero real defects — verified no over-gating, no empty-state bypass, no exchange-on-mismatch, VIEWER keeps reads); honesty lens **fix-then-ship**. Fixes: a vacuous read test (`/api/audit/{id}` 404 — endpoints.py mounts at `/api/v1`) → repointed + added a gating-proof test (all swept paths 401 without auth) + a require_permission positive control (has_permission False → 403); gated the 3 legacy translate verbs with TRANSLATE_EXECUTE (red team found the bypass); G3 reworded (4-router scope, not repo-wide). Worksheets: `.context/loops/TMX-{OIDC-CSRF,RBAC-SWEEP}.md`. Deferred (tracked): **TMX-RBAC-SWEEP-2** (knowledge.py/projects.py/feedback.py mutations), **TMX-AUTH-WALL** checklist note (dashboard hooks send JWT as cookie not Bearer), endpoints↔v1/audit route-collision SSOT cleanup.
 
+### Session 2026-06-15 (batch 6) — 1 loop shipped + 1 false-positive avoided on `feat/mqm-keystone` (PR #14)
+
+| Loop | Status | One-line |
+|---|---|---|
+| TMX-LOGIN-AUDIT | **[Done]** | structured `AUTH_EVENT` audit lines on login/register/refresh/SSO (success + failure) via one fail-safe `_audit_auth_event` helper (A1/A12); never logs password/token/code/state (A3); behaviour-neutral. Immutable job-less chain deferred to TMX-AUTH-AUDIT-CHAIN. |
+| ~~TMX-RBAC-SWEEP-2~~ | **[Not needed]** | FALSE POSITIVE — knowledge.py/projects.py/feedback.py are ALREADY fully guarded via PARAM-level `Depends(get_current_user)`/`require_permission`; the batch-5 red team's "deps=0" inspected route-level `dependencies=[]` (empty) but missed param-level deps (which ARE the guard). Verified before building → avoided redundant-guard bloat. |
+
+Red-teamed (single agent `a6d96114`, verdict **ship** — zero real defects; verified no secret leak across all 12 call sites + the fail-safe holds since every `identity.email` actor is a non-None provider or None-guarded). Fixes applied: audited the register-409 (duplicate-registration enumeration signal); tightened the A3 test to a real password value. Worksheet `.context/loops/TMX-LOGIN-AUDIT.md`. The auth-hardening arc (OIDC-CSRF → RBAC-SWEEP → LOGIN-AUDIT) is now coherent.
+
 ---
 
 ## Feedback-loop initiative (in-app issue → triage → auto-deploy) — started 2026-06-04
