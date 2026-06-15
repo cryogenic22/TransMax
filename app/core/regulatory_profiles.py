@@ -5,6 +5,8 @@ Defines authority-specific rules, formatting, and templates.
 Families: EU, UK, US, ME, JP.
 """
 
+from typing import Any, Dict, Optional
+
 REGULATORY_PROFILES = {
     # FAMILY A: EU (EMA)
     "EMA_SMPC_EN_GB": {
@@ -139,8 +141,27 @@ def resolve_profile(authority: str, locale: str, doc_type: str):
     E.g. resolve_profile("EMA", "fr-FR", "smpc") -> "EMA_SMPC_FR_FR"
     """
     for pid, profile in REGULATORY_PROFILES.items():
-        if (profile["authority"] == authority and 
-            profile["locale"] == locale and 
+        if (profile["authority"] == authority and
+            profile["locale"] == locale and
             profile["doc_type"] == doc_type):
             return profile
     return None
+
+
+def regulatory_profile_for_gate(
+    content_metadata: Optional[Dict[str, Any]], *, enabled: bool
+) -> Optional[str]:
+    """The regulatory profile id the quality gate should enforce (TMX-QRD-WIRE).
+
+    Returns the job's explicit ``regulatory_profile`` tag, but ONLY when QRD
+    checks are ``enabled``. Returns ``None`` when disabled (so the gate's
+    date/header checks stay dead — byte-identical to today) or when the tag is
+    absent/unknown (A3: never substitute a default regulatory profile — an
+    unrecognised authority must fail to NO check, not a guessed one).
+    """
+    if not enabled:
+        return None
+    pid = (content_metadata or {}).get("regulatory_profile")
+    if not isinstance(pid, str):
+        return None  # absent / malformed tag → no check (A3), never a TypeError into the gate
+    return pid if get_profile(pid) else None

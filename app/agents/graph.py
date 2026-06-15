@@ -8,6 +8,7 @@ from langgraph.graph import StateGraph, END
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from app.agents.prompts import PromptRegistry
+from app.core.config import get_settings
 from app.services.tracing import traced
 from app.services.quality_gate import QualityGateService
 from app.services.db_service import DatabaseService
@@ -128,9 +129,24 @@ async def validate_request(state: TransMaxState) -> TransMaxState:
             logger.warning(f"Language detection failed: {e}, defaulting to 'en'")
             state['source_language'] = "en"
 
+    # TMX-MQM-5c: stash document content metadata so the MQM engine can resolve
+    # the content-type metric profile (shadow today, verdict at cutover). Safe,
+    # additive: a missing/empty value just falls back to the default profile.
+    try:
+        _doc_meta = get_db_service().get_document_metadata(state['doc_id']) or {}
+        state['content_metadata'] = {
+            k: _doc_meta.get(k)
+            for k in ("content_type", "doc_type", "document_type",
+                      "archetype", "tier", "metric_profile", "regulatory_profile")
+            if _doc_meta.get(k) is not None
+        }
+    except Exception as e:
+        logger.warning(f"Content-metadata load failed (using default profile): {e}")
+        state['content_metadata'] = {}
+
     # Initialize iteration state
     state['iteration_count'] = 0
-    
+
     # TMX-020: Initialize GxP Audit Trail
     # If job_id exists (it should via API), create the chain.
     if state.get('job_id'):
@@ -282,7 +298,17 @@ async def run_quality_gates(state: TransMaxState) -> TransMaxState:
         violations = []
         constraint_pack = state.get('constraint_pack', {})
         updates = []
-        
+
+        # TMX-QRD-WIRE: resolve the regulatory profile (authority date/header
+        # rules) the gate should enforce — ONLY when enable_qrd_checks is on
+        # (default OFF ⇒ None ⇒ the QRD block in check_segment never runs, so the
+        # verdict is byte-identical). A pilot tenant tags a job with a known
+        # `regulatory_profile`; unknown/absent resolves to None (A3).
+        from app.core.regulatory_profiles import regulatory_profile_for_gate
+        qrd_profile_id = regulatory_profile_for_gate(
+            state.get('content_metadata'), enabled=get_settings().enable_qrd_checks
+        )
+
         # 1. Run Checks per Segment
         for seg in state['segments']:
             if not seg.get('translated_text'):
@@ -292,7 +318,8 @@ async def run_quality_gates(state: TransMaxState) -> TransMaxState:
                 target_text=seg['translated_text'],
                 constraints=constraint_pack,
                 target_lang=state['target_language'],
-                source_lang=state.get('source_language', 'en')
+                source_lang=state.get('source_language', 'en'),
+                profile_id=qrd_profile_id,
             )
             
             gate_results = {
@@ -401,7 +428,25 @@ async def run_quality_gates(state: TransMaxState) -> TransMaxState:
             "status": status,
             "scorecard": scorecard_data
         }
-        
+
+        # TMX-MQM-5 (shadow): score the SAME violations through the pure MQM
+        # engine alongside the legacy verdict and log the diff. Changes NO
+        # verdict — collects the distribution comparison required before any
+        # cutover (ADR-0007 / review cond. 4). Self-contained + fail-safe.
+        from app.agents.nodes.mqm_shadow import (
+            run_ensemble_shadow,
+            run_judge_shadow,
+            run_mqm_shadow,
+        )
+        run_mqm_shadow(state, violations, status)
+        # TMX-MQM-4: independent judge in shadow (default OFF; emits annotations
+        # + a judge-only MQM score to the audit chain). Verdict unaffected.
+        await run_judge_shadow(state)
+        # TMX-MQM-ENSEMBLE-RUN: N-judge ensemble in shadow (default OFF; emits
+        # most-severe merge + disagreement-escalation + inter-judge κ). Verdict
+        # unaffected; honest single-lineage caveat until the router flips.
+        await run_ensemble_shadow(state)
+
     except Exception as e:
         logger.error(f"Quality Gate Error: {e}")
         state['error'] = f"Quality Gate Failed: {e}"

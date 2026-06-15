@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from app.core.database import get_db
 from app.models.database import Document, DocumentStatus, Segment
 from app.schemas.api_v1 import JobCreateRequest, JobResponse, JobResult, ValidationSummary
+from app.auth.dependencies import require_permission
+from app.auth.permissions import Permission
 
 # We need to invoke the graph. For now, we import the runner.
 # Ideally this is a separate worker process.
@@ -14,7 +16,8 @@ from app.agents.runner import run_pipeline_background
 
 router = APIRouter()
 
-@router.post("/", response_model=JobResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=JobResponse, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(require_permission(Permission.TRANSLATE_EXECUTE))])
 async def create_translation_job(
     request: JobCreateRequest, 
     background_tasks: BackgroundTasks,
@@ -86,7 +89,8 @@ async def create_translation_job(
         created_at=new_doc.created_at
     )
 
-@router.get("/", response_model=List[JobResponse])
+@router.get("/", response_model=List[JobResponse],
+            dependencies=[Depends(require_permission(Permission.DOCUMENT_READ))])
 def list_translation_jobs(
     limit: int = 50, 
     skip: int = 0, 
@@ -108,7 +112,8 @@ def list_translation_jobs(
         ))
     return results
 
-@router.get("/{job_id}", response_model=JobResponse)
+@router.get("/{job_id}", response_model=JobResponse,
+            dependencies=[Depends(require_permission(Permission.DOCUMENT_READ))])
 def get_job_status(job_id: str, db: Session = Depends(get_db)):
     doc = db.query(Document).filter(Document.id == job_id).first()
     if not doc:
@@ -120,7 +125,8 @@ def get_job_status(job_id: str, db: Session = Depends(get_db)):
         created_at=doc.created_at
     )
 
-@router.get("/{job_id}/result", response_model=JobResult)
+@router.get("/{job_id}/result", response_model=JobResult,
+            dependencies=[Depends(require_permission(Permission.DOCUMENT_READ))])
 def get_job_result(job_id: str, db: Session = Depends(get_db)):
     doc = db.query(Document).filter(Document.id == job_id).first()
     if not doc:
@@ -162,7 +168,8 @@ def get_job_result(job_id: str, db: Session = Depends(get_db)):
 
 from app.schemas.api_v1 import AuditBundleResponse, AuditLogEntryResponse
 
-@router.get("/{job_id}/audit_bundle", response_model=AuditBundleResponse)
+@router.get("/{job_id}/audit_bundle", response_model=AuditBundleResponse,
+            dependencies=[Depends(require_permission(Permission.AUDIT_READ))])
 def get_audit_bundle(job_id: str, db: Session = Depends(get_db)):
     """
     TMX-020: Export Regulatory Audit Bundle.
@@ -212,7 +219,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@router.get("/{job_id}/certificate")
+@router.get("/{job_id}/certificate",
+            dependencies=[Depends(require_permission(Permission.AUDIT_EXPORT))])
 def download_certificate(job_id: str, db: Session = Depends(get_db)):
     """
     TMX-025: Download Translation Certificate (PDF).

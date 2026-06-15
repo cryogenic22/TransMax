@@ -1,0 +1,23 @@
+version: "1.0.0"
+profile_id: promo
+display_name: "Promotional / transcreation"
+description: >
+  Promotional content legitimately allows stylistic latitude (transcreation),
+  so Style and Audience are weighted up and the tolerance is looser (PT 90 /
+  APP 10) with statistical sampling. BUT a mistranslated CLAIM is a regulatory
+  event: claims snap back to Critical and 100% evaluation via the claim-check
+  path (TMX-MQM Phase 4 / E6). critical_auto_fail stays true so any Critical
+  surfaced (including a claim defect) auto-fails. Thresholds are starting
+  proposals (vision §5.4).
+
+passing_threshold: 90
+acceptable_penalty_points: 10
+evaluation: sampled
+sample_size_floor: 500
+critical_auto_fail: true
+
+error_type_weights:
+  default: 1
+  Style: 2
+  "Audience appropriateness": 2
+  Accuracy: 2

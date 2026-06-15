@@ -3,11 +3,13 @@ TransMax Platform v2.0 - Segment API Router
 Operations for segments: read, update, reverse translate, change log.
 """
 from datetime import datetime, timezone
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from typing import List, Optional
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.database import get_db
+from app.core.tenant_context import org_context
 from app.models.database import Document, Segment, ChangeLog, SegmentStatus
 from app.api.schemas import (
     SegmentResponse, SegmentUpdate,
@@ -26,6 +28,46 @@ router = APIRouter(prefix="/api", tags=["Segments"])
 
 
 # --- Helper Functions ---
+
+async def _capture_hitl_override(
+    segment_id: str,
+    source_text: str,
+    mt_text: str,
+    corrected_text: str,
+    org_id: Optional[str],
+) -> None:
+    """TMX-MQM-CAPTURE: feed a reviewer override into the learning bridge as a
+    PROPOSED Black-Book candidate — the gold signal for Phase-2 judge
+    calibration (review cond. 6).
+
+    Reconnects the existing ``LearningService.process_learning_event`` path
+    (which the vision-gap audit found reachable from no production endpoint).
+    Runs as a FastAPI BackgroundTask so it adds no request latency, and
+    re-establishes the request's tenant context (the candidate row is
+    tenant-scoped, so a missing context would fail loud). Fully defensive: any
+    failure is logged, never surfaced to the reviewer.
+    """
+    if not org_id:
+        logger.warning(
+            "HITL learning capture skipped for %s: no tenant context", segment_id
+        )
+        return
+    try:
+        from app.services.learning_service import LearningService
+
+        with org_context(org_id):
+            await LearningService().process_learning_event(
+                segment_id=segment_id,
+                human_correction=corrected_text,
+                source_text=source_text,
+                mt_text=mt_text,
+            )
+        logger.info("HITL override captured as learning candidate for %s", segment_id)
+    except Exception as e:  # never break on capture
+        logger.warning(
+            "HITL learning capture failed for %s (non-fatal): %s", segment_id, e
+        )
+
 
 def segment_to_response(seg: Segment) -> SegmentResponse:
     """Convert ORM model to response schema."""
@@ -74,6 +116,7 @@ async def get_segment(segment_id: str, db: Session = Depends(get_db), user: Auth
 async def update_segment(
     segment_id: str,
     update: SegmentUpdate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user: AuthenticatedIdentity = Depends(require_permission(Permission.SEGMENT_EDIT)),
 ):
@@ -84,16 +127,18 @@ async def update_segment(
     seg = db.query(Segment).filter(Segment.id == segment_id).first()
     if not seg:
         raise HTTPException(status_code=404, detail="Segment not found")
-    
+
     # Update segment first
     original_text = seg.translated_text or ""
+    source_text = seg.source_text or ""
+    seg_org_id = getattr(seg, "organization_id", None)
     seg.translated_text = update.translated_text
     seg.status = SegmentStatus.EDITED
     seg.updated_at = datetime.now(timezone.utc)
-    
+
     db.commit()
     db.refresh(seg)
-    
+
     # TMX-062: Log Change via Central Service
     # Run in background or sync? Sync to ensure log exists before return.
     from app.services.db_service import DatabaseService
@@ -110,7 +155,25 @@ async def update_segment(
     except Exception as e:
         logger.warning(f"Failed to write ChangeLog: {e}")
         # We don't rollback segment change here as it was committed.
-        
+
+    # TMX-MQM-CAPTURE: a reviewer override (the MT text actually changed) is the
+    # gold signal for Phase-2 judge calibration. Feed it into the learning
+    # bridge as a PROPOSED candidate, off the request path. Only fires on a real
+    # change, so confirms/no-ops cost nothing.
+    if (
+        get_settings().enable_hitl_learning_capture
+        and original_text
+        and original_text != update.translated_text
+    ):
+        background_tasks.add_task(
+            _capture_hitl_override,
+            segment_id,
+            source_text,
+            original_text,
+            update.translated_text,
+            seg_org_id,
+        )
+
     return segment_to_response(seg)
 
 

@@ -146,16 +146,28 @@ class QualityGateService:
 
         # --- Universal Checks (Run for all languages) ---
         
-        # 2. Glossary Check (Major)
+        # 2. Glossary / Black-Book rule check.
+        # A non-strict term missing is Major (review). A *strict* (locked) rule —
+        # `is_strict=True`, the "block if violated" flag — is CRITICAL and blocks
+        # (TMX-BB-STRICT). Previously is_strict was dropped at constraint
+        # assembly and never enforced: a curator's "strict" rule did nothing
+        # (a vacuous-green trap). Now it is honoured end-to-end.
         glossary_terms = constraints.get('glossary', [])
         for term in glossary_terms:
             src = term.get('source_text') or term.get('source')
             tgt = term.get('target_text') or term.get('target')
             if src and tgt and src in source_text and tgt not in target_text:
-                defects.append(self._create_defect(
-                    DefectCategory.TERMINOLOGY,
-                    f"Glossary term missing: '{src}' -> '{tgt}'"
-                ))
+                if term.get('is_strict'):
+                    defects.append(self._create_defect(
+                        DefectCategory.TERMINOLOGY,
+                        f"Locked term violated (strict rule): '{src}' must render as '{tgt}'",
+                        severity=DefectSeverity.CRITICAL,
+                    ))
+                else:
+                    defects.append(self._create_defect(
+                        DefectCategory.TERMINOLOGY,
+                        f"Glossary term missing: '{src}' -> '{tgt}'"
+                    ))
         
         # 2b. Forbidden Terms Check (Critical) — TMX-TERMLOCK-WB
         # Word-boundary match so a forbidden term doesn't false-fire inside a
@@ -456,11 +468,20 @@ class QualityGateService:
             ))
         return defects
 
-    def _create_defect(self, category: DefectCategory, message: str) -> Defect:
-        """Helper to create rated defect"""
-        # Auto-classify severity based on rules/message if needed, or use category default
-        # For now, we use the Service to confirm severity
-        severity = TaxonomyService.classify_violation(category.value, message)
+    def _create_defect(
+        self,
+        category: DefectCategory,
+        message: str,
+        severity: Optional[DefectSeverity] = None,
+    ) -> Defect:
+        """Helper to create a rated defect.
+
+        `severity` defaults to the auto-classified value (by message/category);
+        callers may pin it explicitly — e.g. a *strict* (locked) Black-Book rule
+        violation is CRITICAL regardless of how the message classifies (TMX-BB-STRICT).
+        """
+        if severity is None:
+            severity = TaxonomyService.classify_violation(category.value, message)
         return Defect(category=category, severity=severity, message=message)
 
     def can_finalize(self, job_id: str) -> bool:

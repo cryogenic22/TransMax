@@ -9,6 +9,111 @@ This file replaces the legacy ticket list (Tickets 10-23) which were Phase 1-3 h
 
 ---
 
+## MQM Keystone — defensibility core (Phase 1) — started 2026-06-14
+
+From the 24-agent vision-gap audit (`docs/product_vision_features/VISION-GAP-ANALYSIS-AND-ROADMAP.md`): the three defensibility pillars (MQM engine / independent judge / Black Book) are Divergent or absent. Phase 1 builds the keystone triad — **annotation → engine → judge** — strangler-fig over the existing code (ADR-0007; plan: `PHASE-1-KEYSTONE-BUILD-PLAN.md`). Engine ships in shadow; live pipeline unchanged until the flagged K5 cutover.
+
+**📋 The whole loop list to full vision delivery (Phases 0-5, ~55 loops, with the next-10 resume batch) is `docs/product_vision_features/MQM-DELIVERY-BACKLOG.md`.**
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-MQM-1 | MQM annotation object (§5.7) + taxonomy reconciliation (NEUTRAL, 7 dims, SPM, category→dim bridge) | Quality+Agent | **[Done, pending push]** | reuses `defect_taxonomy.py`; 12 tests; `feat/mqm-keystone`; see `.context/loops/TMX-MQM-1.md` |
+| TMX-MQM-2 | Content-type metric profile registry + 5 §5.4 profiles | Quality | **[Done, pending push]** | mirrors `PromptRegistry`; reconciles the two profile forks; 8 tests; see `.context/loops/TMX-MQM-2.md` |
+| TMX-MQM-3 | Pure MQM-2.0 engine + shadow harness | Quality+Agent | **[Done, pending push]** | spec-binding (RQS=99; SmPC/Promo boundaries); engine-derived auto-fail; insufficient_sample separate; `ConfidenceService` untouched; 14 tests; see `.context/loops/TMX-MQM-3.md` |
+| TMX-MQM-1a | Persist `mqm_annotations` table + Alembic revision | Quality+Auth | **[READY]** | deferred from MQM-1 (engine/judge need only the in-memory object) |
+| TMX-MQM-4 | Independent judge node; wire the dead `reviewer` prompt → §5.7 output | Agent | **[READY]** | UNBLOCKED 2026-06-14: Kapil chose **model-agnostic** — build behind config, default single-model + compensating controls (planted-defect gates / disagreement escalation / cross-prompt adversarial), flip to dual-model when a 2nd in-boundary model is validated (ADR-0007 open decision resolved this way) |
+| TMX-MQM-5 (phase a) | Graph rewire — MQM engine **shadow** alongside the legacy verdict | Agent+Quality | **[Done, pending push]** | observational, changes no verdict; `mqm_shadow_enabled`; logs legacy-vs-MQM diff; 4 tests; see `.context/loops/TMX-MQM-5.md` |
+| TMX-MQM-5 (phase b) | Verdict cutover (engine = sole decider) + strip self-cert + gates→annotators + `ConfidenceService`→adapter + unify SDK fork | Agent+Quality | **[READY]** | one-way; per-tenant `mqm_engine_enabled` flag; **gated on reviewing the shadow diff**; red-team hardest |
+| TMX-MQM-5c | Content-type → metric-profile resolution (reconcile `regulatory_profiles`/`profile_resolver` onto the registry) | Quality | **[READY]** | replaces the default-profile seam in `mqm_shadow.resolve_metric_profile` |
+| TMX-MQM-6 | Bounded revise w/ conservation diff-reject + ensemble + disagreement escalation | Agent | **[READY]** | depends on MQM-4/5b; cap Tier-0/1 iterations (cost reckoning in plan §5) |
+| TMX-MQM-CAPTURE | Reviewer override → learning bridge (gold for Phase 2 κ) | Frontend+Quality | **[Done, pending push]** | reconnects the orphaned `process_learning_event`; background-task + tenant-context; `enable_hitl_learning_capture`; 3 tests; see `.context/loops/TMX-MQM-CAPTURE.md` |
+
+### Session 2026-06-15 — 10 loops shipped on `feat/mqm-keystone` (PR #14)
+
+All additive / shadow / flag-gated; live verdict unchanged. Branch pushed; PR open. Reuse-and-reconcile.
+
+| Loop | Status | One-line |
+|---|---|---|
+| TMX-MQM-5c | **[Done]** | content-type → metric-profile resolution (reconciles the two profile forks); shadow scores the right profile |
+| TMX-BB-STRICT | **[Done]** | `is_strict` locked rules now enforced (CRITICAL/block) — closed the vacuous-green trap where they did nothing |
+| TMX-AUTH-AUDIT | **[Done]** | structured `ACCESS_CHANGE` audit on role updates (A1/A12); immutable-chain follow-up = TMX-AUTH-AUDIT-CHAIN |
+| TMX-MQM-4 | **[Done]** | independent judge in SHADOW (model-agnostic; §5.7 prompt wired; emits annotations, can't set verdict); default-off |
+| TMX-MQM-6 | **[Done]** | ensemble (most-severe + disagreement escalation) + conservation diff-reject — pure helpers |
+| TMX-MQM-5a-emit | **[Done]** | shadow diff + judge findings → v2 audit chain (durable for the cutover gate + Phase-2 κ) |
+| TMX-MQM-EVAL | **[Done]** | judge-reliability metric (planted-defect recall + precision) — the Phase-2 CI gate's measure |
+| TMX-DASH-JUDGE-LABEL | **[Done]** | dashboard no longer mislabels the deterministic gate as "Reviewer agent" (A2) |
+| TMX-MQM-SHADOW-REPORT | **[Done]** | read-only `scripts/mqm_shadow_report.py` — the phase-b cutover evidence tool |
+| TMX-MQM-EVAL-CASES | **[Done]** | planted-defect judge gold set + recall-gate demonstration (E13.S2 seed) |
+
+Commits: Batch 1 (5c/BB-STRICT/AUTH-AUDIT), Batch 2 (4/6/5a-emit), Batch 3 (EVAL/DASH/REPORT/EVAL-CASES). Spawned follow-ups: **TMX-AUTH-AUDIT-CHAIN** (job-less immutable audit trail), **TMX-MQM-1a** (annotation table + Alembic — judge findings already durable in the v2 chain, so deferred), **TMX-MQM-5b** (verdict cutover — gated on the shadow-report review), **TMX-QRD-WIRE** (resolve a regulatory_profiles key into check_segment so QRD/date checks fire — flag-gate; deferred as it can change live verdicts).
+
+### Session 2026-06-15 (batch 2) — 3 loops shipped on `feat/mqm-keystone` (PR #14)
+
+The "make the judge measured / no vacuous green" cluster (Phase 2). All additive / shadow / default-OFF; live verdict unchanged; reuse-and-reconcile. Adversarially red-teamed (4 lenses) before commit; 4 real defects found + fixed.
+
+| Loop | Status | One-line |
+|---|---|---|
+| TMX-MQM-ENSEMBLE-RUN | **[Done]** | `run_ensemble_shadow` — runs the judge N× (default 2), reuses `aggregate_ensemble` (most-severe, never averaged) + the one engine; emits `MQM_ENSEMBLE_SHADOW` w/ escalate + inter-judge κ (first-pair) + honest `single_lineage`; `mqm_ensemble_shadow_enabled`/`mqm_ensemble_size`; A6 per-judge real-model provenance fix |
+| TMX-MQM-EVAL-KAPPA | **[Done]** | pure `cohen_kappa` primitive + `binary_severity_label_map` in `judge_eval.py`; widened `MQM_JUDGE_SHADOW` payload with durable per-segment judge labels. Human-side κ join deferred to **TMX-MQM-EVAL-KAPPA-JOIN** (needs TMX-MQM-1a structured human labels) |
+| TMX-MQM-EVAL-CI | **[Done]** | one canonical `load_judge_gold` (deduped the forked loader) + `scripts/judge_eval_gate.py` (structure-tier always blocks empty/lopsided/corrupt gold; judge-tier enforces recall≥0.75 + precision≥0.5 when keys present) + `eval.yml` `judge-gate` job + pre-commit hook |
+
+Red-team fixes: precision floor was a no-op (0.0→0.5 enforced); corrupt gold line now → structured FAIL_INTEGRITY not a crash; `inter_judge_kappa`→`inter_judge_kappa_first_pair` (+`kappa_pair`); deleted dangling `severity_label_map` + its forked `_SEVERITY_RANK` (anti-bloat/SSOT). Worksheets: `.context/loops/TMX-MQM-{ENSEMBLE-RUN,EVAL-KAPPA,EVAL-CI}.md`. Spawned: **TMX-MQM-EVAL-KAPPA-JOIN** (judge↔human κ once the annotation table lands).
+
+### Session 2026-06-15 (batch 3) — 2 loops shipped on `feat/mqm-keystone` (PR #14)
+
+Lifecycle + governance hygiene. Default-OFF / shadow-safe; 4-lens red-teamed before commit (4 real defects found + fixed).
+
+| Loop | Status | One-line |
+|---|---|---|
+| TMX-ORCH-CHECKPOINT (Loop A) | **[Done]** | `scripts/stuck_job_sweeper.py` recovers jobs orphaned in `processing` → IN_REVIEW + `JOB_SWEPT_STUCK` audit; staleness anchored on Document **+ Segment** activity (live-but-slow jobs safe); A1 emit-before-flip; default-OFF gate in `sweep()`. Loop B (LangGraph checkpointer) deferred (one-way). |
+| TMX-SSOT-TIER (steps 1-3) | **[Done]** | fixed the **dead metadata funnel** (`get_document_metadata` was called-but-undefined → `content_metadata` always `{}`; MQM shadow always scored the default profile) + tier→canonical-MetricProfile refinement + unified the duplicated `INFORMATIONAL!=TIER_A` rule into one predicate. Shadow-safe except the source-language node now uses the **declared** `Document.source_language` (en unchanged; non-en corrected — disclosed). Step 4 (remove dead `MqmAnnotation.risk_tier:int` + fix engine docstring) deferred (one-way, Kapil). |
+
+Red-team fixes: sweeper staleness anchor (Document.updated_at alone was unsound — engine doesn't heartbeat the Document during translate → added Segment-activity check); sweeper A1 ordering + gate-in-`sweep()`; SSOT source-language resurrection (made deterministic via the declared column, not auto-detect); `resolve_profile_id` enum-member normalization (`.value`). Worksheets: `.context/loops/TMX-{ORCH-CHECKPOINT,SSOT-TIER}.md`. Deferred follow-ups: **TMX-ORCH-CHECKPOINT Loop B** (checkpointer, one-way), **TMX-SSOT-TIER step 4** (dead-field removal, one-way), **TMX-QRD-WIRE** (now unblocked — the funnel is live; flag-gated).
+
+### Session 2026-06-15 (batch 4) — 1 loop shipped on `feat/mqm-keystone` (PR #14)
+
+| Loop | Status | One-line |
+|---|---|---|
+| TMX-QRD-WIRE | **[Done]** | fires the dead-but-tested QRD date/header checks behind default-OFF `enable_qrd_checks` — one pure `regulatory_profile_for_gate` helper (graph-only flag gate, preserves `check_segment` contract + `test_profile_gates`); EXERCISABLE via a new optional `JobProfileRequest.regulatory_profile` flowing the now-live funnel → check_segment. Byte-identical when off. |
+
+3-lens red-teamed (`w2x2a4wv4`): 2 lenses ship (zero defects, claims verified by tracing + running tests); fixed 1 low defect (worksheet/config overclaimed "per-tenant" → reframed as a global rollout flag) + a non-str-tag hardening (A3). Worksheet `.context/loops/TMX-QRD-WIRE.md`. Deferred: **TMX-QRD-CAPTURE** (auto-resolve authority/locale at upload), **TMX-QRD-MULTILINGUAL** (EN-only header regex), **TMX-QRD-PER-TENANT** (per-tenant flag keying, shared w/ mqm_engine_enabled).
+
+### Session 2026-06-15 (batch 5) — 2 loops shipped on `feat/mqm-keystone` (PR #14)
+
+Auth-boundary hardening (Phase 0). Both two-way, behaviour-neutral under the live `AUTH_MODE=none` default; 3-lens red-teamed.
+
+| Loop | Status | One-line |
+|---|---|---|
+| TMX-OIDC-CSRF | **[Done]** | closed a real OAuth login-CSRF gap — the OIDC `state` was minted but never verified; now a cookie double-submit (HttpOnly/Secure/SameSite=Lax `oidc_state`) rejects a forged callback 400 BEFORE any code exchange. Ships dark behind `AUTH_MODE=oidc`. Also autofixed 6 dead imports in auth.py. |
+| TMX-RBAC-SWEEP | **[Done]** | applied the existing `require_permission`/`get_current_user` guard to 20 unprotected privileged endpoints (dashboard ×5 router-level, v1/audit ×4 router-level, v1/translations ×6, endpoints.py ×5 incl. the 3 legacy translate verbs). Reuse-only, no new permission. Behaviour-neutral under `AUTH_MODE=none`. |
+
+3-lens red-teamed (`whta73fm1`): OIDC + RBAC lenses **ship** (zero real defects — verified no over-gating, no empty-state bypass, no exchange-on-mismatch, VIEWER keeps reads); honesty lens **fix-then-ship**. Fixes: a vacuous read test (`/api/audit/{id}` 404 — endpoints.py mounts at `/api/v1`) → repointed + added a gating-proof test (all swept paths 401 without auth) + a require_permission positive control (has_permission False → 403); gated the 3 legacy translate verbs with TRANSLATE_EXECUTE (red team found the bypass); G3 reworded (4-router scope, not repo-wide). Worksheets: `.context/loops/TMX-{OIDC-CSRF,RBAC-SWEEP}.md`. Deferred (tracked): **TMX-RBAC-SWEEP-2** (knowledge.py/projects.py/feedback.py mutations), **TMX-AUTH-WALL** checklist note (dashboard hooks send JWT as cookie not Bearer), endpoints↔v1/audit route-collision SSOT cleanup.
+
+### Session 2026-06-15 (batch 6) — 1 loop shipped + 1 false-positive avoided on `feat/mqm-keystone` (PR #14)
+
+| Loop | Status | One-line |
+|---|---|---|
+| TMX-LOGIN-AUDIT | **[Done]** | structured `AUTH_EVENT` audit lines on login/register/refresh/SSO (success + failure) via one fail-safe `_audit_auth_event` helper (A1/A12); never logs password/token/code/state (A3); behaviour-neutral. Immutable job-less chain deferred to TMX-AUTH-AUDIT-CHAIN. |
+| ~~TMX-RBAC-SWEEP-2~~ | **[Not needed]** | FALSE POSITIVE — knowledge.py/projects.py/feedback.py are ALREADY fully guarded via PARAM-level `Depends(get_current_user)`/`require_permission`; the batch-5 red team's "deps=0" inspected route-level `dependencies=[]` (empty) but missed param-level deps (which ARE the guard). Verified before building → avoided redundant-guard bloat. |
+
+Red-teamed (single agent `a6d96114`, verdict **ship** — zero real defects; verified no secret leak across all 12 call sites + the fail-safe holds since every `identity.email` actor is a non-None provider or None-guarded). Fixes applied: audited the register-409 (duplicate-registration enumeration signal); tightened the A3 test to a real password value. Worksheet `.context/loops/TMX-LOGIN-AUDIT.md`. The auth-hardening arc (OIDC-CSRF → RBAC-SWEEP → LOGIN-AUDIT) is now coherent.
+
+### Session 2026-06-15 (CI hardening) — "push to main" revealed main's CI was RED for a month
+
+| Loop | Status | One-line |
+|---|---|---|
+| TMX-CI-PRODSAFE-ENV | **[Done]** `c8b1074` | `assert_production_safe()` exempted only `app_env=="dev"`; CI's `APP_ENV=test` + default `auth_mode=none` crashed pytest *collection* for the whole suite since 2026-05-10. Fix = allow-list `dev/development/test/testing/ci/local`; prod still fails loud (red-teamed SHIP). Resolved own ratchet regression via PR-reviewed baseline exception. Worksheet `.context/loops/TMX-CI-PRODSAFE-ENV.md`. |
+| TMX-CI-FITZ-OPTIONAL | **[Done]** `9c5ed39` | 3 export tests imported optional `fitz` (PyMuPDF/AGPL, not in CI) unconditionally → `importorskip` skip. Unblocks the last collection errors. |
+| TMX-3000 | **[Blocked — needs Kapil]** | (existing) rotate `.env` OpenAI key + purge → unblocks the **secret-scan** CI gate (still red). |
+| TMX-RUFF-SWEEP | **[READY]** | 280 repo-wide ruff errors (218 autofixable) fail the **Quality Gate** CI job — pre-existing debt; `ruff check --fix` sweep + manual remainder. |
+| TMX-FE-SNAPSHOT | **[READY]** | the **Frontend** CI job's 1 failure is a missing Playwright visual baseline (`design-system-visual` chromium-linux PNG) — regenerate via CI `--update-snapshots`. |
+| TMX-PRODSAFE-DEPLOY-ENV | **[READY]** | red-team finding: the live Railway pilot runs `app_env=dev`/`auth_mode=none` (OPEN ACCESS) because no deploy config sets `APP_ENV`; set `APP_ENV=production` in Railway + add `change_this_unsafe_secret` to `_INSECURE_SECRET_KEYS` (latter coupled to TMX-3000). |
+| TMX-CI-POSTGRES-FAILURES | **[READY]** | With collection unblocked, the suite RAN in CI for the first time: **1355 passed, 4 failed, 12 errored** — all PRE-EXISTING (never ran in CI before; test files + tenant guard + seed path all unchanged by this branch; `test_auth_wall_seed` passes on local SQLite). Triage: (a) **12 Postgres tenant-context errors** — `test_dashboard_activity_feed` (9) + `test_segments_element_meta` (3); fixtures `SELECT` tenant-scoped tables without `org_context` (tolerated on SQLite, blocked on Postgres) → fixtures need a default org context. (b) `test_auth_wall_seed` — demo-admin seed yields 0 on Postgres. (c) `test_audit_worktree_clean` — the meta-audit script exits 2 on CI (env). (d) `test_regulatory_pack_traceability` — git-SHA resolution needs full clone depth on CI. (e) `test_vectors` — pgvector integration. NONE block the merge (main was already red + never ran these). |
+
+After these fixes CI on the branch: **Ratchet GREEN (was red), Unit Tests collects 1372 (was 0/crash), eval + 2nd-pass GREEN.** Residual red (secret-scan, Quality Gate, Frontend) is all pre-existing on `main` and either Kapil-gated or a separate sweep. Merge to main does not regress main (already red) and improves it.
+
+---
+
 ## Feedback-loop initiative (in-app issue → triage → auto-deploy) — started 2026-06-04
 
 Replicates market_zero's in-app feedback loop, adapted to TransMax's 8-stage loop + reversibility gates. Users submit bug/issue/enhancement/feature reports from the UI; a `/schedule` cron triages and (for two-way Auto-fix-safe items) runs the loop and auto-deploys; one-way/risky fixes land on a `feedback/<id>` branch and are surfaced to Kapil. Everything logged.

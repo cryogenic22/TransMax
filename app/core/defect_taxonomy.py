@@ -5,14 +5,51 @@ from dataclasses import dataclass
 
 class DefectSeverity(str, Enum):
     """
-    Regulatory Risk Classification.
-    CRITICAL:    Safety impact. Automatic BLOCK.
-    MAJOR:       Meaning impact/Confusion. Review Required.
-    MINOR:       Style/Formatting. Auto-fix or Warning.
+    Regulatory Risk Classification — aligned to the MQM severity ladder.
+    CRITICAL:    Safety impact. Automatic BLOCK.            (MQM SPM 25)
+    MAJOR:       Meaning impact/Confusion. Review Required. (MQM SPM 5)
+    MINOR:       Style/Formatting. Auto-fix or Warning.     (MQM SPM 1)
+    NEUTRAL:     Preferential / flagged-for-attention, acceptable. (MQM SPM 0)
+
+    NEUTRAL was added for the MQM-2.0 engine (TMX-MQM-1): it is the
+    "reviewer-preferred wording that is not an error" tier. The deterministic
+    quality gates never emit NEUTRAL today (they only raise real defects), so
+    adding it is purely additive — existing CRITICAL/MAJOR/MINOR semantics and
+    `is_critical()` are unchanged.
     """
     CRITICAL = "CRITICAL" # Safety, Dosage, Contraindications, Units
     MAJOR = "MAJOR"       # Terminology, Omissions, ambiguous phrasing
     MINOR = "MINOR"       # Style, Punctuation, Spaces
+    NEUTRAL = "NEUTRAL"   # Preferential — not an error (MQM only)
+
+
+# MQM-2.0 Severity Penalty Multipliers (TMX-MQM-1). Exponential ladder per the
+# MQM Council recommendation (Neutral=0, Minor=1, Major=5, Critical=25). These
+# are the defaults; a content-type metric profile may override (see
+# app/core/metric_profiles/). The MQM engine multiplies SPM × Error-Type-Weight
+# to produce penalty points — see app/services/mqm_engine.py.
+SEVERITY_PENALTY_MULTIPLIER: dict = {
+    DefectSeverity.NEUTRAL: 0,
+    DefectSeverity.MINOR: 1,
+    DefectSeverity.MAJOR: 5,
+    DefectSeverity.CRITICAL: 25,
+}
+
+
+class MqmDimension(str, Enum):
+    """
+    The seven MQM-Core top-level error dimensions, instantiated for pharma
+    (TMX-MQM-1; see LangOps-Platform-Vision §5.2). Every quality annotation is
+    classified into exactly one dimension; the metric profile assigns an
+    Error-Type Weight per dimension.
+    """
+    TERMINOLOGY = "Terminology"               # term-base / QRD standard-phrase / MedDRA
+    ACCURACY = "Accuracy"                      # mistranslation, omission, numeric/unit/dose
+    LINGUISTIC = "Linguistic conventions"     # grammar, spelling, punctuation, register
+    STYLE = "Style"                           # awkward / inconsistent style
+    LOCALE = "Locale conventions"             # number/date/decimal/measurement format
+    AUDIENCE = "Audience appropriateness"     # readability / reading-level fit
+    DESIGN = "Design & markup"                # tags, layout, lost emphasis on warnings
 
 class DefectCategory(str, Enum):
     NUMERIC_MISMATCH = "NUMERIC_MISMATCH"     # Critical
@@ -33,6 +70,49 @@ class DefectCategory(str, Enum):
     FORMATTING_ERROR = "FORMATTING_ERROR"             # Major (Regulatory)
     STRUCTURE_ERROR = "STRUCTURE_ERROR"               # Major (Regulatory)
     PROMPT_INJECTION = "PROMPT_INJECTION"             # Critical (Input safety — TMX-INJ-1)
+
+
+# Bridge the existing deterministic-gate taxonomy onto the seven MQM dimensions
+# (TMX-MQM-1). This is what lets a legacy gate violation become an MQM
+# annotation without re-authoring the gates — reconciliation, not replacement.
+# Any DefectCategory absent here, or any free-form category string, falls back
+# to ACCURACY (the safest, highest-weighted default in regulated content).
+CATEGORY_TO_DIMENSION: dict = {
+    DefectCategory.NUMERIC_MISMATCH: MqmDimension.ACCURACY,
+    DefectCategory.UNIT_MISMATCH: MqmDimension.ACCURACY,
+    DefectCategory.OMISSION: MqmDimension.ACCURACY,
+    DefectCategory.ADDITION: MqmDimension.ACCURACY,
+    DefectCategory.MISTRANSLATION: MqmDimension.ACCURACY,
+    DefectCategory.NEGATION_FLIP: MqmDimension.ACCURACY,
+    DefectCategory.FREQUENCY_MISMATCH: MqmDimension.ACCURACY,
+    DefectCategory.ANCHOR_MISMATCH: MqmDimension.ACCURACY,
+    DefectCategory.TERMINOLOGY: MqmDimension.TERMINOLOGY,
+    DefectCategory.SENTIMENT_SHIFT: MqmDimension.STYLE,
+    DefectCategory.FORMATTING: MqmDimension.LOCALE,
+    DefectCategory.FORMATTING_ERROR: MqmDimension.LOCALE,
+    DefectCategory.STRUCTURE_ERROR: MqmDimension.DESIGN,
+    DefectCategory.TABLE_CORRUPTION: MqmDimension.DESIGN,
+    DefectCategory.PLACEHOLDER_CORRUPTION: MqmDimension.DESIGN,
+    DefectCategory.COMPLEXITY_WARNING: MqmDimension.AUDIENCE,
+    DefectCategory.PII_LEAK: MqmDimension.ACCURACY,
+    DefectCategory.PROMPT_INJECTION: MqmDimension.ACCURACY,
+}
+
+
+def dimension_for_category(category) -> "MqmDimension":
+    """Resolve a DefectCategory (or its string value) to an MQM dimension.
+
+    Falls back to ACCURACY for unknown / free-form categories — never raises,
+    so the engine can score legacy violations without a taxonomy round-trip.
+    """
+    if isinstance(category, DefectCategory):
+        return CATEGORY_TO_DIMENSION.get(category, MqmDimension.ACCURACY)
+    # Accept a raw string (the deterministic gate emits category strings).
+    try:
+        return CATEGORY_TO_DIMENSION.get(DefectCategory(category), MqmDimension.ACCURACY)
+    except (ValueError, KeyError):
+        return MqmDimension.ACCURACY
+
 
 def is_critical(severity) -> bool:
     """Case-insensitive check whether a severity is CRITICAL (TMX-QG-SEVCASE).

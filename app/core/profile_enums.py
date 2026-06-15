@@ -37,3 +37,16 @@ class IndustryDomain(str, Enum):
     PHARMA = "PHARMA"
     MEDTECH = "MEDTECH"
     GENERAL = "GENERAL"
+
+
+def is_tier_archetype_compatible(
+    archetype: TranslationArchetype, tier: ContentRiskTier
+) -> bool:
+    """Single source of truth for the tier↔archetype governance invariant
+    (TMX-SSOT-TIER): an INFORMATIONAL archetype cannot be the zero-tolerance
+    TIER_A. Both the live API-edge validator (`api_v1.JobProfileRequest`) and the
+    legacy `profile_resolver` call this — the rule lives in ONE place, not two."""
+    return not (
+        archetype == TranslationArchetype.INFORMATIONAL
+        and tier == ContentRiskTier.TIER_A
+    )

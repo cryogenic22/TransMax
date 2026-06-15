@@ -4,21 +4,39 @@ TransMax Auth API Router.
 Endpoints for login, registration, SSO, user management.
 All endpoints are aware of AUTH_MODE and behave accordingly.
 """
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from pydantic import BaseModel, EmailStr
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
+from pydantic import BaseModel
 
-from app.auth.providers import AuthenticatedIdentity, TokenPair
+from app.auth.providers import AuthenticatedIdentity
 from app.auth.permissions import UserRole, Permission
-from app.auth.dependencies import get_current_user, require_permission, require_role
+from app.auth.dependencies import get_current_user, require_permission
 from app.auth.factory import get_auth_provider, _get_auth_mode, _get_user_by_email
 from app.auth.password import hash_password, verify_password
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
+
+
+def _audit_auth_event(action, outcome, *, actor=None, provider=None, detail=None):
+    """TMX-LOGIN-AUDIT: emit ONE structured access-audit line for an auth flow
+    (A1 / A12), same key=value shape as TMX-AUTH-AUDIT's ACCESS_CHANGE. NEVER logs
+    the password / token / code (A3 — only the actor identifier, outcome, and
+    provider). Fail-safe: an audit hiccup must not break authentication. The
+    immutable job-less chain is the follow-up (TMX-AUTH-AUDIT-CHAIN)."""
+    try:
+        logger.info(
+            "AUTH_EVENT action=%s outcome=%s actor=%s provider=%s detail=%s at=%s",
+            action, outcome, actor or "-", provider or "-", detail or "-",
+            datetime.now(timezone.utc).isoformat(),
+        )
+    except Exception:  # noqa: BLE001 — the audit side-channel must never break auth
+        pass
 
 
 # --- Request/Response Schemas ---
@@ -90,6 +108,7 @@ async def login(request: LoginRequest):
         provider = get_auth_provider()
         identity = await provider.authenticate_token(None)
         tokens = await provider.issue_tokens(identity.user_id, identity.email, identity.name, identity.role)
+        _audit_auth_event("login", "success", actor=identity.email, provider="none")
         return TokenResponse(
             access_token=tokens.access_token,
             refresh_token=tokens.refresh_token,
@@ -103,10 +122,13 @@ async def login(request: LoginRequest):
 
     user = await _get_user_by_email(request.email)
     if not user or not user.hashed_password:
+        _audit_auth_event("login", "failure", actor=request.email, provider="local", detail="invalid_credentials")
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not verify_password(request.password, user.hashed_password):
+        _audit_auth_event("login", "failure", actor=request.email, provider="local", detail="invalid_credentials")
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not user.is_active:
+        _audit_auth_event("login", "failure", actor=request.email, provider="local", detail="account_deactivated")
         raise HTTPException(status_code=403, detail="Account is deactivated")
 
     # _get_user_by_email returns a DETACHED instance; capture the fields now,
@@ -131,6 +153,7 @@ async def login(request: LoginRequest):
 
     provider = get_auth_provider()
     tokens = await provider.issue_tokens(user_id, user_email, user_name, UserRole(user_role))
+    _audit_auth_event("login", "success", actor=user_email, provider=user_provider)
     return TokenResponse(
         access_token=tokens.access_token,
         refresh_token=tokens.refresh_token,
@@ -156,6 +179,7 @@ async def register(request: RegisterRequest):
 
     existing = await _get_user_by_email(request.email)
     if existing:
+        _audit_auth_event("register", "failure", actor=request.email, provider="local", detail="email_already_registered")
         raise HTTPException(status_code=409, detail="Email already registered")
 
     from app.core.database import SessionLocal
@@ -183,6 +207,7 @@ async def register(request: RegisterRequest):
 
     provider = get_auth_provider()
     tokens = await provider.issue_tokens(str(user.id), user.email, user.name, UserRole(user.role))
+    _audit_auth_event("register", "success", actor=user.email, provider="local")
     return TokenResponse(
         access_token=tokens.access_token,
         refresh_token=tokens.refresh_token,
@@ -213,6 +238,7 @@ async def refresh_token(request: RefreshRequest):
         provider = get_auth_provider()
         identity = await provider.authenticate_token(None)
         tokens = await provider.issue_tokens(identity.user_id, identity.email, identity.name, identity.role)
+        _audit_auth_event("refresh", "success", actor=identity.email, provider="none")
         return TokenResponse(
             access_token=tokens.access_token,
             refresh_token=tokens.refresh_token,
@@ -233,10 +259,12 @@ async def refresh_token(request: RefreshRequest):
 
     tokens = await provider.refresh_access_token(request.refresh_token)
     if not tokens:
+        _audit_auth_event("refresh", "failure", detail="invalid_refresh_token")
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
     # Get user info for response
     identity = await provider.authenticate_token(tokens.access_token)
+    _audit_auth_event("refresh", "success", actor=identity.email if identity else None, provider="local")
     return TokenResponse(
         access_token=tokens.access_token,
         refresh_token=tokens.refresh_token,
@@ -248,8 +276,16 @@ async def refresh_token(request: RefreshRequest):
 
 # --- SSO Endpoints ---
 
+# TMX-OIDC-CSRF: the OAuth `state` is bound to the browser via this short-lived
+# cookie at /authorize and verified at /callback (cookie double-submit). Path-
+# scoped to the SSO routes so it is not broadcast on every request.
+_OIDC_STATE_COOKIE = "oidc_state"
+_OIDC_STATE_COOKIE_PATH = "/api/auth/sso"
+_OIDC_STATE_TTL_SECONDS = 600
+
+
 @router.get("/sso/{provider}/authorize")
-async def sso_authorize(provider: str):
+async def sso_authorize(provider: str, response: Response):
     """Redirect to SSO provider's authorization page."""
     mode = _get_auth_mode()
     if mode != "oidc":
@@ -262,12 +298,28 @@ async def sso_authorize(provider: str):
 
     state = str(uuid.uuid4())
     url = await auth_provider.get_authorization_url(state)
+    # TMX-OIDC-CSRF: bind `state` to the browser so the callback can verify it.
+    response.set_cookie(
+        key=_OIDC_STATE_COOKIE,
+        value=state,
+        max_age=_OIDC_STATE_TTL_SECONDS,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        path=_OIDC_STATE_COOKIE_PATH,
+    )
     return {"authorization_url": url, "state": state}
 
 
 @router.get("/sso/{provider}/callback")
-async def sso_callback(provider: str, code: str, state: Optional[str] = None):
-    """OIDC callback — exchange code, provision user, return tokens."""
+async def sso_callback(
+    provider: str,
+    code: str,
+    response: Response,
+    state: Optional[str] = None,
+    oidc_state: Optional[str] = Cookie(None),
+):
+    """OIDC callback — verify the CSRF state, exchange code, return tokens."""
     mode = _get_auth_mode()
     if mode != "oidc":
         raise HTTPException(status_code=400, detail="SSO not enabled")
@@ -277,11 +329,30 @@ async def sso_callback(provider: str, code: str, state: Optional[str] = None):
     if not isinstance(auth_provider, OIDCAuthProvider):
         raise HTTPException(status_code=500, detail="OIDC provider not configured")
 
+    # TMX-OIDC-CSRF: verify the `state` round-trip BEFORE any code exchange. A
+    # forged/replayed callback has no matching cookie ⇒ reject loud (A3). The
+    # legitimate same-origin flow always set + returns the cookie.
+    if not state or not oidc_state or oidc_state != state:
+        logger.warning(
+            "OIDC callback rejected: state mismatch or absent (provider=%s, has_cookie=%s)",
+            provider, bool(oidc_state),
+        )
+        _audit_auth_event("sso_login", "failure", provider=provider, detail="state_mismatch")
+        raise HTTPException(status_code=400, detail="Invalid or missing OAuth state")
+    # Match the attrs of the set cookie so the clear reliably overwrites it
+    # across browsers (a non-Secure clear may not replace a Secure cookie).
+    response.delete_cookie(
+        _OIDC_STATE_COOKIE, path=_OIDC_STATE_COOKIE_PATH,
+        httponly=True, secure=True, samesite="lax",
+    )
+
     try:
         identity, tokens = await auth_provider.handle_callback(code)
     except Exception as e:
+        _audit_auth_event("sso_login", "failure", provider=provider, detail="exchange_failed")
         raise HTTPException(status_code=400, detail=f"SSO authentication failed: {str(e)}")
 
+    _audit_auth_event("sso_login", "success", actor=identity.email, provider=identity.auth_provider)
     # Return tokens — frontend will store them
     return TokenResponse(
         access_token=tokens.access_token,
@@ -343,9 +414,21 @@ async def update_user_role(
         target = db.query(User).filter(User.id == user_id).first()
         if not target:
             raise HTTPException(status_code=404, detail="User not found")
+        old_role = target.role
         target.role = request.role
         target.updated_at = datetime.now(timezone.utc)
         db.commit()
+        # TMX-AUTH-AUDIT: access-control changes MUST be audited (A1 / A12). The
+        # v1+v2 audit chains are job-scoped, so a job-less access change cannot
+        # use them yet (same constraint routing_policy_service documents); emit a
+        # structured audit log with actor + target + old→new role. The immutable
+        # system-level chain is the follow-up (TMX-AUTH-AUDIT-CHAIN).
+        logger.info(
+            "ACCESS_CHANGE action=role_update actor_id=%s target_user_id=%s "
+            "target=%s old_role=%s new_role=%s at=%s",
+            user.user_id, user_id, target.email, old_role, request.role,
+            datetime.now(timezone.utc).isoformat(),
+        )
         return {"message": f"User {target.email} role updated to {request.role}"}
     finally:
         db.close()

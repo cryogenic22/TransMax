@@ -1,0 +1,21 @@
+version: "1.0.0"
+profile_id: smpc_pil
+display_name: "SmPC / PIL (labelling)"
+description: >
+  Labelling content tolerates almost no error. Accuracy and Terminology
+  (including QRD standard-phrase fidelity, which resolves to Critical via the
+  Black Book) are weighted hardest; Design & markup is weighted up because a
+  warning rendered as body text is a real safety regression. 100% evaluation;
+  any Critical auto-fails. Thresholds are starting proposals (vision §5.4).
+
+passing_threshold: 98
+acceptable_penalty_points: 2
+evaluation: full
+sample_size_floor: 500
+critical_auto_fail: true
+
+error_type_weights:
+  default: 1
+  Accuracy: 3
+  Terminology: 3
+  "Design & markup": 2

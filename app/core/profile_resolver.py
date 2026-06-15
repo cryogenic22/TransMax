@@ -1,7 +1,7 @@
 
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional
-from app.core.profile_enums import TranslationArchetype, ContentRiskTier, OutputModality, IndustryDomain
+from typing import Dict, Any
+from app.core.profile_enums import TranslationArchetype, ContentRiskTier, OutputModality, IndustryDomain, is_tier_archetype_compatible
 
 @dataclass
 class JobProfile:
@@ -57,8 +57,8 @@ def resolve_job_profile(metadata: Dict[str, Any]) -> JobProfile:
 
     # 2. Apply Governance Rules (Constraint Validation)
     
-    # Rule: Informational Archetype cannot be Tier A
-    if archetype == TranslationArchetype.INFORMATIONAL and tier == ContentRiskTier.TIER_A:
+    # Rule: Informational Archetype cannot be Tier A (TMX-SSOT-TIER: one predicate)
+    if not is_tier_archetype_compatible(archetype, tier):
         # Auto-downgrade or Error? For validation rigor, we Error.
         raise ValueError("Governance Violation: Informational Archetype cannot be Tier A.")
 
