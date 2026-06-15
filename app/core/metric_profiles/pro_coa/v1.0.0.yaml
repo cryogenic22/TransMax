@@ -1,0 +1,20 @@
+version: "1.0.0"
+profile_id: pro_coa
+display_name: "PRO / COA item"
+description: >
+  Patient-reported-outcome / clinical-outcome-assessment items: concept
+  equivalence is everything, so Accuracy is weighted hardest and Audience
+  appropriateness is weighted up. Full evaluation plus cognitive debriefing
+  (handled outside this scoring profile); any Critical auto-fails. Thresholds
+  are starting proposals (vision §5.4).
+
+passing_threshold: 97
+acceptable_penalty_points: 3
+evaluation: full
+sample_size_floor: 500
+critical_auto_fail: true
+
+error_type_weights:
+  default: 1
+  Accuracy: 3
+  "Audience appropriateness": 2

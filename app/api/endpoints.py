@@ -9,7 +9,8 @@ from app.services.db_service import DatabaseService
 from app.services.queue_service import QueueService
 from app.services.pdf_service import PDFService
 from app.auth.providers import AuthenticatedIdentity
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user, require_permission
+from app.auth.permissions import Permission
 
 router = APIRouter()
 
@@ -48,7 +49,8 @@ class TranslationResponse(BaseModel):
 # Endpoints
 # ---------------------------------------------------------
 
-@router.post("/translate", response_model=TranslationResponse)
+@router.post("/translate", response_model=TranslationResponse,
+             dependencies=[Depends(require_permission(Permission.TRANSLATE_EXECUTE))])
 async def translate_text(request: TranslationRequest, background_tasks: BackgroundTasks, user: AuthenticatedIdentity = Depends(get_current_user)):
     """
     Triggers the TransMax Agentic Workflow asynchronously.
@@ -117,7 +119,8 @@ class QuickTranslateResponse(BaseModel):
     source_text: str
     target_language: str
 
-@router.post("/translate/quick", response_model=QuickTranslateResponse)
+@router.post("/translate/quick", response_model=QuickTranslateResponse,
+             dependencies=[Depends(require_permission(Permission.TRANSLATE_EXECUTE))])
 async def quick_translate(request: QuickTranslateRequest, user: AuthenticatedIdentity = Depends(get_current_user)):
     """
     High-quality synchronous translation for short text snippets.
@@ -210,7 +213,8 @@ Return ONLY the translation with no explanations or notes.""")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Translation failed: {str(e)}")
 
-@router.post("/translate/upload")
+@router.post("/translate/upload",
+             dependencies=[Depends(require_permission(Permission.TRANSLATE_EXECUTE))])
 async def translate_file_upload(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -329,7 +333,7 @@ async def get_translation_job(job_id: str, user: AuthenticatedIdentity = Depends
     finally:
         db.close()
 
-@router.get("/audit/{audit_id}")
+@router.get("/audit/{audit_id}", dependencies=[Depends(require_permission(Permission.AUDIT_READ))])
 async def get_audit_log(audit_id: str):
     """
     Retrieves the structured audit log including chain entries and integrity status.
@@ -376,7 +380,7 @@ async def get_audit_log(audit_id: str):
     finally:
         session.close()
 
-@router.get("/knowledge/rules")
+@router.get("/knowledge/rules", dependencies=[Depends(require_permission(Permission.KNOWLEDGE_READ))])
 async def list_knowledge_rules(status: str = "ACTIVE"):
     """
     Exposes the Black Book rules for the UI.

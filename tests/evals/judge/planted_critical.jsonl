@@ -1,0 +1,6 @@
+{"id": "jc_001", "source": "Take 10 mg twice daily", "target": "Prendre 100 mg deux fois par jour", "planted_critical": true, "defect": "numeric"}
+{"id": "jc_002", "source": "Do not exceed the recommended dose", "target": "Depassez la dose recommandee", "planted_critical": true, "defect": "negation"}
+{"id": "jc_003", "source": "Store below 25 C", "target": "Conserver en dessous de 25 C", "planted_critical": false, "defect": "none"}
+{"id": "jc_004", "source": "Administer twice daily", "target": "Administrer une fois par jour", "planted_critical": true, "defect": "frequency"}
+{"id": "jc_005", "source": "Patient information leaflet", "target": "Notice destinee au patient", "planted_critical": false, "defect": "none"}
+{"id": "jc_006", "source": "Contraindicated in pregnancy", "target": "Recommande pendant la grossesse", "planted_critical": true, "defect": "meaning_reversal"}

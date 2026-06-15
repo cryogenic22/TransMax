@@ -34,6 +34,23 @@ _INSECURE_SECRET_KEYS: frozenset[str] = frozenset({
 })
 
 
+# Known non-production environment names. `assert_production_safe()` exempts ONLY
+# these (an allow-list, normalised case/space). Any other value — including a
+# typo, a brand-new env name, or `production`/`prod`/`staging` — is still checked
+# and fails loud (fail-safe default). The contract is documented on `app_env`
+# below: production deployments MUST set `APP_ENV=production` (or `staging`).
+# `test`/`ci` are here because the CI suite runs with `APP_ENV=test` and the
+# dev-default `auth_mode="none"`; exempting `dev` alone crashed test collection.
+_NON_PRODUCTION_ENVS: frozenset[str] = frozenset({
+    "dev",
+    "development",
+    "test",
+    "testing",
+    "ci",
+    "local",
+})
+
+
 class Settings(BaseSettings):
     # Environment mode — drives production-safety guard. Default `dev` so
     # backward-compat with developer machines + CI is preserved; production
@@ -82,6 +99,58 @@ class Settings(BaseSettings):
     # (A3 fail-loud) and a BUDGET_EXCEEDED audit event is recorded (A1).
     max_tokens_per_job: Optional[int] = None
     max_cost_usd_per_job: Optional[float] = None
+
+    # TMX-MQM-5 / ADR-0007: MQM-2.0 engine rollout (strangler-fig).
+    #  - `mqm_shadow_enabled` runs the pure MQM engine ALONGSIDE the legacy
+    #    deterministic verdict and logs a shadow comparison. It changes NO
+    #    verdict — it only collects the distribution diff that review condition
+    #    4 requires before any cutover. Safe to leave on (observational).
+    #  - `mqm_engine_enabled` is the future cutover flag (default OFF; flipped
+    #    per-tenant only after the shadow diff is signed off — TMX-MQM-5b).
+    #  - `mqm_default_profile` is the content-type metric profile used until
+    #    content→profile resolution lands (TMX-MQM-5c).
+    mqm_shadow_enabled: bool = True
+    mqm_engine_enabled: bool = False
+    mqm_default_profile: str = "smpc_pil"
+    # TMX-MQM-4: run the independent judge in SHADOW (an extra LLM call per job
+    # that emits §5.7 annotations + a judge-only MQM score to the audit chain,
+    # changing no verdict). Default OFF because of the per-job cost; turn on for
+    # the pilot tenant to collect judge-vs-gate data before the cutover.
+    mqm_judge_shadow_enabled: bool = False
+    # TMX-MQM-ENSEMBLE-RUN: run the judge N times in SHADOW and combine with the
+    # most-severe + disagreement-escalation aggregator (no averaging). Default
+    # OFF (N× the per-job judge cost). `mqm_ensemble_size` is the judge count
+    # (>=2). NOTE: with `enable_llm_router` off, all judges share one model — the
+    # emitted `single_lineage` flag + inter-judge κ keep that honest (it is
+    # self-consistency, not independent corroboration, until routing flips).
+    mqm_ensemble_shadow_enabled: bool = False
+    mqm_ensemble_size: int = 2
+
+    # TMX-MQM-CAPTURE: when a reviewer overrides an MT segment, feed the change
+    # into the learning bridge as a PROPOSED Black-Book candidate (the gold
+    # signal for Phase-2 judge calibration). Default on; turn off to avoid the
+    # per-override rule-extraction LLM call.
+    enable_hitl_learning_capture: bool = True
+
+    # TMX-ORCH-CHECKPOINT (Loop A): the stuck-PROCESSING job sweeper. A worker
+    # killed mid-run (deploy/OOM/crash) leaves a Document orphaned in
+    # `processing` forever. The sweeper (scripts/stuck_job_sweeper.py) flips such
+    # docs to IN_REVIEW with a JOB_SWEPT_STUCK audit event. Default OFF: the
+    # script refuses to MUTATE unless this is True (--dry-run previews regardless),
+    # so it is safe to schedule before a tenant opts in. Timeout is generous
+    # (4× the translate timeout) so a slow-but-alive early-stage job is never swept.
+    stuck_job_sweep_enabled: bool = False
+    stuck_job_timeout_seconds: int = 1200
+
+    # TMX-QRD-WIRE: enforce authority QRD format rules (date format + mandatory
+    # section headers, per app/core/regulatory_profiles.py) in the live gate when
+    # a job is tagged with a `regulatory_profile`. Default OFF: it can flip a
+    # verdict (a non-standard header → STRUCTURE_ERROR MAJOR → REVIEW_REQUIRED; a
+    # wrong date format → FORMATTING_ERROR MINOR → lower confidence band), so a
+    # deployment opts in. NB: this is a GLOBAL (process-wide) rollout flag like
+    # mqm_engine_enabled — true per-tenant keying is a follow-up. Flag off ⇒ the
+    # gate runs ZERO QRD checks (byte-identical).
+    enable_qrd_checks: bool = False
 
     # Feature Flags (Epic 4: Surgical Reality)
     enable_real_pdf_parsing: bool = True  # Enabled for demo
@@ -155,12 +224,14 @@ class Settings(BaseSettings):
         TMX-3003 / addendum A3 (no silent fallbacks in regulated paths).
 
         Raises:
-            InsecureProductionConfigError: when `app_env != "dev"` AND either
+            InsecureProductionConfigError: when `app_env` is NOT a known
+                non-production env (`_NON_PRODUCTION_ENVS`) AND either
                 `secret_key` is a known placeholder or `auth_mode == "none"`.
                 The error message names the failing setting and gives a one-
                 line remediation hint, so the startup log is self-explanatory.
+                An unknown `app_env` is treated as production (fail-safe).
         """
-        if self.app_env == "dev":
+        if self.app_env.strip().lower() in _NON_PRODUCTION_ENVS:
             return
 
         if self.secret_key in _INSECURE_SECRET_KEYS:

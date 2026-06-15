@@ -10,9 +10,13 @@ from typing import Any
 
 from app.core.database import get_db
 from app.models.database import Document, Segment
+from app.auth.dependencies import get_current_user
 from app.models.models import AuditRecord, AuditLogEntry
 
-router = APIRouter()
+# TMX-RBAC-SWEEP: every dashboard route is an authenticated KPI/audit-activity
+# read — gate the whole router on a valid identity (A12). No-op under
+# AUTH_MODE=none (virtual admin).
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 # ─── Activity Feed wire-shape (TMX-3603-wire) ────────────────────────────
@@ -35,14 +39,21 @@ _EVENT_TYPE_TO_ACTION: dict[str, str] = {
     "JOB_COMPLETED":         "completed",
 }
 
+# TMX-DASH-JUDGE-LABEL: the deterministic quality gate is NOT an independent
+# assessor and must not be presented as a "Reviewer agent" in a regulator-facing
+# view (the A2 vacuous-green hazard — there is no independent judge in the live
+# verdict path yet). The lane `id`s are kept stable; the visible NAMES are made
+# honest: GATE_* is the deterministic quality gate, REVERSE_TRANSLATE is the
+# back-translation check. "Judge" is reserved for the real judge once it lands
+# in the verdict path (it emits MQM_JUDGE_SHADOW to the v2 chain today).
 _EVENT_TYPE_TO_AGENT: dict[str, dict[str, str]] = {
     "JOB_STARTED":           {"id": "system",     "name": "Translation pipeline"},
     "TRANSLATION_GENERATED": {"id": "translator", "name": "Translator agent"},
-    "GATE_CHECK":            {"id": "reviewer",   "name": "Reviewer agent"},
-    "GATE_PASSED":           {"id": "reviewer",   "name": "Reviewer agent"},
-    "GATE_FAILED":           {"id": "reviewer",   "name": "Reviewer agent"},
+    "GATE_CHECK":            {"id": "reviewer",   "name": "Quality gate (deterministic)"},
+    "GATE_PASSED":           {"id": "reviewer",   "name": "Quality gate (deterministic)"},
+    "GATE_FAILED":           {"id": "reviewer",   "name": "Quality gate (deterministic)"},
     "REFINEMENT_LOOP":       {"id": "fixer",      "name": "Fixer agent"},
-    "REVERSE_TRANSLATE":     {"id": "reviewer",   "name": "Reviewer agent"},
+    "REVERSE_TRANSLATE":     {"id": "reviewer",   "name": "Back-translation check"},
     "AUDIT_SEAL":            {"id": "auditor",    "name": "Auditor agent"},
     "JOB_COMPLETED":         {"id": "system",     "name": "Translation pipeline"},
 }
