@@ -13,6 +13,8 @@ This file replaces the legacy ticket list (Tickets 10-23) which were Phase 1-3 h
 
 From the 24-agent vision-gap audit (`docs/product_vision_features/VISION-GAP-ANALYSIS-AND-ROADMAP.md`): the three defensibility pillars (MQM engine / independent judge / Black Book) are Divergent or absent. Phase 1 builds the keystone triad — **annotation → engine → judge** — strangler-fig over the existing code (ADR-0007; plan: `PHASE-1-KEYSTONE-BUILD-PLAN.md`). Engine ships in shadow; live pipeline unchanged until the flagged K5 cutover.
 
+**📋 The whole loop list to full vision delivery (Phases 0-5, ~55 loops, with the next-10 resume batch) is `docs/product_vision_features/MQM-DELIVERY-BACKLOG.md`.**
+
 | Ticket | Title | Owner | Status | Notes |
 |---|---|---|---|---|
 | TMX-MQM-1 | MQM annotation object (§5.7) + taxonomy reconciliation (NEUTRAL, 7 dims, SPM, category→dim bridge) | Quality+Agent | **[Done, pending push]** | reuses `defect_taxonomy.py`; 12 tests; `feat/mqm-keystone`; see `.context/loops/TMX-MQM-1.md` |
