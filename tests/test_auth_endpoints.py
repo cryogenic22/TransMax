@@ -3,6 +3,8 @@ Tests for auth API endpoints.
 Runs against the FastAPI test client in no-auth mode (default).
 """
 
+import logging
+
 import pytest
 from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
@@ -172,16 +174,20 @@ def test_oidc_authorize_sets_state_cookie(oidc_client):
     assert "httponly" in sc and "secure" in sc and "samesite=lax" in sc
 
 
-def test_oidc_callback_matching_state_proceeds(oidc_client):
+def test_oidc_callback_matching_state_proceeds(oidc_client, caplog):
     c, prov = oidc_client
-    res = c.get(
-        "/api/auth/sso/okta/callback",
-        params={"code": "abc", "state": "s1"},
-        headers={"Cookie": "oidc_state=s1"},
-    )
+    with caplog.at_level(logging.INFO, logger="app.api.auth"):
+        res = c.get(
+            "/api/auth/sso/okta/callback",
+            params={"code": "abc", "state": "s1"},
+            headers={"Cookie": "oidc_state=s1"},
+        )
     assert res.status_code == 200
     assert res.json()["access_token"] == "at"
     prov.handle_callback.assert_awaited_once()
+    # TMX-LOGIN-AUDIT: a successful SSO login is audited.
+    lines = [r.getMessage() for r in caplog.records if "AUTH_EVENT" in r.getMessage()]
+    assert any("action=sso_login" in m and "outcome=success" in m for m in lines)
 
 
 def test_oidc_callback_mismatched_state_rejected(oidc_client):

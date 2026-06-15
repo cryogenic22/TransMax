@@ -23,6 +23,22 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
 
+def _audit_auth_event(action, outcome, *, actor=None, provider=None, detail=None):
+    """TMX-LOGIN-AUDIT: emit ONE structured access-audit line for an auth flow
+    (A1 / A12), same key=value shape as TMX-AUTH-AUDIT's ACCESS_CHANGE. NEVER logs
+    the password / token / code (A3 — only the actor identifier, outcome, and
+    provider). Fail-safe: an audit hiccup must not break authentication. The
+    immutable job-less chain is the follow-up (TMX-AUTH-AUDIT-CHAIN)."""
+    try:
+        logger.info(
+            "AUTH_EVENT action=%s outcome=%s actor=%s provider=%s detail=%s at=%s",
+            action, outcome, actor or "-", provider or "-", detail or "-",
+            datetime.now(timezone.utc).isoformat(),
+        )
+    except Exception:  # noqa: BLE001 — the audit side-channel must never break auth
+        pass
+
+
 # --- Request/Response Schemas ---
 
 class LoginRequest(BaseModel):
@@ -92,6 +108,7 @@ async def login(request: LoginRequest):
         provider = get_auth_provider()
         identity = await provider.authenticate_token(None)
         tokens = await provider.issue_tokens(identity.user_id, identity.email, identity.name, identity.role)
+        _audit_auth_event("login", "success", actor=identity.email, provider="none")
         return TokenResponse(
             access_token=tokens.access_token,
             refresh_token=tokens.refresh_token,
@@ -105,10 +122,13 @@ async def login(request: LoginRequest):
 
     user = await _get_user_by_email(request.email)
     if not user or not user.hashed_password:
+        _audit_auth_event("login", "failure", actor=request.email, provider="local", detail="invalid_credentials")
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not verify_password(request.password, user.hashed_password):
+        _audit_auth_event("login", "failure", actor=request.email, provider="local", detail="invalid_credentials")
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not user.is_active:
+        _audit_auth_event("login", "failure", actor=request.email, provider="local", detail="account_deactivated")
         raise HTTPException(status_code=403, detail="Account is deactivated")
 
     # _get_user_by_email returns a DETACHED instance; capture the fields now,
@@ -133,6 +153,7 @@ async def login(request: LoginRequest):
 
     provider = get_auth_provider()
     tokens = await provider.issue_tokens(user_id, user_email, user_name, UserRole(user_role))
+    _audit_auth_event("login", "success", actor=user_email, provider=user_provider)
     return TokenResponse(
         access_token=tokens.access_token,
         refresh_token=tokens.refresh_token,
@@ -158,6 +179,7 @@ async def register(request: RegisterRequest):
 
     existing = await _get_user_by_email(request.email)
     if existing:
+        _audit_auth_event("register", "failure", actor=request.email, provider="local", detail="email_already_registered")
         raise HTTPException(status_code=409, detail="Email already registered")
 
     from app.core.database import SessionLocal
@@ -185,6 +207,7 @@ async def register(request: RegisterRequest):
 
     provider = get_auth_provider()
     tokens = await provider.issue_tokens(str(user.id), user.email, user.name, UserRole(user.role))
+    _audit_auth_event("register", "success", actor=user.email, provider="local")
     return TokenResponse(
         access_token=tokens.access_token,
         refresh_token=tokens.refresh_token,
@@ -215,6 +238,7 @@ async def refresh_token(request: RefreshRequest):
         provider = get_auth_provider()
         identity = await provider.authenticate_token(None)
         tokens = await provider.issue_tokens(identity.user_id, identity.email, identity.name, identity.role)
+        _audit_auth_event("refresh", "success", actor=identity.email, provider="none")
         return TokenResponse(
             access_token=tokens.access_token,
             refresh_token=tokens.refresh_token,
@@ -235,10 +259,12 @@ async def refresh_token(request: RefreshRequest):
 
     tokens = await provider.refresh_access_token(request.refresh_token)
     if not tokens:
+        _audit_auth_event("refresh", "failure", detail="invalid_refresh_token")
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
     # Get user info for response
     identity = await provider.authenticate_token(tokens.access_token)
+    _audit_auth_event("refresh", "success", actor=identity.email if identity else None, provider="local")
     return TokenResponse(
         access_token=tokens.access_token,
         refresh_token=tokens.refresh_token,
@@ -311,6 +337,7 @@ async def sso_callback(
             "OIDC callback rejected: state mismatch or absent (provider=%s, has_cookie=%s)",
             provider, bool(oidc_state),
         )
+        _audit_auth_event("sso_login", "failure", provider=provider, detail="state_mismatch")
         raise HTTPException(status_code=400, detail="Invalid or missing OAuth state")
     # Match the attrs of the set cookie so the clear reliably overwrites it
     # across browsers (a non-Secure clear may not replace a Secure cookie).
@@ -322,8 +349,10 @@ async def sso_callback(
     try:
         identity, tokens = await auth_provider.handle_callback(code)
     except Exception as e:
+        _audit_auth_event("sso_login", "failure", provider=provider, detail="exchange_failed")
         raise HTTPException(status_code=400, detail=f"SSO authentication failed: {str(e)}")
 
+    _audit_auth_event("sso_login", "success", actor=identity.email, provider=identity.auth_provider)
     # Return tokens — frontend will store them
     return TokenResponse(
         access_token=tokens.access_token,
