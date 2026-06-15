@@ -78,6 +78,17 @@ Red-team fixes: sweeper staleness anchor (Document.updated_at alone was unsound 
 
 3-lens red-teamed (`w2x2a4wv4`): 2 lenses ship (zero defects, claims verified by tracing + running tests); fixed 1 low defect (worksheet/config overclaimed "per-tenant" → reframed as a global rollout flag) + a non-str-tag hardening (A3). Worksheet `.context/loops/TMX-QRD-WIRE.md`. Deferred: **TMX-QRD-CAPTURE** (auto-resolve authority/locale at upload), **TMX-QRD-MULTILINGUAL** (EN-only header regex), **TMX-QRD-PER-TENANT** (per-tenant flag keying, shared w/ mqm_engine_enabled).
 
+### Session 2026-06-15 (batch 5) — 2 loops shipped on `feat/mqm-keystone` (PR #14)
+
+Auth-boundary hardening (Phase 0). Both two-way, behaviour-neutral under the live `AUTH_MODE=none` default; 3-lens red-teamed.
+
+| Loop | Status | One-line |
+|---|---|---|
+| TMX-OIDC-CSRF | **[Done]** | closed a real OAuth login-CSRF gap — the OIDC `state` was minted but never verified; now a cookie double-submit (HttpOnly/Secure/SameSite=Lax `oidc_state`) rejects a forged callback 400 BEFORE any code exchange. Ships dark behind `AUTH_MODE=oidc`. Also autofixed 6 dead imports in auth.py. |
+| TMX-RBAC-SWEEP | **[Done]** | applied the existing `require_permission`/`get_current_user` guard to 20 unprotected privileged endpoints (dashboard ×5 router-level, v1/audit ×4 router-level, v1/translations ×6, endpoints.py ×5 incl. the 3 legacy translate verbs). Reuse-only, no new permission. Behaviour-neutral under `AUTH_MODE=none`. |
+
+3-lens red-teamed (`whta73fm1`): OIDC + RBAC lenses **ship** (zero real defects — verified no over-gating, no empty-state bypass, no exchange-on-mismatch, VIEWER keeps reads); honesty lens **fix-then-ship**. Fixes: a vacuous read test (`/api/audit/{id}` 404 — endpoints.py mounts at `/api/v1`) → repointed + added a gating-proof test (all swept paths 401 without auth) + a require_permission positive control (has_permission False → 403); gated the 3 legacy translate verbs with TRANSLATE_EXECUTE (red team found the bypass); G3 reworded (4-router scope, not repo-wide). Worksheets: `.context/loops/TMX-{OIDC-CSRF,RBAC-SWEEP}.md`. Deferred (tracked): **TMX-RBAC-SWEEP-2** (knowledge.py/projects.py/feedback.py mutations), **TMX-AUTH-WALL** checklist note (dashboard hooks send JWT as cookie not Bearer), endpoints↔v1/audit route-collision SSOT cleanup.
+
 ---
 
 ## Feedback-loop initiative (in-app issue → triage → auto-deploy) — started 2026-06-04
