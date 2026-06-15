@@ -1,10 +1,10 @@
 # TMX-MQM-ENSEMBLE-RUN — multi-judge ensemble shadow runner (most-severe + disagreement escalation)
 
-**State**: `[WIP]`
+**State**: `[Done]`
 **Owner**: Agent & AI
 **Sprint**: MQM Keystone / Phase 1→2
 **Started**: 2026-06-15
-**Closed**: —
+**Closed**: 2026-06-15
 **Reversibility**: `two-way` (additive shadow node behind a default-OFF flag; revertable by removing the function + flag + the one graph call line)
 **Pre-mortem**: if this fails in production, the failure mode is *an "ensemble" that is really one model agreeing with itself, presented as independent corroboration* — guarded by an explicit `single_lineage` honesty flag in the payload + the inter-judge κ (which is ~1.0 under single lineage, surfacing the caveat numerically).
 **Blast radius**: `app/agents/nodes/mqm_shadow.py` (new `run_ensemble_shadow`), `app/core/config.py` (2 flags), `app/agents/graph.py` (1 call), `app/services/mqm_judge.py` (honest per-judge model provenance). No live verdict; extra LLM calls only when the flag is on.
@@ -73,9 +73,9 @@ Renamed the field → `inter_judge_kappa_first_pair` + added `kappa_pair: ["judg
 
 ## 8. Deploy
 
-- [ ] Commit: <SHA after commit>
-- [ ] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
-- [ ] `.context/active_tasks.md` + `MQM-DELIVERY-BACKLOG.md` updated
+- [x] Commit: `6536939` (batch w/ EVAL-KAPPA + EVAL-CI)
+- [x] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
+- [x] `.context/active_tasks.md` + `MQM-DELIVERY-BACKLOG.md` updated
 
 ---
 
@@ -84,3 +84,4 @@ Renamed the field → `inter_judge_kappa_first_pair` + added `kappa_pair: ["judg
 | When (UTC) | From | To | Note |
 |---|---|---|---|
 | 2026-06-15T00:00Z | — | `[WIP]` | Created; consumes the unwired TMX-MQM-6 `aggregate_ensemble` + TMX-MQM-EVAL-KAPPA `cohen_kappa`; shadow + default-OFF |
+| 2026-06-15T00:00Z | `[WIP]` | `[Done]` | Shipped in `6536939`; red team confirmed engine-sole-authority + fail-safe; renamed κ field to `_first_pair`, `single_lineage=None` when unobserved |

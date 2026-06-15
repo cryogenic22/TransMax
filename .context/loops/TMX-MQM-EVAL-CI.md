@@ -1,10 +1,10 @@
 # TMX-MQM-EVAL-CI — release-blocking judge-reliability gate + one canonical gold loader
 
-**State**: `[WIP]`
+**State**: `[Done]`
 **Owner**: Quality & Regulatory + Platform
 **Sprint**: MQM Keystone / Phase 2
 **Started**: 2026-06-15
-**Closed**: —
+**Closed**: 2026-06-15
 **Reversibility**: `two-way` (new script + new CI job + new pre-commit hook + a loader move; revertable by deleting them)
 **Pre-mortem**: if this fails in production, the failure mode is *a green gate that proves nothing* — a missing/empty gold set silently scoring recall=1.0. Guarded by an explicit non-empty + has-planted + has-clean integrity assertion that fails the build (the exact vacuous-green trap the audit warned about).
 **Blast radius**: `app/services/judge_eval.py` (canonical loader), `tests/test_judge_eval_cases.py` (dedupe onto it), new `scripts/judge_eval_gate.py`, `.github/workflows/eval.yml` (new job), `.pre-commit-config.yaml` (mirror hook). No runtime/app behaviour change.
@@ -73,9 +73,9 @@ judge → exit 0). CLI structure-only → result=PASS_STRUCTURE_ONLY. Full regre
 
 ## 8. Deploy
 
-- [ ] Commit: <SHA after commit>
-- [ ] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
-- [ ] `.context/active_tasks.md` + `MQM-DELIVERY-BACKLOG.md` updated
+- [x] Commit: `6536939` (batch w/ ENSEMBLE-RUN + EVAL-KAPPA)
+- [x] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
+- [x] `.context/active_tasks.md` + `MQM-DELIVERY-BACKLOG.md` updated
 
 ---
 
@@ -84,3 +84,4 @@ judge → exit 0). CLI structure-only → result=PASS_STRUCTURE_ONLY. Full regre
 | When (UTC) | From | To | Note |
 |---|---|---|---|
 | 2026-06-15T00:00Z | — | `[WIP]` | Created; gate over the existing planted gold; structure-tier always blocks, judge-tier blocks when keys present |
+| 2026-06-15T00:00Z | `[WIP]` | `[Done]` | Shipped in `6536939`; red team fixed precision no-op (→0.5 enforced) + corrupt-gold crash (→FAIL_INTEGRITY) |
