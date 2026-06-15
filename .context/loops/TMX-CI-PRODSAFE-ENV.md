@@ -1,6 +1,6 @@
 # TMX-CI-PRODSAFE-ENV — `assert_production_safe()` must exempt all non-production envs, not just `dev`
 
-**State**: `[WIP]`
+**State**: `[Done]` (`c8b1074`)
 **Owner**: Auth & Tenancy
 **Sprint**: MQM Keystone / Phase 0 (substrate — make CI a real gate, not a paper exercise)
 **Started**: 2026-06-15
