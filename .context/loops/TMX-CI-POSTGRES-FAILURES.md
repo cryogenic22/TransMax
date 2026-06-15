@@ -1,6 +1,6 @@
 # TMX-CI-POSTGRES-FAILURES — green the suite on Postgres (newly visible after the collection fix)
 
-**State**: `[WIP]`
+**State**: `[Done]` — CI Unit Tests fully green (`14fe34a`): **1375 passed, 5 skipped, 0 failed** (was a month of crash/0)
 **Owner**: Platform & Observability
 **Sprint**: MQM Keystone / Phase 0 (make CI a real gate)
 **Started**: 2026-06-15
@@ -84,8 +84,10 @@ Key question: does any fix MASK a real app bug? No. (a) The app generates 36-cha
 
 Fix: migrate `app/auth/password.py` off passlib to **bcrypt directly** (`requirements.txt`: `passlib[bcrypt]` → `bcrypt`). Proven byte-compatible: a real passlib-made `$2b$12$…` hash verifies under `bcrypt.checkpw` (frozen regression pin in `tests/test_password_hashing.py`), same ident/cost(12)/72-byte truncation. Adversarial auth red-team (agent `a9cc13d4`) verdict **SHIP** — no defect across backward-compat / truncation / fail-closed / work-factor. 41 auth tests + 5 new password tests green on Postgres.
 
-- [ ] Commit (this) — password.py + requirements.txt + test_password_hashing.py
-- [ ] Push → CI validates auth_wall_seed now passes (full green expected)
+- [x] Commit `14fe34a` — password.py + requirements.txt + test_password_hashing.py
+- [x] Push → **CI Unit Tests GREEN: 1375 passed, 5 skipped, 0 failed** (PR #20, run 27544140614)
+
+**Residual red CI gates (pre-existing, out of scope here):** secret-scan (`.env` key — Kapil-gated TMX-3000), Quality Gate (280 ruff — TMX-RUFF-SWEEP), Frontend (1 visual snapshot — TMX-FE-SNAPSHOT).
 
 ---
 
