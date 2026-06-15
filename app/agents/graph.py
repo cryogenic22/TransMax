@@ -421,11 +421,19 @@ async def run_quality_gates(state: TransMaxState) -> TransMaxState:
         # engine alongside the legacy verdict and log the diff. Changes NO
         # verdict — collects the distribution comparison required before any
         # cutover (ADR-0007 / review cond. 4). Self-contained + fail-safe.
-        from app.agents.nodes.mqm_shadow import run_judge_shadow, run_mqm_shadow
+        from app.agents.nodes.mqm_shadow import (
+            run_ensemble_shadow,
+            run_judge_shadow,
+            run_mqm_shadow,
+        )
         run_mqm_shadow(state, violations, status)
         # TMX-MQM-4: independent judge in shadow (default OFF; emits annotations
         # + a judge-only MQM score to the audit chain). Verdict unaffected.
         await run_judge_shadow(state)
+        # TMX-MQM-ENSEMBLE-RUN: N-judge ensemble in shadow (default OFF; emits
+        # most-severe merge + disagreement-escalation + inter-judge κ). Verdict
+        # unaffected; honest single-lineage caveat until the router flips.
+        await run_ensemble_shadow(state)
 
     except Exception as e:
         logger.error(f"Quality Gate Error: {e}")

@@ -47,6 +47,18 @@ All additive / shadow / flag-gated; live verdict unchanged. Branch pushed; PR op
 
 Commits: Batch 1 (5c/BB-STRICT/AUTH-AUDIT), Batch 2 (4/6/5a-emit), Batch 3 (EVAL/DASH/REPORT/EVAL-CASES). Spawned follow-ups: **TMX-AUTH-AUDIT-CHAIN** (job-less immutable audit trail), **TMX-MQM-1a** (annotation table + Alembic — judge findings already durable in the v2 chain, so deferred), **TMX-MQM-5b** (verdict cutover — gated on the shadow-report review), **TMX-QRD-WIRE** (resolve a regulatory_profiles key into check_segment so QRD/date checks fire — flag-gate; deferred as it can change live verdicts).
 
+### Session 2026-06-15 (batch 2) — 3 loops shipped on `feat/mqm-keystone` (PR #14)
+
+The "make the judge measured / no vacuous green" cluster (Phase 2). All additive / shadow / default-OFF; live verdict unchanged; reuse-and-reconcile. Adversarially red-teamed (4 lenses) before commit; 4 real defects found + fixed.
+
+| Loop | Status | One-line |
+|---|---|---|
+| TMX-MQM-ENSEMBLE-RUN | **[Done]** | `run_ensemble_shadow` — runs the judge N× (default 2), reuses `aggregate_ensemble` (most-severe, never averaged) + the one engine; emits `MQM_ENSEMBLE_SHADOW` w/ escalate + inter-judge κ (first-pair) + honest `single_lineage`; `mqm_ensemble_shadow_enabled`/`mqm_ensemble_size`; A6 per-judge real-model provenance fix |
+| TMX-MQM-EVAL-KAPPA | **[Done]** | pure `cohen_kappa` primitive + `binary_severity_label_map` in `judge_eval.py`; widened `MQM_JUDGE_SHADOW` payload with durable per-segment judge labels. Human-side κ join deferred to **TMX-MQM-EVAL-KAPPA-JOIN** (needs TMX-MQM-1a structured human labels) |
+| TMX-MQM-EVAL-CI | **[Done]** | one canonical `load_judge_gold` (deduped the forked loader) + `scripts/judge_eval_gate.py` (structure-tier always blocks empty/lopsided/corrupt gold; judge-tier enforces recall≥0.75 + precision≥0.5 when keys present) + `eval.yml` `judge-gate` job + pre-commit hook |
+
+Red-team fixes: precision floor was a no-op (0.0→0.5 enforced); corrupt gold line now → structured FAIL_INTEGRITY not a crash; `inter_judge_kappa`→`inter_judge_kappa_first_pair` (+`kappa_pair`); deleted dangling `severity_label_map` + its forked `_SEVERITY_RANK` (anti-bloat/SSOT). Worksheets: `.context/loops/TMX-MQM-{ENSEMBLE-RUN,EVAL-KAPPA,EVAL-CI}.md`. Spawned: **TMX-MQM-EVAL-KAPPA-JOIN** (judge↔human κ once the annotation table lands).
+
 ---
 
 ## Feedback-loop initiative (in-app issue → triage → auto-deploy) — started 2026-06-04

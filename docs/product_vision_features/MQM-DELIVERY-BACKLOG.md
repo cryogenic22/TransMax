@@ -22,7 +22,7 @@ Legend: `[Done]` shipped · `[Next-10]` the immediate resume batch · `[Gated]` 
 | TMX-MQM-CAPTURE | Reviewer override → learning bridge (gold) | — | two-way | **[Done]** |
 | **TMX-MQM-1a** | Persist `mqm_annotations` table + Alembic + save helper | 1 | one-way | **[Next-10]** |
 | **TMX-MQM-6-wire** | Wire conservation diff-reject + ensemble into the live reviser | 6 | two-way | **[Next-10]** |
-| **TMX-MQM-ENSEMBLE-RUN** | Ensemble runner for Tier-0/1 (2+ judges, most-severe, escalate) | 4,6 | two-way | **[Next-10]** |
+| TMX-MQM-ENSEMBLE-RUN | Ensemble runner for Tier-0/1 (2+ judges, most-severe, escalate) | 4,6 | two-way | **[Done]** (shadow; default-off; inter-judge κ) |
 | TMX-MQM-5c-deepen | Per-segment content-type detection (beyond doc metadata) | 5c | two-way | [ ] |
 | TMX-MQM-5b | **Verdict CUTOVER** — engine sole decider, strip self-cert, gates→annotators, ConfidenceService→adapter, unify SDK fork | shadow review | one-way | **[Gated]** (review `scripts/mqm_shadow_report.py` first) |
 | TMX-MQM-4b | Judge moves shadow→verdict (after cutover) | 5b | one-way | [ ] |
@@ -47,8 +47,9 @@ Legend: `[Done]` shipped · `[Next-10]` the immediate resume batch · `[Gated]` 
 |---|---|---|---|---|
 | TMX-MQM-EVAL | Judge-reliability metric (recall/precision) | 4 | two-way | **[Done]** |
 | TMX-MQM-EVAL-CASES | Planted-defect judge gold set + recall gate | EVAL | two-way | **[Done]** |
-| **TMX-MQM-EVAL-CI** | Wire recall/precision into a release-BLOCKING CI gate (regression blocks) | EVAL | two-way | **[Next-10]** |
-| **TMX-MQM-EVAL-KAPPA** | Judge↔human agreement (Cohen's/Fleiss' κ ≥ 0.80) over CAPTURE gold | CAPTURE,4 | two-way | **[Next-10]** |
+| TMX-MQM-EVAL-CI | Wire recall/precision into a release-BLOCKING CI gate (regression blocks) | EVAL | two-way | **[Done]** (structure + judge tiers; recall≥0.75/precision≥0.5) |
+| TMX-MQM-EVAL-KAPPA | Cohen's κ primitive + durable per-segment judge labels | CAPTURE,4 | two-way | **[Done]** (κ primitive; judge↔human join → TMX-MQM-EVAL-KAPPA-JOIN, needs MQM-1a) |
+| TMX-MQM-EVAL-KAPPA-JOIN | Judge↔human κ ≥ 0.80 over CAPTURE gold (needs structured human MQM labels) | EVAL-KAPPA, MQM-1a | two-way | [ ] |
 | TMX-MQM-EVAL-DRIFT | Drift detection on agreement/recall/precision (rolling window blocks release) | EVAL-CI | two-way | [ ] |
 | TMX-MQM-EVAL-GOLD | Golden datasets per content type w/ human-MQM gold + measured IAA | EVAL-KAPPA | two-way | [ ] |
 | TMX-MQM-CALIBRATE | Calibration loop (recalibrate judge prompt/thresholds, shadow-test before adopt) | EVAL-GOLD | two-way | [ ] |

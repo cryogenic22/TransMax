@@ -71,6 +71,16 @@ repos:
         pass_filenames: false
         stages: [pre-commit]
 
+      # TMX-MQM-EVAL-CI: structure-only judge-reliability gate (no LLM) — blocks
+      # a missing/empty/lopsided gold set before push. The CI eval workflow runs
+      # the real-judge recall tier when keys are present.
+      - id: judge-eval-gate
+        name: Judge-reliability gate (structure-only)
+        entry: python -m scripts.judge_eval_gate check
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+
   # ── Worksheet/commit drift audit (advisory) ───────────────────────────
   # Runs `scripts/audit_worksheet_drift.py` so a developer sees drift
   # before push. Advisory only — `verbose: true` surfaces output, but
