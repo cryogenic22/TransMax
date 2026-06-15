@@ -1,10 +1,10 @@
 # TMX-SSOT-TIER (steps 1–3) — fix the metadata funnel + tier→profile refinement + unify the governance rule
 
-**State**: `[WIP]`
+**State**: `[Done]` (steps 1-3; step 4 deferred to Kapil)
 **Owner**: Quality & Regulatory
 **Sprint**: MQM Keystone / Phase 0 (stop the vacuous green)
 **Started**: 2026-06-15
-**Closed**: —
+**Closed**: 2026-06-15
 **Reversibility**: `two-way` (a new read method + a data-driven override map + a predicate extraction; revertable. The one-way step 4 — removing the dead `MqmAnnotation.risk_tier` int — is DEFERRED to Kapil sign-off.)
 **Pre-mortem**: if this fails in production, the failure mode is *the funnel fix changes a LIVE verdict via the source-language node*. The red team caught this: defining `get_document_metadata` (previously undefined → AttributeError → always `'en'`) re-activates the source-language node, which feeds the live `constraint_pack`/gate. Resolved by surfacing the DECLARED `Document.source_language` column so the node is DETERMINISTIC: en-source docs (the pilot) resolve to `'en'` exactly as before; a declared non-en source is now honoured instead of the latent always-`'en'` (a correctness fix, NOT a speculative behaviour, and never fragile auto-detection). The verdict authority `evaluate_verdict` reads neither `content_metadata` nor the profile; `content_metadata` feeds ONLY the MQM shadow; the metric profile is resolved ONLY on the shadow path. So no shadow-→-live leak beyond the deterministic declared source language.
 **Blast radius**: `app/services/db_service.py` (+1 read method — graph already calls it), `app/core/metric_profiles/resolution.py`, `app/core/profile_enums.py`, `app/schemas/api_v1.py` (validator body only — request shape + error message unchanged), `app/core/profile_resolver.py`. No live verdict.
@@ -70,9 +70,9 @@ Full regression 230 passed.
 
 ## 8. Deploy
 
-- [ ] Commit: <SHA after commit>
-- [ ] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
-- [ ] `.context/active_tasks.md` + `MQM-DELIVERY-BACKLOG.md` updated
+- [x] Commit: `c265913` (batch w/ TMX-ORCH-CHECKPOINT)
+- [x] Pushed to origin (branch `feat/mqm-keystone`, PR #14)
+- [x] `.context/active_tasks.md` + `MQM-DELIVERY-BACKLOG.md` updated
 
 ---
 
@@ -81,3 +81,4 @@ Full regression 230 passed.
 | When (UTC) | From | To | Note |
 |---|---|---|---|
 | 2026-06-15T00:00Z | — | `[WIP]` | Created (batch 3); steps 1–3 (funnel + tier refinement + rule unify); step 4 (dead-field removal) deferred to Kapil (one-way) |
+| 2026-06-15T00:00Z | `[WIP]` | `[Done]` | Shipped in `c265913`; red team corrected the source-language claim (declared-deterministic, not byte-identical) + enum-member resolution; QRD-WIRE now unblocked |
