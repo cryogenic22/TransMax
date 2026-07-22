@@ -81,9 +81,30 @@ class TransMaxState(TypedDict):
     # the old iteration_count=999 sentinel. Set on a safety regression during refine.
     force_finalize: Optional[bool]
 
+    # TMX-LANGDETECT-HOLD: uncertain source language -> explicit hold, never "en" (A3/RS-06).
+    source_language_confirmation_required: Optional[bool]
+    source_language_detection_confidence: Optional[float]
+    source_language_detection_reason: Optional[str]
+
 # ---------------------------------------------------------
 # NODES
 # ---------------------------------------------------------
+
+def _emit_source_language_hold(state: TransMaxState, confidence: Optional[float], reason: str) -> None:
+    """Audit the hold, THEN flip the state (A1). TMX-LANGDETECT-HOLD."""
+    if state.get('job_id'):
+        _emit_v2_audit_event(
+            job_id=state['job_id'], event_type="SOURCE_LANGUAGE_CONFIRMATION_REQUIRED",
+            actor_id=None, actor_kind="system",
+            payload={
+                "doc_id": state.get('doc_id'), "detection_confidence": confidence,
+                "reason": reason, "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+        )
+    state['source_language_confirmation_required'] = True
+    state['source_language_detection_confidence'] = confidence
+    state['source_language_detection_reason'] = reason
+
 
 @traced("graph.node.validate")
 async def validate_request(state: TransMaxState) -> TransMaxState:
@@ -104,30 +125,33 @@ async def validate_request(state: TransMaxState) -> TransMaxState:
     except Exception as e:
         logger.warning(f"Failed to update document status, proceeding anyway: {e}")
     
-    # Resolve source language: metadata → auto-detect → fallback to "en"
+    # Declared metadata (TMX-SSOT-TIER) wins; only then auto-detect, and a
+    # low-confidence/errored detection holds instead of guessing "en" (A3/RS-06).
     if not state.get('source_language'):
         try:
             doc_meta = get_db_service().get_document_metadata(state['doc_id'])
             if doc_meta and doc_meta.get('source_language'):
                 state['source_language'] = doc_meta['source_language']
             else:
-                # Auto-detect from first segments
                 from app.services.language_detection import detect_language
                 segments = get_db_service().get_segments_for_doc(state['doc_id'])
                 sample_text = " ".join(s['source_text'] for s in segments[:5])[:2000]
-                if sample_text.strip():
-                    detection = detect_language(sample_text)
-                    if detection.confidence >= 0.5:
-                        state['source_language'] = detection.language
-                        logger.info(f"Auto-detected source language: {detection.language} (confidence={detection.confidence:.2f})")
-                    else:
-                        state['source_language'] = "en"
-                        logger.info(f"Low detection confidence ({detection.confidence:.2f}), defaulting to 'en'")
+                detection = detect_language(sample_text)
+                if detection.low_confidence:
+                    logger.warning(
+                        f"Source language undetermined (reason={detection.reason}, "
+                        f"confidence={detection.confidence:.2f}) — holding for "
+                        "confirmation, not defaulting to 'en'"
+                    )
+                    _emit_source_language_hold(
+                        state, detection.confidence, detection.reason or "low_confidence"
+                    )
                 else:
-                    state['source_language'] = "en"
+                    state['source_language'] = detection.language
+                    logger.info(f"Auto-detected source language: {detection.language} (confidence={detection.confidence:.2f})")
         except Exception as e:
-            logger.warning(f"Language detection failed: {e}, defaulting to 'en'")
-            state['source_language'] = "en"
+            logger.warning(f"Language detection failed unexpectedly: {e} — holding for confirmation")
+            _emit_source_language_hold(state, None, "detector_error")
 
     # TMX-MQM-5c: stash document content metadata so the MQM engine can resolve
     # the content-type metric profile (shadow today, verdict at cutover). Safe,
@@ -207,6 +231,13 @@ async def validate_request(state: TransMaxState) -> TransMaxState:
             # In strict GxP, we might start failing here. For now, log.
 
     return state
+
+def decide_after_validate(state: TransMaxState) -> str:
+    """TMX-LANGDETECT-HOLD: unconfirmed source language -> straight to finalize,
+    no segment ever loads or translates under a guessed language (A3/RS-06)."""
+    if state.get('source_language_confirmation_required'):
+        return "finalize"
+    return "load_segments"
 
 @traced("graph.node.load_segments")
 async def load_segments(state: TransMaxState) -> TransMaxState:
@@ -657,7 +688,15 @@ async def finalize_job(state: TransMaxState) -> TransMaxState:
             f"(min back-translation score {state.get('reflexion_min_score')})"
         )
         final_status = DocumentStatus.IN_REVIEW
-        
+
+    # TMX-LANGDETECT-HOLD: unconfirmed source language overrides every other
+    # outcome (A3 fail-toward-review; never downgrades an already-held status).
+    if state.get('source_language_confirmation_required'):
+        logger.info(
+            f"Source-language confirmation required — reason={state.get('source_language_detection_reason')}"
+        )
+        final_status = DocumentStatus.IN_REVIEW
+
     try:
         get_db_service().update_document_status(state['doc_id'], final_status.value)
     except Exception as e:
@@ -678,6 +717,11 @@ async def finalize_job(state: TransMaxState) -> TransMaxState:
             if state.get('reflexion_review_required'):
                 final_payload["reflexion_review_required"] = True
                 final_payload["reflexion_min_score"] = state.get('reflexion_min_score')
+            # TMX-LANGDETECT-HOLD: audit-visible hold reason (never a silent "en").
+            if state.get('source_language_confirmation_required'):
+                final_payload["source_language_confirmation_required"] = True
+                final_payload["source_language_detection_reason"] = state.get('source_language_detection_reason')
+                final_payload["source_language_detection_confidence"] = state.get('source_language_detection_confidence')
             get_audit_service().log_event(state['audit_id'], "JOB_FINALIZED", final_payload)
             logger.info(f"Finalized Audit Trail {state['audit_id']}")
 
@@ -719,7 +763,16 @@ workflow.add_node("finalize", finalize_job)
 
 # Flow with Refinement Loop
 workflow.set_entry_point("validate")
-workflow.add_edge("validate", "load_segments")
+
+# TMX-LANGDETECT-HOLD: unconfirmed source language skips straight to finalize.
+workflow.add_conditional_edges(
+    "validate",
+    decide_after_validate,
+    {
+        "load_segments": "load_segments",
+        "finalize": "finalize",
+    },
+)
 workflow.add_edge("load_segments", "constraints")
 workflow.add_edge("constraints", "translate")
 workflow.add_edge("translate", "gates")

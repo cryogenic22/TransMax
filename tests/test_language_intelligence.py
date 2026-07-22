@@ -186,15 +186,20 @@ class TestLanguageDetection:
         assert result.confidence > 0.5
 
     def test_detect_short_text_fallback(self):
+        # TMX-LANGDETECT-HOLD: too little text to detect is an explicit hold
+        # ("und" + low_confidence), never a silent "en" (A3 / RS-06).
         from app.services.language_detection import detect_language
         result = detect_language("Hi")
-        assert result.language == "en"
+        assert result.language == "und"
         assert result.confidence == 0.0
+        assert result.low_confidence is True
+        assert result.reason == "insufficient_text"
 
     def test_detect_empty_text(self):
         from app.services.language_detection import detect_language
         result = detect_language("")
-        assert result.language == "en"
+        assert result.language == "und"
+        assert result.low_confidence is True
 
     def test_get_language_name(self):
         from app.services.language_detection import get_language_name
