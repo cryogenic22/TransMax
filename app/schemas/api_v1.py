@@ -400,7 +400,14 @@ class SegmentResult(BaseModel):
     """One segment's disposition, MQM summary, provenance and audit pointer."""
     segment_id: str
     disposition: TranslationDisposition
-    mqm: MqmSummary
+    # Optional by design: the MQM engine is shadow-only today
+    # (`mqm_engine_enabled` has no consumer in application code), so no honest
+    # MqmSummary exists for any segment. `None` means "not scored" and becomes
+    # a real summary at the TMX-MQM-5b cutover. A REQUIRED field here would
+    # force a conforming implementer to fabricate a score — the unearned-claim
+    # defect ADR-0009 clause 5 and seam invariant C-4 exist to prevent.
+    # See tests/test_seam_contract_mqm_optional.py.
+    mqm: Optional[MqmSummary] = None
     provenance: ProvenanceRecord
     audit: AuditRef
     contract_version: str = CONTRACT_VERSION
