@@ -16,10 +16,11 @@ the build if this table silently drifts from what is actually registered):
   C-4  COVERED  - provenance defaults to None, never "MT"/"transmax_ai"
   C-5  COVERED  - a TM-exact segment still runs the deterministic gates
   C-7  COVERED  - duplicate request_id yields one job (DB-enforced today)
+  C-3  COVERED  - uncertain source language returns a typed hold ('und'),
+                  never a silent 'en' (activated at Batch-B integration)
   C-9  PENDING  - language_tier field exists + defaults None; no tiering
                   engine exists yet (TMX-LANG-TIERS, unbuilt)
   C-1  SKIPPED  - needs a live reSCApe pair; blocked on TMX-SEAM-CLIENT
-  C-3  SKIPPED  - needs TMX-LANGDETECT-HOLD (READY, unbuilt)
   C-6  SKIPPED  - needs a live pair + signature-reference wiring (unfiled)
   C-8  SKIPPED  - needs a live pair to independently re-verify the chain
 
@@ -53,8 +54,8 @@ from transmax_sdk.types import TranslationRequest, TranslationSegment
 # Invariant registry — the honesty mechanism.
 # ---------------------------------------------------------------------------
 
-SKIPPED_INVARIANTS: FrozenSet[str] = frozenset({"C-1", "C-3", "C-6", "C-8"})
-COVERED_INVARIANTS: FrozenSet[str] = frozenset({"C-2", "C-4", "C-5", "C-7", "C-9"})
+SKIPPED_INVARIANTS: FrozenSet[str] = frozenset({"C-1", "C-6", "C-8"})
+COVERED_INVARIANTS: FrozenSet[str] = frozenset({"C-2", "C-3", "C-4", "C-5", "C-7", "C-9"})
 PENDING_INVARIANTS: FrozenSet[str] = frozenset({"C-9"})
 DECLARED_PENDING_COUNT = 1
 ALL_INVARIANTS: FrozenSet[str] = frozenset(f"C-{i}" for i in range(1, 10))
@@ -343,23 +344,49 @@ def test_engine_unreachable_yields_typed_error_never_glossary_substitution() -> 
         client.translate(job_payload={"request_id": "seam-c1"})
 
 
-@skip_covers(
-    "C-3",
-    reason=(
-        "requires TMX-LANGDETECT-HOLD (READY, not yet built) - the typed "
-        "hold this invariant asserts on does not exist in the engine yet."
-    ),
-)
+@covers("C-3")
 def test_low_confidence_source_language_detection_yields_typed_hold() -> None:
     """C-3: a source document whose language cannot be confidently detected
-    must return a typed hold, never a silent default to 'en'."""
-    from app.services.language_detection import (  # type: ignore[import-not-found]
-        detect_source_language,
+    must return a typed hold, never a silent default to 'en'.
+
+    Activated at Batch-B integration: TMX-LANGDETECT-HOLD shipped in the same
+    batch as this suite, so the loop that wrote this test could not see the
+    implementation and left it skipped against a guessed API. Rewritten
+    against the shipped contract: `DetectionResult.low_confidence` +
+    a typed `DetectionHoldReason`, with `language == "und"` (ISO 639-2
+    undetermined) on every non-confident path.
+    """
+    from app.services.language_detection import DetectionResult, detect_language
+
+    # Too short to identify — the cheapest path into an honest hold.
+    result: DetectionResult = detect_language("?!")
+
+    assert result.low_confidence is True, (
+        "an unidentifiable source must be flagged low_confidence, not "
+        "silently accepted"
+    )
+    assert result.reason is not None, "the hold must carry a typed reason (A1/A8)"
+    assert result.language == "und", (
+        "a non-confident detection must return 'und', never a plausible "
+        f"guess; got {result.language!r}"
+    )
+    assert result.language != "en", "the RS-06 regression: silent English default"
+
+
+@covers("C-3")
+def test_confident_detection_is_not_held() -> None:
+    """C-3 negative control: the hold must not fire on clearly-identifiable
+    text, or the gate would be useless noise rather than a signal."""
+    from app.services.language_detection import detect_language
+
+    result = detect_language(
+        "The patient should take one tablet twice daily with water, and "
+        "should not exceed the stated dose under any circumstances."
     )
 
-    result = detect_source_language("??? ambiguous mixed-script input ...")
-    assert result.status == "HOLD_LOW_CONFIDENCE"
-    assert result.detected_language != "en"
+    assert result.low_confidence is False
+    assert result.reason is None
+    assert result.language != "und"
 
 
 @skip_covers(
