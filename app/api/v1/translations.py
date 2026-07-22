@@ -30,6 +30,48 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
+def _reconstruct_document_text(segments: List[Segment]) -> str:
+    """
+    TMX-V1-DURABLE-IR (ADR-0008 hazard 2, two-way half): rebuild a job's full
+    text from the segment IR instead of `". ".join(...)`.
+
+    The naive join fabricated a ". " between every pair of segments
+    regardless of what punctuation the preceding segment already ended in
+    (the segmenter — `app/services/segmenter.py` — always keeps a segment's
+    own terminal punctuation attached to it), and it flattened DOCX
+    structural roles (headers, paragraphs, table cells, etc. — recorded on
+    `Segment.element_type`) into a single run of prose.
+
+    Fix: never invent a punctuation character (A3). The only join decisions
+    are whitespace-shaped, driven by data the IR already recorded:
+      - `element_type` changes between consecutive segments -> a structural
+        boundary was actually recorded; preserve it as a line break instead
+        of merging it into running text.
+      - otherwise -> a single space. This is the same separator the
+        segmenter itself consumed (`[.!?]+\\s+` / clause-boundary splits) —
+        it never adds a period, so an already-terminated segment ("...?")
+        is never double-punctuated, and an un-terminated one (e.g. a
+        length-capped hard wrap, see TMX-OMIT-2) is joined the same way the
+        original whitespace joined it, not invented.
+
+    Segments with no translated text are skipped entirely so a missing
+    translation cannot inject a stray separator (e.g. "foo. . bar").
+    """
+    parts: List[str] = []
+    prev_element_type: str | None = None
+    have_prev = False
+    for seg in segments:
+        text = seg.translated_text or ""
+        if not text:
+            continue
+        if have_prev:
+            parts.append("\n" if seg.element_type != prev_element_type else " ")
+        parts.append(text)
+        prev_element_type = seg.element_type
+        have_prev = True
+    return "".join(parts)
+
 @router.post("/", response_model=JobResponse, status_code=status.HTTP_201_CREATED,
              dependencies=[Depends(require_permission(Permission.TRANSLATE_EXECUTE))])
 async def create_translation_job(
@@ -163,9 +205,10 @@ def get_job_result(job_id: str, db: Session = Depends(get_db)):
     if doc.status not in [DocumentStatus.TRANSLATED, DocumentStatus.IN_REVIEW, DocumentStatus.APPROVED]:
         raise HTTPException(status_code=400, detail="Translation not complete")
         
-    # Reconstruct Text
+    # Reconstruct Text (TMX-V1-DURABLE-IR: from the segment IR, never a
+    # fabricated ". "-join — see _reconstruct_document_text docstring).
     segments = db.query(Segment).filter(Segment.document_id == job_id).order_by(Segment.order_index).all()
-    full_text = ". ".join([s.translated_text or "" for s in segments])
+    full_text = _reconstruct_document_text(segments)
     
     # Calc Quality Stats
     try:
