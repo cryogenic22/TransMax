@@ -157,8 +157,11 @@ def test_result_endpoint_does_not_fabricate_period_after_question_mark():
         elif model is Segment:
             q.filter.return_value.order_by.return_value.all.return_value = segments
         else:
-            # QualityScorecard (and anything else the route queries) — no row.
+            # QualityScorecard / AuditEventV2 (TMX-SEAM-WIRE) — no row for
+            # either `.filter().first()` or `.filter().order_by().first()`
+            # (the result-block helpers use the latter shape).
             q.filter.return_value.first.return_value = None
+            q.filter.return_value.order_by.return_value.first.return_value = None
         return q
 
     mock_db.query.side_effect = query_side_effect
