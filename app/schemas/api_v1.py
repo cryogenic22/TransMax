@@ -1,3 +1,7 @@
+import hashlib
+import json
+from enum import Enum
+
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 from typing import Optional, Dict, Any, List
 from datetime import datetime
@@ -7,6 +11,46 @@ from app.core.profile_enums import (
     TranslationArchetype,
     is_tier_archetype_compatible,
 )
+
+# TMX-SEAM-CONTRACT / ADR-0009 clause 3: the join key a stored result is traced
+# back to. Bump whenever a response shape changes; existing routes stay on the
+# same version until their shape actually changes (backwards-compatible
+# additions don't require a bump per CROSS-REPO-PROTOCOL Rule 3, but this loop
+# starts the seam contract at 1.1.0 per the ticket).
+CONTRACT_VERSION = "1.1.0"
+
+
+class SourceReference(BaseModel):
+    """ADR-0009 clause 3 — reSCApe component identity a translation job was run
+    against. All fields optional: TransMax accepts jobs with no reSCApe origin
+    (e.g. ad-hoc translation) as well as seam-originated ones (A5: these IDs
+    are carried through verbatim, never re-derived from position or content).
+    """
+    component_id: Optional[str] = None
+    component_version_id: Optional[str] = None
+    hash_canonical: Optional[str] = None
+    doc_type: Optional[str] = None
+    market: Optional[str] = None
+    product_ref: Optional[str] = None
+    section_path: Optional[str] = None
+
+
+class TermbaseRef(BaseModel):
+    """One versioned termbase reference inside a `ConstraintPack`."""
+    termbase_id: str
+    version: str
+
+
+class ConstraintPack(BaseModel):
+    """ADR-0009 clause 3 — constraints a translation job must honour.
+
+    `termbase_refs` carries the versioned termbase(s) to apply; the version is
+    part of `tm_match_key` below so a terminology change invalidates any TM
+    match automatically (ADR-0009 clause 4 bind-revalidation).
+    """
+    termbase_refs: List[TermbaseRef] = Field(default_factory=list)
+    do_not_translate: List[str] = Field(default_factory=list)
+
 
 class JobProfileRequest(BaseModel):
     """
@@ -56,6 +100,13 @@ class JobCreateRequest(BaseModel):
     # Async Callback. TMX-WEBHOOK-FIRE: dispatched on terminal job status by
     # app/services/webhook_dispatch.py — no longer accepted-and-ignored (A3).
     webhook_url: Optional[HttpUrl] = None
+
+    # TMX-SEAM-CONTRACT / ADR-0009 clause 3: reSCApe origin + constraints.
+    # Both optional and default-None — pre-existing callers (no seam origin)
+    # are unaffected. NOT wired into the live translation path this loop
+    # (schema + helper + export only; see worksheet scope note).
+    source_ref: Optional[SourceReference] = None
+    constraints: Optional[ConstraintPack] = None
 
     @field_validator('webhook_url')
     @classmethod
@@ -122,6 +173,8 @@ class JobResponse(BaseModel):
     score_breakdown: Optional[Dict[str, float]] = None
     created_at: datetime
     estimated_completion: Optional[datetime] = None
+    # TMX-SEAM-CONTRACT: join key — see CONTRACT_VERSION docstring above.
+    contract_version: str = CONTRACT_VERSION
 
 class JobResult(BaseModel):
     """
@@ -130,12 +183,13 @@ class JobResult(BaseModel):
     job_id: str
     status: str
     original_filename: Optional[str]
-    
+
     translated_text: Optional[str]
     quality_summary: ValidationSummary
     audit_id: Optional[str]
-    
+
     completed_at: datetime
+    contract_version: str = CONTRACT_VERSION
 
 class AuditLogEntryResponse(BaseModel):
     sequence_index: int
@@ -155,8 +209,9 @@ class AuditBundleResponse(BaseModel):
     
     chain_head_hash: str
     is_tampered: bool
-    
+
     entries: List[AuditLogEntryResponse]
+    contract_version: str = CONTRACT_VERSION
 
 class AuditRecordResponse(BaseModel):
     """
@@ -169,6 +224,7 @@ class AuditRecordResponse(BaseModel):
     hash_signature: Optional[str]
     full_payload: Optional[Dict[str, Any]] = None
     created_at: datetime
+    contract_version: str = CONTRACT_VERSION
 
 
 class VerifyFinding(BaseModel):
@@ -223,6 +279,7 @@ class AuditVerificationResponse(BaseModel):
         description="Hex event_hash of the highest-sequence event; null for an empty chain.",
     )
     findings: List[VerifyFinding] = Field(default_factory=list)
+    contract_version: str = CONTRACT_VERSION
 
 
 class OrgChainSummary(BaseModel):
@@ -248,4 +305,107 @@ class OrgAuditVerificationResponse(BaseModel):
     ok_chains: int
     all_ok: bool
     chains: List[OrgChainSummary] = Field(default_factory=list)
+    contract_version: str = CONTRACT_VERSION
+
+
+# ---------------------------------------------------------------------------
+# TMX-SEAM-CONTRACT / ADR-0009 clause 3 — the result block.
+#
+# NOT wired into any live route this loop (schema only — see worksheet
+# .context/loops/TMX-SEAM-CONTRACT.md scope note). A future loop composes
+# these into JobResult / a v2 result route.
+# ---------------------------------------------------------------------------
+
+class TranslationDisposition(str, Enum):
+    """ADR-0009 clause 3 — the gate verdict a segment or job carries."""
+    PASS = "PASS"
+    REVIEW_REQUIRED = "REVIEW_REQUIRED"
+    BLOCKED = "BLOCKED"
+
+
+class MqmSummary(BaseModel):
+    """The MQM 2.0 score and the exact profile version that produced it (A6/A8:
+    reproducibility — a regulator must be able to trace a score to a pinned
+    profile version, never an unversioned "current" profile).
+    """
+    score: float
+    profile_id: str
+    profile_version: str
+    critical_count: int
+    major_count: int
+    minor_count: int
+
+
+class ProvenanceRecord(BaseModel):
+    """A6 qualified-supplier telemetry for the LLM call (or TM match) that
+    produced a segment. All fields optional: a value is only ever populated
+    from the artefact that produced it (prompt hash, chain entry, match
+    type) — never defaulted or a fallback survivor (A3/ADR-0009 clause 5).
+    """
+    model: Optional[str] = None
+    model_version: Optional[str] = None
+    prompt_version: Optional[str] = None
+    prompt_content_hash: Optional[str] = None
+    match_type: Optional[str] = None
+    language_tier: Optional[str] = None
+
+
+class AuditRef(BaseModel):
+    """A1/C-8: every result carries a pointer into the tamper-evident chain
+    and a URL that independently re-verifies it — never just a claim.
+    """
+    chain_head_hash: Optional[str] = None
+    verify_url: Optional[str] = None
+
+
+class SegmentResult(BaseModel):
+    """One segment's disposition, MQM summary, provenance and audit pointer."""
+    segment_id: str
+    disposition: TranslationDisposition
+    mqm: MqmSummary
+    provenance: ProvenanceRecord
+    audit: AuditRef
+    contract_version: str = CONTRACT_VERSION
+
+
+class JobResultResponse(BaseModel):
+    """ADR-0009 clause 3 result block, job-level. Not yet wired to a route —
+    `JobResult` above remains the live `/result` response shape this loop;
+    this is the additive shape a future v2 (or JobResult extension) composes.
+    """
+    job_id: str
+    disposition: TranslationDisposition
+    segments: List[SegmentResult] = Field(default_factory=list)
+    audit: AuditRef
+    contract_version: str = CONTRACT_VERSION
+
+
+def tm_match_key(hash_canonical: str, target_locale: str, termbase_version_id: str) -> str:
+    """ADR-0009 clause 4 — the TM match key, adopted verbatim from reSCApe's
+    draft architecture note: `(source_component_version.hash_canonical,
+    target_locale, termbase_version_id)`.
+
+    Keying on the content hash gives reuse across components; including the
+    termbase version means a terminology change invalidates the match
+    automatically (bind-revalidation) rather than relying on a policy someone
+    must remember to enforce. A bound segment still runs the deterministic
+    gates — binding skips the model, never the checks (ADR-0009 clause 4,
+    C-5) — but that lookup/skip logic is out of scope for this ticket; this
+    function only derives the key.
+
+    Mirrors the canonical-JSON + sha256 pattern already used for stable
+    identifiers in this codebase (see
+    `app.core.metric_profiles.registry._compute_hash`) rather than raw
+    delimiter concatenation.
+    """
+    payload = json.dumps(
+        {
+            "hash_canonical": hash_canonical,
+            "target_locale": target_locale,
+            "termbase_version_id": termbase_version_id,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
