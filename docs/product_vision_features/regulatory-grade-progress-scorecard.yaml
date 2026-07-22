@@ -1,0 +1,278 @@
+pack:
+  name: Transmax regulatory-grade engine progress scorecard
+  version: 1.0.0
+  baseline_date: 2026-07-13
+  intended_use: >-
+    Translate and quality-assure regulated pharmaceutical content through a
+    controlled workflow. This scorecard is not a certification or release approval.
+  baseline_confidence: medium
+  assessment_method: >-
+    Evidence-based repository review. A workstream is complete only when its
+    listed proof is generated and approved for the claimed intended use.
+
+release_rule:
+  score_is_not_sufficient: true
+  minimum_weighted_score_for_controlled_pilot: 80
+  mandatory_red_stops_must_be_clear: true
+  no_evidence_means: not_started
+
+baseline_red_stops:
+  - id: RS-01
+    state: open
+    statement: Two execution engines can produce materially different regulated outcomes.
+  - id: RS-02
+    state: open
+    statement: SDK uses unsafe placeholder output when a translation provider is unavailable.
+  - id: RS-03
+    state: open
+    statement: Canonical regulated job identity and audit-v2 identity are not unified.
+  - id: RS-04
+    state: open
+    statement: Production tenant identity is not derived from authenticated customer claims.
+  - id: RS-05
+    state: open
+    statement: Existing readiness reporting can report READY despite absent operational evidence.
+  - id: RS-06
+    state: open
+    statement: Source-language detection can default to English after uncertainty or error.
+
+workstreams:
+  - id: WS-00
+    name: Baseline integrity and truthful readiness
+    weight: 8
+    baseline: 35
+    status: in_progress
+    evidence_found:
+      - Production configuration guard exists.
+      - Repository contains a regulatory-pack scaffold and audit verification code.
+    gaps:
+      - Pilot readiness artefact reports READY with no completed jobs, scorecards or audit trails.
+      - Current status sources conflict; there is a dirty worktree with unreviewed files.
+    exit_criteria:
+      - A signed release scorecard is generated from test, security, audit and operations evidence.
+      - No credential or sensitive data is present in tracked files/history after approved remediation.
+      - Release baseline and intended-use scope are approved.
+    evidence_required:
+      - release-scorecard.json
+      - secret-scan attestation
+      - signed intended-use statement
+
+  - id: WS-01
+    name: Canonical domain and identity model
+    weight: 12
+    baseline: 25
+    status: not_started
+    evidence_found:
+      - Stable IDs and tenant-scoped models exist in several layers.
+    gaps:
+      - Document/segment queue model and UUID regulatory translation model coexist.
+      - Audit v2 references the UUID translation job while graph execution uses the document ID.
+    exit_criteria:
+      - One TranslationJob aggregate owns document, targets, findings, review and evidence IDs.
+      - Migration and read-compatibility plan approved and tested.
+    evidence_required:
+      - ADR-canonical-job.md
+      - migration-reconciliation-report.json
+      - identity-lineage-integration-test.xml
+
+  - id: WS-02
+    name: Unified translation kernel and application service
+    weight: 12
+    baseline: 35
+    status: in_progress
+    evidence_found:
+      - LangGraph route has an identifiable translation/quality/refine/review flow.
+      - SDK and MCP have explicit component interfaces.
+    gaps:
+      - SDK/MCP executes a separate pipeline and quality logic.
+      - Surface-specific defaults and output shapes permit drift.
+    exit_criteria:
+      - REST, hosted UI, Python client and MCP call the same typed application service.
+      - No regulated business rule is implemented in a surface adapter.
+      - Cross-surface contract and parity suite passes.
+    evidence_required:
+      - openapi/transmax-v2.yaml
+      - surface-parity-report.json
+      - architecture-test-report.json
+
+  - id: WS-03
+    name: Durable and idempotent operations
+    weight: 8
+    baseline: 30
+    status: in_progress
+    evidence_found:
+      - API has a request ID field and a stuck-job sweeper concept.
+      - Graph has bounded refinement logic.
+    gaps:
+      - In-process background task is not a durable worker/checkpoint.
+      - Cancellation, replay and webhook outbox are not a single transactionally proven system.
+    exit_criteria:
+      - Worker restart, duplicate submission, provider timeout and cancellation are replay-safe.
+      - Every externally observable event is emitted through an outbox.
+    evidence_required:
+      - chaos-replay-report.json
+      - idempotency-contract-report.json
+      - webhook-delivery-report.json
+
+  - id: WS-04
+    name: Policy, terminology and regulatory starter kits
+    weight: 10
+    baseline: 40
+    status: in_progress
+    evidence_found:
+      - Glossary/TM and strict terminology controls exist.
+      - QRD/MQM profile scaffolding exists.
+    gaps:
+      - Policy activation is largely global flags rather than signed per-profile policy snapshots.
+      - Regulatory reference provenance and client-pack approval lifecycle are incomplete.
+    exit_criteria:
+      - Policies are versioned, signed, approved, expiry-aware and hash-snapshotted per job.
+      - EU product-information starter kit is bounded to claimed profiles and language pairs.
+    evidence_required:
+      - policy-registry-export.json
+      - starter-kit-manifest.json
+      - policy-approval-audit-report.json
+
+  - id: WS-05
+    name: Translation provenance and provider control
+    weight: 10
+    baseline: 40
+    status: in_progress
+    evidence_found:
+      - Exact TM, language routing, model/prompt snapshots and usage telemetry exist.
+    gaps:
+      - Provider unavailable has a placeholder-output fallback in SDK.
+      - Provider/model route is not yet a qualified, approved policy object across all surfaces.
+    exit_criteria:
+      - Every segment records deterministic/TM/model/human provenance.
+      - Provider/model/prompt failures produce typed holds or blocks, never substitute output.
+    evidence_required:
+      - provider-qualification-register.json
+      - segment-provenance-report.json
+      - unsafe-fallback-mutation-test.xml
+
+  - id: WS-06
+    name: Quality, MQM, review and release disposition
+    weight: 14
+    baseline: 50
+    status: in_progress
+    evidence_found:
+      - Deterministic gates, defect taxonomy, MQM engine/shadow and reviewer learning are present.
+      - Critical defects hold jobs for review.
+    gaps:
+      - MQM and independent judge remain shadow/default-off for release disposition.
+      - Calibration and profile-specific thresholds lack a final release evidence gate.
+    exit_criteria:
+      - Canonical findings are emitted for every detector.
+      - Release policy is approved per content/language risk slice.
+      - Required reviewer signatures gate final approval.
+    evidence_required:
+      - mqm-cutover-decision.md
+      - calibration-report.json
+      - review-separation-of-duties-report.json
+
+  - id: WS-07
+    name: Document and format fidelity
+    weight: 10
+    baseline: 35
+    status: in_progress
+    evidence_found:
+      - Parser/export abstractions and placeholder/table checks exist.
+    gaps:
+      - Canonical IR and live parser registry are not the controlled end-to-end path.
+      - Output reconstruction has a plain-text join path.
+    exit_criteria:
+      - Supported formats pass IR round-trip and artifact-conservation checks.
+      - Unsupported/low-confidence parsing routes to explicit hold, not degraded translation.
+    evidence_required:
+      - format-golden-corpus-report.json
+      - artifact-hash-conservation-report.json
+      - parser-confidence-escalation-report.json
+
+  - id: WS-08
+    name: Evidence ledger, validation and release bundle
+    weight: 8
+    baseline: 45
+    status: in_progress
+    evidence_found:
+      - Audit v2 writer/verifier, prompt snapshots and URS/FS/IQ/OQ/PQ templates exist.
+    gaps:
+      - v2 audit is currently best-effort double-write.
+      - External anchoring, signature workflow and automated test-result population are incomplete.
+    exit_criteria:
+      - Audit v2 is mandatory for regulated jobs and independently verified.
+      - Release evidence is generated from canonical records and receives human approval.
+    evidence_required:
+      - audit-verification-report.json
+      - evidence-bundle-manifest.json
+      - signed-validation-summary.pdf
+
+  - id: WS-09
+    name: Security, tenancy and operations
+    weight: 4
+    baseline: 35
+    status: in_progress
+    evidence_found:
+      - Tenant context, RBAC and production-safety guard are implemented.
+    gaps:
+      - Request middleware uses a default organisation pending identity claim integration.
+      - MCP/API deployment authentication and operational controls need surface parity proof.
+    exit_criteria:
+      - OAuth/OIDC service accounts bind tenant/scopes to all surfaces.
+      - Database RLS, backup/restore, key rotation, monitoring and incident controls are tested.
+    evidence_required:
+      - tenant-isolation-penetration-report.pdf
+      - backup-restore-drill-report.json
+      - production-readiness-attestation.md
+
+  - id: WS-10
+    name: REST, generated client, webhooks and MCP parity
+    weight: 4
+    baseline: 25
+    status: planned
+    evidence_found:
+      - API v1, Python SDK and MCP prototype are present.
+    gaps:
+      - Planned v2 contract, signed webhooks and MCP authentication/parity are not live.
+    exit_criteria:
+      - OpenAPI is the source of truth for API/client/MCP schemas.
+      - MCP is a thin authenticated job adapter and never uses a local alternate engine.
+    evidence_required:
+      - generated-client-contract-report.json
+      - mcp-api-parity-report.json
+      - signed-webhook-replay-report.json
+
+operating_metrics:
+  quality:
+    - critical_defect_recall_by_profile
+    - critical_defect_precision_by_profile
+    - reviewer_override_rate_by_detector
+    - calibration_error_by_language_content_slice
+    - unresolved_critical_findings_at_release
+  integrity:
+    - verified_audit_chain_rate
+    - complete_evidence_bundle_rate
+    - provenance_complete_segment_rate
+    - artifact_hash_conservation_rate
+  operations:
+    - idempotent_submission_rate
+    - provider_failure_hold_rate
+    - worker_recovery_time
+    - webhook_delivery_success_rate
+  human:
+    - review_sla_by_risk_tier
+    - reviewer_disagreement_rate
+    - proposed_rule_to_approved_rule_rate
+
+monthly_review:
+  owners:
+    - product_lead
+    - engineering_lead
+    - quality_lead
+    - regulatory_affairs_lead
+    - security_lead
+  agenda:
+    - Recompute scorecard only from attached evidence.
+    - Review all red stops and intended-use changes.
+    - Approve or reject policy/model/starter-kit activation changes.
+    - Publish residual-risk register and next release gate.

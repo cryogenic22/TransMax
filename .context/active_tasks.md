@@ -9,6 +9,97 @@ This file replaces the legacy ticket list (Tickets 10-23) which were Phase 1-3 h
 
 ---
 
+## Convergence — Regulatory-Grade Engine Pack (2026-07-13) — **ADR-0008**
+
+External second-opinion review (`~\Documents\Codex\2026-07-13\wha\outputs\transmax-regulatory-grade-engine-pack.md` + `…-progress.yaml`) independently reached our MQM keystone architecture (its WS6 = ADR-0007 producer→calculator→decider; its `Finding` schema = our §5.7 `MqmAnnotation`) and its scorecard directly kills our stated #1 liability, the "vacuous-green" hazard. Decision (**ADR-0008**): **converge spine-first** — pull WS0 (release scorecard) + WS1 (canonical job identity) forward under the in-flight MQM cutover; fix 2 verified un-ticketed A3 hazards; keep full headless surfaces (WS10 / E11) deferred to v3.1 (common ground with the pack's own week-14–20 ordering). All 7 of the pack's gap claims verified TRUE against code. WS→epic map is in ADR-0008.
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-RELEASE-SCORECARD | WS0 — signed `release-scorecard.json` recomputed only from evidence; red-stops override any weighted score; can never report READY without proof | Audit+Platform | **[READY]** | kills vacuous-green (VISION-GAP §3.a); adopt the pack's `…-progress.yaml` as the tracked gate artifact |
+| TMX-3221 (identity slice) | WS1 — reconcile the graph string `Document` identity with the v2 UUID `TranslationJob`; one canonical job aggregate + migration plan | Agent+Audit | **[READY]** | **un-deferred from E11/v3.1** — the foundation TMX-MQM-5b cuts over onto; one-way migration is Kapil-gated; `runner.py:31` vs `audit_v2.py:65-67` (A4) |
+| TMX-SDK-FAILCLOSED | Hazard 1 (A3) — SDK fails closed with typed `PROVIDER_UNAVAILABLE`/`INVALID_MODEL_RESPONSE` instead of fabricating `[target] source` (labelled "MT") or returning `{}` on parse error | Agent+AI | **[READY]** | `transmax_sdk/pipeline/pipeline.py:113,311`; two-way; not in live REST path today but must land before SDK/MCP ships as a surface (TMX-3227/3228) |
+| TMX-V1-DURABLE-IR | Hazard 2 — v1 stop the lossy `". ".join` output rebuild (IR-based reconstruction) + move off in-process `BackgroundTasks` toward durable execution | Doc Pipeline | **[READY]** | `app/api/v1/translations.py:79,140`; the join half is a two-way surgical fix; durable-worker half links WS3 / TMX-ORCH-CHECKPOINT Loop B |
+| TMX-LANGDETECT-HOLD | Hazard 3 (A3) — source-language low-confidence/error becomes an explicit `SOURCE_LANGUAGE_CONFIRMATION_REQUIRED` hold, not a silent `en` default | Agent+AI | **[READY]** | `app/agents/graph.py:120-130`, `app/services/language_detection.py:_fallback`; two-way |
+| TMX-CTX-ONBOARD | Onboard repo to CtxPack "ctx" deterministic session-memory ledger (parity with onto_wiz/setu); closes the missing-`.claude/settings.json` hole | Platform | **[Done, this session]** | `ctxpack onboard`: hooks + `.mcp.json` + CLAUDE.md block + `.claude/ctx/`; activates on next Claude Code restart; complements (does not replace) `.context/` |
+
+Recommended build order (spine before the cutover): **TMX-SDK-FAILCLOSED → TMX-LANGDETECT-HOLD** (small, surgical A3 wins) → **TMX-RELEASE-SCORECARD** (WS0 evidence gate) → **TMX-3221 identity slice** (WS1, Kapil-gated migration) → then resume **TMX-MQM-5b** cutover on the now-canonical spine.
+
+---
+
+## Seam programme — TransMax as the language engine behind reSCApe's contract (2026-07-22) — **ADR-0009**
+
+Review of `~\Scriptiva_SCA` (reSCApe) established that reSCApe already owns component
+identity, versioning, markets, lineage, assembly and **Part 11 `signature_records`** — and that its
+component model is **monolingual**, so TransMax supplies the locale dimension rather than duplicating
+anything. The existing integration is a **git submodule pinned at `274557a` (2026-03-03, the 2nd
+commit in TransMax's history)**, consumed by in-process `importlib`, failing open to glossary mode
+while still reporting `mode: "transmax_ai"`. Decision (**ADR-0009**): TransMax becomes a deployed
+service behind a versioned contract. Full analysis: `docs/PROGRAM-STATUS-2026-07-21.html` §8.
+Cross-repo loop rules: `.context/loops/CROSS-REPO-PROTOCOL.md`.
+
+**Supersedes** two epics proposed earlier in this programme: the component-graph epic (reSCApe owns
+it → a foreign reference, not a graph) and the Part 11 e-signature epic (consume `signature_records`).
+
+**Board vocabulary (effective now):** ticket rows use a closed five-value set —
+`READY · WIP · BLOCKED · DONE · DROPPED`. Worksheet headers keep their own 7-value loop-stage
+taxonomy (`[Spec] [Design] [WIP] [Verify] [Fix] [Done] [Blocked]`) — the two are deliberately
+distinct. `[Done, pending push]` is `WIP`, not `DONE`.
+
+### Batch 0 — critical path (approval latency is the long pole)
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-SEAM-LOCALE-RFC | reSCApe RFC: locale on the component model, in the variant selector, and in `build_hash` | Kapil + reSCApe platform | **READY** | **one-way**, their Backend Lock. Today a FR and an EN label are indistinguishable to `build_hash`. Blocks all of Batch D's value. Draft filed in their `docs/rfc/`. |
+
+### Batch A — truth fixes (all two-way, no seam dependency, can start immediately)
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-POSTURE-FAB | Delete the fabricated compliance posture panel; the honest Trust Center version already exists | Frontend | **READY** | A3. `ComplianceView.tsx:30-86` hardcodes "Zero Retention (Azure OpenAI) / NO_STORE / NER_V2_EN" with animated live dots; contradicts the A3 comment at `trust/page.tsx:388` |
+| TMX-SCORECARD-MOCK | Remove the first-paint mock scorecard | Frontend | **READY** | A3. `documents/[id]/page.tsx:56-68` renders `overall_score: 94`, "Negation Safety" 88 before the real calc |
+| TMX-WEBHOOK-FIRE | Fire `webhook_url` or reject the field | Platform | **READY** | A3. `app/schemas/api_v1.py:57` is the only occurrence in `app/`; zero dispatch. Becomes the seam callback in Batch B |
+| TMX-QRD-FR-HEADING | Fix the English mandatory heading in `EMA_SMPC_FR_FR` | Quality | **READY** | `regulatory_profiles.py:40` — `"5. PHARMACOLOGICAL PROPERTIES"`. Latent only while `enable_qrd_checks=False`; a live false-positive the moment that READY flag flips |
+| TMX-TM-FUZZY-HONEST | Compute the fuzzy TM score or delete the dead path | Pipeline | **READY** | A3. `db_service.py:294` returns hardcoded `"score": 0.9`; not called by the graph today |
+| TMX-SDK-FAILCLOSED | SDK fails closed with typed errors instead of fabricating `[target] source` | Agent+AI | **WIP** | worksheet at stage 2 of 8; RS-02 |
+| TMX-LANGDETECT-HOLD | Source-language uncertainty becomes an explicit hold, not a silent `en` | Agent+AI | **READY** | RS-06 |
+| TMX-BOARD-HYGIENE | Board sweep: five-state vocabulary, adopt-or-drop the 95 prose-only IDs, sweep 52 stale "pending push" headers, add an ID-uniqueness lint to the drift auditor | Platform | **READY** | runs **before** the seam loops so cross-repo work does not inherit the leak |
+
+### Batch B — the contract (TransMax, additive, two-way)
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-SEAM-CONTRACT | Extend `api_v1` with a source-reference block and a disposition/MQM/provenance result block; version it; export OpenAPI | Platform+Agent | **READY** | already has `request_id` idempotency + governance profile. Adopt reSCApe's TM key verbatim: `(hash_canonical, target_locale, termbase_version_id)` |
+| TMX-SEAM-CONFORMANCE | The seam conformance suite — invariants C-1…C-9, no mocking of the counterpart | Platform | **READY** | C-1 is the red test for today's fail-open defect. See CROSS-REPO-PROTOCOL Rule 4 |
+| TMX-V1-DURABLE-IR | Durable execution + IR-based reconstruction (stop the `". ".join`) | Doc Pipeline | **READY** | existing ticket; the contract is worthless if jobs die on restart |
+
+### Batch C — kernel extraction (two-way, incremental — only the slice the contract needs)
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-KERNEL-QUALITY | Extract the pure quality kernel (MQM engine + metric profiles + deterministic checks) so surfaces hold no logic | Quality+Platform | **READY** | WS2 / folds in TMX-3220. `mqm_engine.score()` is already pure — cheapest first slice |
+
+### Batch D — reSCApe side (their Backend Lock applies; prefer extending existing modules)
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-SEAM-CLIENT | Rewrite `transmax_bridge.py` in place as a thin HTTP client | Agent+AI | **BLOCKED** | on TMX-SEAM-CONTRACT. Lock-safe (existing service module) |
+| TMX-SEAM-SUBMODULE-RM | Remove `.gitmodules` entry + `packages/transmax` | Platform | **BLOCKED** | on TMX-SEAM-CLIENT |
+| TMX-SEAM-GLOSSARY-MIGRATE | Migrate reSCApe's `TranslationGlossary` + `PHARMA_GLOSSARY_FR` into the TransMax termbase store | Quality | **BLOCKED** | on TMX-SEAM-CONTRACT; pairs with TMX-TM-UNIFY |
+
+### Batch E — language & knowledge assets (reuses existing tickets; no new IDs)
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-LANG-TIERS | Declared language tier (Qualified / Supported / Available) returned in response provenance | Quality+Agent | **READY** | invariant C-9. A language is not "supported" until golden eval measures it |
+| TMX-TM-UNIFY | One glossary model — retire the `translation_glossaries` fork | Quality | **READY** | existing ticket (Phase 3) |
+| TMX-ENF-LEVELS | Four enforcement levels (suggested/preferred/required/locked), not binary `is_strict` | Quality | **READY** | existing ticket (Phase 3); specified in the knowledge ADR |
+| TMX-PRECEDENCE | Layered termbase precedence (MedDRA / EDQM / QRD / product) | Quality | **READY** | existing ticket (Phase 3); one flat list today |
+
+**Ordering:** Batch 0 now (approval latency). Batch A immediately and in parallel — no seam
+decisions needed. B before D. C parallel to B. E after the contract stabilises.
+
+---
+
 ## MQM Keystone — defensibility core (Phase 1) — started 2026-06-14
 
 From the 24-agent vision-gap audit (`docs/product_vision_features/VISION-GAP-ANALYSIS-AND-ROADMAP.md`): the three defensibility pillars (MQM engine / independent judge / Black Book) are Divergent or absent. Phase 1 builds the keystone triad — **annotation → engine → judge** — strangler-fig over the existing code (ADR-0007; plan: `PHASE-1-KEYSTONE-BUILD-PLAN.md`). Engine ships in shadow; live pipeline unchanged until the flagged K5 cutover.
