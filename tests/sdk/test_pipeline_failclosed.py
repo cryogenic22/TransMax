@@ -6,7 +6,7 @@ swallowed model-response parse failures.
 
 import hashlib
 import json
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import pytest
 
@@ -36,7 +36,7 @@ class CannedLLMProvider:
         model: Optional[str] = None,
         temperature: float = 0.0,
         max_tokens: Optional[int] = None,
-    ) -> Dict[str, Any]:
+    ) -> Dict[str, str]:
         return {"content": self._content, "model": "canned-1"}
 
 

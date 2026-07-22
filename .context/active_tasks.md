@@ -55,14 +55,14 @@ distinct. `[Done, pending push]` is `WIP`, not `DONE`.
 
 | Ticket | Title | Owner | Status | Notes |
 |---|---|---|---|---|
-| TMX-POSTURE-FAB | Delete the fabricated compliance posture panel; the honest Trust Center version already exists | Frontend | **READY** | A3. `ComplianceView.tsx:30-86` hardcodes "Zero Retention (Azure OpenAI) / NO_STORE / NER_V2_EN" with animated live dots; contradicts the A3 comment at `trust/page.tsx:388` |
-| TMX-SCORECARD-MOCK | Remove the first-paint mock scorecard | Frontend | **READY** | A3. `documents/[id]/page.tsx:56-68` renders `overall_score: 94`, "Negation Safety" 88 before the real calc |
-| TMX-WEBHOOK-FIRE | Fire `webhook_url` or reject the field | Platform | **READY** | A3. `app/schemas/api_v1.py:57` is the only occurrence in `app/`; zero dispatch. Becomes the seam callback in Batch B |
-| TMX-QRD-FR-HEADING | Fix the English mandatory heading in `EMA_SMPC_FR_FR` | Quality | **READY** | `regulatory_profiles.py:40` — `"5. PHARMACOLOGICAL PROPERTIES"`. Latent only while `enable_qrd_checks=False`; a live false-positive the moment that READY flag flips |
-| TMX-TM-FUZZY-HONEST | Compute the fuzzy TM score or delete the dead path | Pipeline | **READY** | A3. `db_service.py:294` returns hardcoded `"score": 0.9`; not called by the graph today |
-| TMX-SDK-FAILCLOSED | SDK fails closed with typed errors instead of fabricating `[target] source` | Agent+AI | **WIP** | worksheet at stage 2 of 8; RS-02 |
-| TMX-LANGDETECT-HOLD | Source-language uncertainty becomes an explicit hold, not a silent `en` | Agent+AI | **READY** | RS-06 |
-| TMX-BOARD-HYGIENE | Board sweep: five-state vocabulary, adopt-or-drop the 95 prose-only IDs, sweep 52 stale "pending push" headers, add an ID-uniqueness lint to the drift auditor | Platform | **READY** | runs **before** the seam loops so cross-repo work does not inherit the leak |
+| TMX-POSTURE-FAB | Delete the fabricated compliance posture panel; the honest Trust Center version already exists | Frontend | **WIP (code complete, `6a8928b`, on feat branch — awaiting review-merge)** | A3. Fabricated cards replaced with real `api.trust.getPosture()` render + link-through; red test 5/5 red pre-fix → 5/5 green. Red team deferred a sibling A3 finding: `AuditLogList` swallows fetch errors into "No activity recorded" → spawn TMX-AUDITLOG-ERR |
+| TMX-SCORECARD-MOCK | Remove the first-paint mock scorecard | Frontend | **WIP (code complete, `2294ed4`, on feat branch)** | A3. Null initial state + honest "scoring unavailable"; source-scan test forbids mock literals. Follow-up candidates: "N of M segments scored" honesty; no-op "Approve All" button |
+| TMX-WEBHOOK-FIRE | Fire `webhook_url` or reject the field | Platform | **WIP (code complete, `48165cf`, on feat branch)** | A3/A1. Dispatch + retries + SSRF guard behind `webhook_allow_private_targets=False`; audit events emitted. Becomes the seam callback in Batch B |
+| TMX-QRD-FR-HEADING | Fix the English mandatory heading in `EMA_SMPC_FR_FR` | Quality | **WIP (code complete, `7904396`, on feat branch)** | + repo-wide guard test against English marker words in non-EN profiles |
+| TMX-TM-FUZZY-HONEST | Compute the fuzzy TM score or delete the dead path | Pipeline | **WIP (code complete, `c186270`, on feat branch)** | score now derived from real cosine distance via pure `_assemble_fuzzy_match`; unit-testable without pgvector |
+| TMX-SDK-FAILCLOSED | SDK fails closed with typed errors instead of fabricating `[target] source` | Agent+AI | **WIP (code complete, `9c0bf8c`, on feat branch)** | RS-02. Typed `ProviderUnavailableError`/`InvalidModelResponseError`; opt-in passthrough labelled `PASSTHROUGH_UNTRANSLATED`, never "MT"; full SDK suite green |
+| TMX-LANGDETECT-HOLD | Source-language uncertainty becomes an explicit hold, not a silent `en` | Agent+AI | **READY** | RS-06. Batch-A agent died on the monthly spend limit before starting; re-run when limit allows (workflow resume `wf_44cfbe07-ecf`) |
+| TMX-BOARD-HYGIENE | Board sweep: five-state vocabulary, adopt-or-drop the 95 prose-only IDs, sweep 52 stale "pending push" headers | Platform | **WIP** | ID-uniqueness lint slice shipped as TMX-DRIFT-IDLINT (`0c3d1d0`, `--check-ids`); the active_tasks/worksheet sweep remains (orchestrator, main tree) |
 
 ### Batch B — the contract (TransMax, additive, two-way)
 
