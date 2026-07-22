@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
+from transmax_sdk.errors import InvalidModelResponseError, ProviderUnavailableError
 from transmax_sdk.language.router import AnyToAnyRouter
+from transmax_sdk.llm.protocol import LLMProviderProtocol
 from transmax_sdk.memory.glossary import GlossaryManager
 from transmax_sdk.memory.tm import VectorTranslationMemory
 from transmax_sdk.pipeline.state import PipelineState
@@ -15,7 +18,6 @@ from transmax_sdk.telemetry.cost import CostTracker
 from transmax_sdk.telemetry.noop import NoOpTelemetry
 from transmax_sdk.telemetry.protocol import TelemetryProtocol
 from transmax_sdk.types import (
-    QualityDefect,
     RoutePlan,
     RouteStrategy,
     SegmentResult,
@@ -42,8 +44,10 @@ class DefaultTranslationPipeline:
         cost_tracker: Optional[CostTracker] = None,
         telemetry: Optional[TelemetryProtocol] = None,
         llm_providers: Optional[Dict[str, Any]] = None,
+        allow_passthrough: bool = False,
     ) -> None:
         self._llm = llm_provider
+        self._allow_passthrough = allow_passthrough
         self._llm_providers = llm_providers or {}
         self._gate = quality_gate or PharmaQualityGate(telemetry=telemetry)
         self._tm = tm or VectorTranslationMemory(telemetry=telemetry)
@@ -101,6 +105,19 @@ class DefaultTranslationPipeline:
             return self._llm_providers[provider_name]
         return self._llm
 
+    def _require_provider(
+        self, provider: Optional[LLMProviderProtocol]
+    ) -> LLMProviderProtocol:
+        """Fail closed when a translation step has no provider to call (A3)."""
+        if provider is None:
+            raise ProviderUnavailableError(
+                "A translation step resolved to no LLM provider; refusing to "
+                "continue rather than fabricating output. Configure a provider "
+                "API key, or opt in explicitly with allow_passthrough=True to "
+                "receive source text labelled PASSTHROUGH_UNTRANSLATED."
+            )
+        return provider
+
     async def _translate(self, state: PipelineState, route: RouteStrategy) -> None:
         """Translate segments that don't have TM matches."""
         segments_to_translate = [
@@ -110,11 +127,21 @@ class DefaultTranslationPipeline:
         if not segments_to_translate:
             return
 
-        if self._llm is None:
-            # No LLM provider - use passthrough for headless testing
+        if self._llm is None and not self._llm_providers:
+            # No LLM provider configured at all. Fail closed (A3): never
+            # fabricate output dressed as machine translation.
+            if not self._allow_passthrough:
+                raise ProviderUnavailableError(
+                    "No LLM provider is configured and allow_passthrough is "
+                    "False. Configure a provider API key, or opt in explicitly "
+                    "with allow_passthrough=True to receive the unaltered "
+                    "source text labelled PASSTHROUGH_UNTRANSLATED."
+                )
+            # Explicit opt-in: return the source text under an honest label
+            # that can never be mistaken for a real machine translation.
             for seg in segments_to_translate:
-                state.translations[seg.segment_id] = f"[{state.target_lang}] {seg.source_text}"
-                state.translation_sources[seg.segment_id] = "MT"
+                state.translations[seg.segment_id] = seg.source_text
+                state.translation_sources[seg.segment_id] = "PASSTHROUGH_UNTRANSLATED"
             return
 
         # Check if router supports smart routing with per-step providers
@@ -133,6 +160,7 @@ class DefaultTranslationPipeline:
 
     async def _direct_translate(self, state: PipelineState, segments) -> None:
         """Direct LLM translation."""
+        provider = self._require_provider(self._llm)
         segments_payload = [
             {"segment_id": s.segment_id, "source_text": s.source_text}
             for s in segments
@@ -147,19 +175,20 @@ class DefaultTranslationPipeline:
             })},
         ]
 
-        result = await self._llm.complete(messages)
+        result = await provider.complete(messages)
         self._parse_and_store(state, result["content"])
 
         if "usage" in result:
             usage = result["usage"]
             rec = self._cost_tracker.record(
-                self._llm.name, result.get("model", "unknown"),
+                provider.name, result.get("model", "unknown"),
                 usage.get("input_tokens", 0), usage.get("output_tokens", 0),
             )
             state.total_cost_usd += rec.cost_usd
 
     async def _pivot_translate(self, state: PipelineState, segments) -> None:
         """Two-step pivot translation: source -> en -> target."""
+        provider = self._require_provider(self._llm)
         # Step 1: source -> English
         segments_payload = [
             {"segment_id": s.segment_id, "source_text": s.source_text}
@@ -170,7 +199,7 @@ class DefaultTranslationPipeline:
             {"role": "system", "content": "Translate the following segments to English. Return JSON: {\"segments\": [{\"segment_id\": \"...\", \"target_text\": \"...\"}]}"},
             {"role": "user", "content": json.dumps({"segments": segments_payload})},
         ]
-        r1 = await self._llm.complete(msg1)
+        r1 = await provider.complete(msg1)
         english_texts = self._parse_translations(r1["content"])
 
         # Step 2: English -> target
@@ -187,7 +216,7 @@ class DefaultTranslationPipeline:
                 "segments": en_segments,
             })},
         ]
-        r2 = await self._llm.complete(msg2)
+        r2 = await provider.complete(msg2)
         self._parse_and_store(state, r2["content"])
 
         # Track cost for both steps
@@ -195,7 +224,7 @@ class DefaultTranslationPipeline:
             if "usage" in r:
                 u = r["usage"]
                 rec = self._cost_tracker.record(
-                    self._llm.name, r.get("model", "unknown"),
+                    provider.name, r.get("model", "unknown"),
                     u.get("input_tokens", 0), u.get("output_tokens", 0),
                 )
                 state.total_cost_usd += rec.cost_usd
@@ -212,17 +241,18 @@ class DefaultTranslationPipeline:
             )
             if provider is None:
                 provider = self._llm
+            provider = self._require_provider(provider)
             await self._direct_translate_with_provider(state, segments, provider)
         else:
             # Pivot: step 0 = src->en, step 1 = en->tgt
             step0 = smart_plan.steps[0] if len(smart_plan.steps) > 0 else None
             step1 = smart_plan.steps[1] if len(smart_plan.steps) > 1 else None
-            provider0 = self._resolve_provider(
+            provider0 = self._require_provider(self._resolve_provider(
                 step0.provider_name if step0 else None
-            ) or self._llm
-            provider1 = self._resolve_provider(
+            ) or self._llm)
+            provider1 = self._require_provider(self._resolve_provider(
                 step1.provider_name if step1 else None
-            ) or self._llm
+            ) or self._llm)
             await self._pivot_translate_with_providers(
                 state, segments, provider0, provider1
             )
@@ -309,12 +339,26 @@ class DefaultTranslationPipeline:
             state.translation_sources[sid] = "MT"
 
     def _parse_translations(self, content: str) -> Dict[str, str]:
-        """Parse LLM JSON response into segment_id -> text mapping."""
+        """Parse LLM JSON response into segment_id -> text mapping.
+
+        Fails closed (A3): an unparseable or malformed response raises
+        InvalidModelResponseError instead of silently dropping segments.
+        A valid response with zero segments is NOT an error. The error
+        carries the length + sha256 of the raw payload, never the payload
+        itself (it may contain regulated content).
+        """
         try:
             data = json.loads(content)
             return {s["segment_id"]: s["target_text"] for s in data.get("segments", [])}
-        except (json.JSONDecodeError, KeyError):
-            return {}
+        except (json.JSONDecodeError, KeyError, TypeError, AttributeError) as exc:
+            digest = hashlib.sha256(content.encode("utf-8")).hexdigest()
+            raise InvalidModelResponseError(
+                "Model response could not be parsed into translations "
+                f"({type(exc).__name__}: {exc}); "
+                f"raw_length={len(content)}, raw_sha256={digest}",
+                raw_length=len(content),
+                raw_sha256=digest,
+            ) from exc
 
     def _run_quality_gates(self, state: PipelineState) -> None:
         """Run quality checks on all translated segments."""
@@ -358,7 +402,10 @@ class DefaultTranslationPipeline:
                 defects=state.defects.get(seg.segment_id, []),
                 back_translation=state.back_translations.get(seg.segment_id),
                 drift_score=state.drift_scores.get(seg.segment_id, 0.0),
-                translation_source=state.translation_sources.get(seg.segment_id, "MT"),
+                # An absent translation must not claim MT provenance (A3).
+                translation_source=state.translation_sources.get(
+                    seg.segment_id, "UNTRANSLATED"
+                ),
                 cost_usd=0.0,
             ))
 

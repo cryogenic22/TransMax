@@ -8,8 +8,8 @@ from transmax_sdk.types import TranslationRequest, TranslationSegment, Translati
 class TestPipelineStandalone:
     @pytest.mark.asyncio
     async def test_runs_without_llm(self):
-        """Pipeline runs in headless mode with passthrough translations."""
-        pipeline = DefaultTranslationPipeline()
+        """Headless passthrough requires the explicit allow_passthrough opt-in."""
+        pipeline = DefaultTranslationPipeline(allow_passthrough=True)
         request = TranslationRequest(
             segments=[TranslationSegment(segment_id="s1", source_text="Hello world")],
             source_lang="en",
@@ -23,7 +23,7 @@ class TestPipelineStandalone:
 
     @pytest.mark.asyncio
     async def test_multiple_segments(self):
-        pipeline = DefaultTranslationPipeline()
+        pipeline = DefaultTranslationPipeline(allow_passthrough=True)
         request = TranslationRequest(
             segments=[
                 TranslationSegment(segment_id="s1", source_text="Take daily"),
@@ -39,12 +39,15 @@ class TestPipelineStandalone:
     async def test_tm_bypass_works(self):
         """Exact TM match skips LLM entirely."""
         from transmax_sdk.memory.tm import VectorTranslationMemory
+
         tm = VectorTranslationMemory()
         tm.store("Take 10mg daily", "Prendre 10mg par jour", "en", "fr")
 
         pipeline = DefaultTranslationPipeline(tm=tm)
         request = TranslationRequest(
-            segments=[TranslationSegment(segment_id="s1", source_text="Take 10mg daily")],
+            segments=[
+                TranslationSegment(segment_id="s1", source_text="Take 10mg daily")
+            ],
             source_lang="en",
             target_lang="fr",
         )
@@ -55,18 +58,22 @@ class TestPipelineStandalone:
 
     @pytest.mark.asyncio
     async def test_result_has_status(self):
-        pipeline = DefaultTranslationPipeline()
+        pipeline = DefaultTranslationPipeline(allow_passthrough=True)
         request = TranslationRequest(
             segments=[TranslationSegment(segment_id="s1", source_text="Hello")],
             source_lang="en",
             target_lang="fr",
         )
         result = await pipeline.execute(request)
-        assert result.status in (TranslationStatus.PASS, TranslationStatus.REVIEW_REQUIRED, TranslationStatus.BLOCKED)
+        assert result.status in (
+            TranslationStatus.PASS,
+            TranslationStatus.REVIEW_REQUIRED,
+            TranslationStatus.BLOCKED,
+        )
 
     @pytest.mark.asyncio
     async def test_result_to_dict(self):
-        pipeline = DefaultTranslationPipeline()
+        pipeline = DefaultTranslationPipeline(allow_passthrough=True)
         request = TranslationRequest(
             segments=[TranslationSegment(segment_id="s1", source_text="Hello")],
             source_lang="en",
