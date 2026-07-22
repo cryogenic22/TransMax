@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Type, TypeVar
+from typing import Any, Dict, Optional, TypeVar
 
 from transmax_sdk.config import SDKConfig
 from transmax_sdk.telemetry.noop import NoOpTelemetry
@@ -224,4 +224,5 @@ class SDKContainer:
             cost_tracker=container.resolve("cost_tracker"),
             telemetry=container.telemetry,
             llm_providers=container.resolve("llm_providers") or None,
+            allow_passthrough=container.config.allow_passthrough,
         )

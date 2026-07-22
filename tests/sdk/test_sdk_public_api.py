@@ -27,12 +27,14 @@ class TestTransMaxSDKPublicAPI:
     def test_plan_route_direct(self):
         sdk = TransMaxSDK()
         from transmax_sdk.types import RouteStrategy
+
         route = sdk.plan_route("en", "fr")
         assert route == RouteStrategy.DIRECT
 
     def test_plan_route_pivot(self):
         sdk = TransMaxSDK()
         from transmax_sdk.types import RouteStrategy
+
         route = sdk.plan_route("ja", "ar")
         assert route == RouteStrategy.PIVOT_ENGLISH
 
@@ -43,7 +45,7 @@ class TestTransMaxSDKPublicAPI:
 
     @pytest.mark.asyncio
     async def test_translate_headless(self):
-        sdk = TransMaxSDK()
+        sdk = TransMaxSDK(config={"allow_passthrough": True})
         result = await sdk.translate("Hello world", target_lang="fr", source_lang="en")
         assert result.source_lang == "en"
         assert result.target_lang == "fr"
@@ -52,7 +54,7 @@ class TestTransMaxSDKPublicAPI:
 
     @pytest.mark.asyncio
     async def test_translate_multiple_segments(self):
-        sdk = TransMaxSDK()
+        sdk = TransMaxSDK(config={"allow_passthrough": True})
         result = await sdk.translate(
             ["Take daily", "With food"],
             target_lang="fr",
@@ -74,7 +76,7 @@ class TestTransMaxSDKPublicAPI:
 
     @pytest.mark.asyncio
     async def test_translate_auto_detect(self):
-        sdk = TransMaxSDK()
+        sdk = TransMaxSDK(config={"allow_passthrough": True})
         result = await sdk.translate(
             "Ceci est une phrase en français.",
             target_lang="en",

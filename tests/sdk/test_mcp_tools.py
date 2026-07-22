@@ -7,7 +7,7 @@ from transmax_mcp.tools import TransMaxTools
 
 class TestMCPTools:
     def setup_method(self):
-        self.sdk = TransMaxSDK()
+        self.sdk = TransMaxSDK(config={"allow_passthrough": True})
         self.tools = TransMaxTools(sdk=self.sdk)
 
     def test_detect_language(self):
@@ -20,7 +20,8 @@ class TestMCPTools:
     async def test_translate_returns_schema(self):
         result = await self.tools.translate(
             "This is an English sentence about pharmaceutical dosages.",
-            "fr", source_lang="en",
+            "fr",
+            source_lang="en",
         )
         assert "translated_text" in result
         assert "confidence" in result
@@ -65,7 +66,7 @@ class TestMCPTools:
 class TestMCPToolsAutoDetect:
     @pytest.mark.asyncio
     async def test_translate_auto_detect_french(self):
-        sdk = TransMaxSDK()
+        sdk = TransMaxSDK(config={"allow_passthrough": True})
         tools = TransMaxTools(sdk=sdk)
         result = await tools.translate(
             "Ceci est une phrase en français sur les médicaments.",
@@ -76,7 +77,7 @@ class TestMCPToolsAutoDetect:
 
     @pytest.mark.asyncio
     async def test_translate_auto_detect_japanese(self):
-        sdk = TransMaxSDK()
+        sdk = TransMaxSDK(config={"allow_passthrough": True})
         tools = TransMaxTools(sdk=sdk)
         result = await tools.translate(
             "これは日本語のテストです",
