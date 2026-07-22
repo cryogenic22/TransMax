@@ -52,20 +52,10 @@ export default function DocumentReviewPage() {
     const [editText, setEditText] = useState("")
     const [saving, setSaving] = useState(false)
 
-    // Mock scorecard data (will come from API)
-    const [scorecard, setScorecard] = useState<QualityScorecard>({
-        overall_score: 94,
-        status: "REVIEW_REQUIRED",
-        categories: [
-            { name: "Terminology", score: 100, issues: 0 },
-            { name: "Negation Safety", score: 88, issues: 2 },
-            { name: "Unit Conversion", score: 100, issues: 0 },
-            { name: "Medical Accuracy", score: 96, issues: 1 },
-        ],
-        total_segments: 0,
-        translated_segments: 0,
-        issue_segments: 0
-    })
+    // TMX-SCORECARD-MOCK / A3: the scorecard starts with NO claim — null —
+    // and is only ever populated from real gate_results. First paint must
+    // never show an invented quality figure to a reviewer.
+    const [scorecard, setScorecard] = useState<QualityScorecard | null>(null)
 
     useEffect(() => {
         const fetchDocument = async () => {
@@ -76,6 +66,13 @@ export default function DocumentReviewPage() {
 
                 const segs = await api.segments.list(docId)
                 setSegments(segs)
+
+                // TMX-SCORECARD-MOCK / A3: scoring is only "available" when
+                // the quality engine actually produced gate_results for at
+                // least one segment. An unscored document must NOT fall back
+                // to a vacuous 100 / PASSED verdict — the scorecard stays
+                // null and the surface says "scoring unavailable" instead.
+                const scoringRan = segs.some((s: Segment) => s.gate_results != null)
 
                 // Calculate scorecard from real segment violations
                 const translated = segs.filter((s: Segment) => s.translated_text)
@@ -100,7 +97,7 @@ export default function DocumentReviewPage() {
                     status = "REVIEW_REQUIRED"
                 }
 
-                setScorecard({
+                setScorecard(scoringRan ? {
                     overall_score: segs.length > 0
                         ? Math.round((1 - withIssues.length / segs.length) * 100)
                         : 100,
@@ -114,7 +111,7 @@ export default function DocumentReviewPage() {
                     total_segments: segs.length,
                     translated_segments: translated.length,
                     issue_segments: withIssues.length
-                })
+                } : null)
             } catch (err) {
                 setError(getErrMessage(err, "Failed to load document"))
                 setDocument(null)
@@ -397,8 +394,35 @@ export default function DocumentReviewPage() {
             {/* Main Content */}
             <main style={{ maxWidth: "1400px", margin: "0 auto", padding: "2rem" }}>
 
-                {/* Scorecard View */}
-                {viewMode === "scorecard" && (
+                {/* Scorecard View — honest empty state when scoring never ran.
+                    TMX-SCORECARD-MOCK / A3: a scoring outage is its own state,
+                    never a fabricated score. Mirrors QualityDashboard's
+                    TMX-UX-QDASH-REAL amber "scoring unavailable" pattern. */}
+                {viewMode === "scorecard" && !scorecard && (
+                    <div style={{
+                        background: "#fffbeb",
+                        border: "1px solid #fde68a",
+                        borderRadius: "16px",
+                        padding: "3rem",
+                        textAlign: "center",
+                        maxWidth: "640px",
+                        margin: "0 auto"
+                    }}>
+                        <AlertTriangle size={40} style={{ color: "#d97706", marginBottom: "1rem" }} />
+                        <h2 style={{ fontSize: "1.125rem", fontWeight: 600, color: "#92400e", margin: "0 0 0.5rem" }}>
+                            Quality scoring unavailable — manual review required
+                        </h2>
+                        <p style={{ fontSize: "0.875rem", color: "#92400e", margin: 0, lineHeight: 1.6 }}>
+                            The quality engine has not produced gate results for this
+                            document, so no score is shown. Treat the translation as
+                            unverified and have a qualified reviewer check every
+                            segment before use.
+                        </p>
+                    </div>
+                )}
+
+                {/* Scorecard View — real engine data only */}
+                {viewMode === "scorecard" && scorecard && (
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "1.5rem" }}>
                         {/* Left: Main Scorecard */}
                         <div>
