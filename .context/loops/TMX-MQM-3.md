@@ -1,6 +1,6 @@
 # TMX-MQM-3 — pure MQM-2.0 quality engine
 
-**State**: `[Done, pending push]`
+**State**: `[Done]`
 **Owner**: Quality & Regulatory / Agent & AI
 **Sprint**: MQM Keystone (Phase 1)
 **Started**: 2026-06-14
@@ -53,7 +53,7 @@ Risk: insufficient_sample leaking into the verdict — explicitly tested separat
 No findings — clean.
 
 ## 8. Deploy
-- [ ] Commit: <this commit; SHA backfill>
+- [x] Commit: `da7831a` (batched: "TMX-MQM-1/2/3: build the MQM keystone (annotation->engine) in shadow")
 - [ ] Pushed to origin/main: **gated on Kapil** (branch `feat/mqm-keystone`)
 - [x] `.context/active_tasks.md` updated
 

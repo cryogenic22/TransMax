@@ -1,6 +1,6 @@
 # TMX-MQM-EVAL — judge-reliability metric (recall/precision)
 
-**State**: `[Done, pending push]` · **Owner**: Quality & Regulatory / Agent & AI · **Sprint**: Phase 2 seed (E13.S2)
+**State**: `[Done]` · **Owner**: Quality & Regulatory / Agent & AI · **Sprint**: Phase 2 seed (E13.S2)
 **Reversibility**: `two-way` (pure, additive). **Pre-mortem**: n/a (pure metric). **Blast radius**: new `app/services/judge_eval.py`.
 
 **Gates**: G1 ✓ (the metric the no-vacuous-green CI gate will block on; pure + tested) · G2 N/A · G3 ✓ (recall over planted Criticals + precision computed deterministically).
@@ -18,7 +18,7 @@ The judge is a model and must be measured (§6.10/E13.S2). Ship the pure metric 
 Risk: span-level vs segment-level recall — segment-level here (planted Critical = a flagged segment); span-level is a Phase-2 refinement. No findings.
 
 ## 8. Deploy
-- [ ] Commit: <this commit; SHA backfill> · Pushed: **gated on Kapil** · [x] active_tasks updated
+- [x] Commit: `e03c760` (batched: "TMX-MQM-EVAL/DASH-LABEL/SHADOW-REPORT/EVAL-CASES: judge reliability + honest labels + cutover tool") · Pushed: **gated on Kapil** · [x] active_tasks updated
 
 ## Status log
 | 2026-06-15 | — | `[Done, pending push]` | recall/precision metric ready for the Phase-2 gate |

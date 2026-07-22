@@ -1,6 +1,6 @@
 # TMX-MQM-5a-emit — persist the shadow diff to the v2 audit chain
 
-**State**: `[Done, pending push]` · **Owner**: Audit & Validation / Agent & AI · **Sprint**: MQM Keystone (Phase 1)
+**State**: `[Done]` · **Owner**: Audit & Validation / Agent & AI · **Sprint**: MQM Keystone (Phase 1)
 **Reversibility**: `two-way`. **Pre-mortem**: emit failure → logged + skipped (the emit helper is fail-safe); never affects the verdict. **Blast radius**: `run_mqm_shadow` (one extra v2 event per gate run when a job_id is present).
 
 **Gates**: G1 ✓ (makes the shadow diff durable + queryable for the phase-b gate review and Phase-2 κ; reuses `emit_v2_audit_event`) · G2 N/A · G3 ✓ (the legacy-vs-MQM diff + judge findings now land in the immutable chain, not just logs).
@@ -18,7 +18,7 @@ Covered by `tests/test_mqm_shadow.py` (comparison returned) + the gate/graph reg
 Risk: audit volume (one event/gate run) → acceptable; can be sampled later. Risk: non-JSON payload → `MqmScore.to_dict` is JSON-safe (interval→list). No findings.
 
 ## 8. Deploy
-- [ ] Commit: <this commit; SHA backfill> · Pushed: **gated on Kapil** · [x] active_tasks updated
+- [x] Commit: `875751c` (batched: "TMX-MQM-4/6/5a-emit: independent judge (shadow) + ensemble/conservation + audit emit") · Pushed: **gated on Kapil** · [x] active_tasks updated
 
 ## Status log
 | 2026-06-15 | — | `[Done, pending push]` | shadow diff + judge findings durable in v2 |
