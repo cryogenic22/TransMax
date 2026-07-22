@@ -1422,6 +1422,16 @@
       "JobResult": {
         "description": "TMX-010: Final Result Payload.",
         "properties": {
+          "audit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuditRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "audit_id": {
             "anyOf": [
               {
@@ -1443,9 +1453,29 @@
             "title": "Contract Version",
             "type": "string"
           },
+          "disposition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TranslationDisposition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "job_id": {
             "title": "Job Id",
             "type": "string"
+          },
+          "mqm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MqmSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "original_filename": {
             "anyOf": [
@@ -1457,6 +1487,16 @@
               }
             ],
             "title": "Original Filename"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProvenanceRecord"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "quality_summary": {
             "$ref": "#/components/schemas/ValidationSummary"
@@ -2562,7 +2602,15 @@
             "$ref": "#/components/schemas/TranslationDisposition"
           },
           "mqm": {
-            "$ref": "#/components/schemas/MqmSummary"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MqmSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "provenance": {
             "$ref": "#/components/schemas/ProvenanceRecord"
@@ -2575,7 +2623,6 @@
         "required": [
           "segment_id",
           "disposition",
-          "mqm",
           "provenance",
           "audit"
         ],
