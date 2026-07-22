@@ -33,6 +33,11 @@ class SDKConfig(BaseModel):
     max_refinement_iterations: int = 3
     confidence_threshold: float = 0.85
     enable_back_translation: bool = True
+    # Fail-closed behaviour (A3): with no LLM provider configured the pipeline
+    # raises ProviderUnavailableError. Set True to explicitly opt in to
+    # passthrough output (unaltered source text labelled
+    # PASSTHROUGH_UNTRANSLATED, never "MT") for headless testing.
+    allow_passthrough: bool = False
 
     # Quality
     quality_check_plugins: List[str] = Field(

@@ -30,11 +30,11 @@ class TestPipelineTMBypass:
 
     @pytest.mark.asyncio
     async def test_partial_tm_hits(self):
-        """Mix of TM hits and passthrough translations."""
+        """Mix of TM hits and explicitly opted-in passthrough translations."""
         tm = VectorTranslationMemory()
         tm.store("Hello", "Bonjour", "en", "fr")
 
-        pipeline = DefaultTranslationPipeline(tm=tm)
+        pipeline = DefaultTranslationPipeline(tm=tm, allow_passthrough=True)
         request = TranslationRequest(
             segments=[
                 TranslationSegment(segment_id="s1", source_text="Hello"),
@@ -45,4 +45,5 @@ class TestPipelineTMBypass:
         )
         result = await pipeline.execute(request)
         assert result.segments[0].translation_source == "TM_EXACT"
-        assert result.segments[1].translation_source == "MT"
+        # Passthrough output is honestly labelled — never dressed as "MT".
+        assert result.segments[1].translation_source == "PASSTHROUGH_UNTRANSLATED"

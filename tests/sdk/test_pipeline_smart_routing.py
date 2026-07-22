@@ -35,7 +35,7 @@ class TestPipelineSmartRouting:
     @pytest.mark.asyncio
     async def test_headless_pipeline_with_smart_router(self):
         """Pipeline still works headless even with SmartRouter configured."""
-        sdk = TransMaxSDK()
+        sdk = TransMaxSDK(config={"allow_passthrough": True})
         result = await sdk.translate(
             "Take 10mg ibuprofen daily.",
             target_lang="fr",
