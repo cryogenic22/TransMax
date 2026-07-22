@@ -1,18 +1,32 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
-from sqlalchemy.orm import Session
+import logging
 import uuid
 from datetime import datetime, timezone
 
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
+from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.models.database import Document, DocumentStatus, Segment
-from app.schemas.api_v1 import JobCreateRequest, JobResponse, JobResult, ValidationSummary
+from app.schemas.api_v1 import (
+    AuditBundleResponse,
+    AuditLogEntryResponse,
+    JobCreateRequest,
+    JobResponse,
+    JobResult,
+    ValidationSummary,
+)
 from app.auth.dependencies import require_permission
 from app.auth.permissions import Permission
+from app.services.reporting_service import ReportingService
 
 # We need to invoke the graph. For now, we import the runner.
 # Ideally this is a separate worker process.
 from typing import List
 from app.agents.runner import run_pipeline_background
+from app.services.webhook_dispatch import dispatch_job_webhook
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -82,7 +96,21 @@ async def create_translation_job(
         request.target_language,
         org_id=org_id,
     )
-    
+
+    # 5. TMX-WEBHOOK-FIRE: schedule the terminal-status callback AFTER the
+    # pipeline task. Starlette runs BackgroundTasks strictly in order, so the
+    # dispatcher observes the job's terminal state. A3: this field used to be
+    # accepted and silently ignored; now it either fires or fails loud
+    # (WEBHOOK_DELIVERY_FAILED audit event + WARNING — never into the job path).
+    if request.webhook_url:
+        background_tasks.add_task(
+            dispatch_job_webhook,
+            doc_id,
+            str(request.webhook_url),
+            request.request_id,
+            org_id=org_id,
+        )
+
     return JobResponse(
         job_id=doc_id,
         status="processing", 
@@ -166,8 +194,6 @@ def get_job_result(job_id: str, db: Session = Depends(get_db)):
         completed_at=doc.updated_at
     )
 
-from app.schemas.api_v1 import AuditBundleResponse, AuditLogEntryResponse
-
 @router.get("/{job_id}/audit_bundle", response_model=AuditBundleResponse,
             dependencies=[Depends(require_permission(Permission.AUDIT_READ))])
 def get_audit_bundle(job_id: str, db: Session = Depends(get_db)):
@@ -211,13 +237,6 @@ def get_audit_bundle(job_id: str, db: Session = Depends(get_db)):
         is_tampered=is_tampered,
         entries=response_entries
     )
-
-from fastapi.responses import StreamingResponse
-from app.services.reporting_service import ReportingService
-
-import logging
-logger = logging.getLogger(__name__)
-
 
 @router.get("/{job_id}/certificate",
             dependencies=[Depends(require_permission(Permission.AUDIT_EXPORT))])

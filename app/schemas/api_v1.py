@@ -53,9 +53,39 @@ class JobCreateRequest(BaseModel):
     text_content: Optional[str] = None
     document_name: Optional[str] = "untitled.txt"
     
-    # Async Callback
+    # Async Callback. TMX-WEBHOOK-FIRE: dispatched on terminal job status by
+    # app/services/webhook_dispatch.py — no longer accepted-and-ignored (A3).
     webhook_url: Optional[HttpUrl] = None
-    
+
+    @field_validator('webhook_url')
+    @classmethod
+    def validate_webhook_target(cls, v: Optional[HttpUrl]) -> Optional[HttpUrl]:
+        """TMX-WEBHOOK-FIRE SSRF guard.
+
+        Reject private/loopback/link-local webhook targets with a 422 unless
+        `Settings.webhook_allow_private_targets` (default False) is set —
+        otherwise a tenant could aim the platform's egress at internal
+        infrastructure (169.254.169.254 metadata, localhost admin ports, …).
+        Imports are lazy to keep the schema layer import-light; the host
+        predicate lives in the dispatch service so schema and dispatcher can
+        never drift (single source of truth).
+        """
+        if v is None:
+            return v
+        from app.core.config import settings
+        from app.services.webhook_dispatch import is_private_webhook_host
+
+        if settings.webhook_allow_private_targets:
+            return v
+        if is_private_webhook_host(v.host or ""):
+            raise ValueError(
+                "webhook_url must not target a private, loopback, or "
+                "link-local host; webhook delivery to internal networks is "
+                "disabled (WEBHOOK_ALLOW_PRIVATE_TARGETS is for trusted "
+                "dev/test environments only)."
+            )
+        return v
+
     model_config = ConfigDict(json_schema_extra={
         "example": {
             "source_language": "en",
