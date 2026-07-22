@@ -13,7 +13,7 @@ module, so SQLite CI covers them.
 import sys
 import types
 from types import SimpleNamespace
-from typing import Any, List
+from typing import List
 from unittest.mock import MagicMock
 
 import pytest
@@ -87,7 +87,7 @@ def _stub_langchain_openai(
         def embed_query(self, text: str) -> List[float]:
             return vector
 
-    module.OpenAIEmbeddings = _StubEmbeddings  # type: ignore[attr-defined]
+    setattr(module, "OpenAIEmbeddings", _StubEmbeddings)
     monkeypatch.setitem(sys.modules, "langchain_openai", module)
 
 
@@ -105,7 +105,7 @@ def test_fuzzy_path_score_derives_from_row_distance(
     # Exact-hash lookup misses -> the fuzzy branch runs.
     mock_session.query.return_value.filter.return_value.first.return_value = None
     # Fuzzy query returns the nearest row WITH its cosine distance.
-    row: Any = SimpleNamespace(
+    row = SimpleNamespace(
         source_text="Hello world",
         target_text="Bonjour le monde",
         distance=0.04,
@@ -132,7 +132,7 @@ def test_fuzzy_path_perfect_row_scores_one(monkeypatch: pytest.MonkeyPatch) -> N
     _stub_langchain_openai(monkeypatch, [0.0] * 1536)
 
     mock_session.query.return_value.filter.return_value.first.return_value = None
-    row: Any = SimpleNamespace(source_text="a", target_text="b", distance=0.0)
+    row = SimpleNamespace(source_text="a", target_text="b", distance=0.0)
     mock_session.query.return_value.filter.return_value.order_by.return_value.first.return_value = row
 
     match = service.find_best_match("a!", "en", "fr")
