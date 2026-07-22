@@ -163,6 +163,57 @@ class ValidationSummary(BaseModel):
     decision: str
     semantic_drift: Optional[int] = None
 
+
+# ---------------------------------------------------------------------------
+# TMX-SEAM-CONTRACT / ADR-0009 clause 3 — shared result-block component
+# models. Moved above `JobResult` (TMX-SEAM-WIRE) so `JobResult` can carry
+# them as optional fields without a forward reference. `SegmentResult` /
+# `JobResultResponse` (further below) still compose these; nothing about
+# their shape changes.
+# ---------------------------------------------------------------------------
+
+class TranslationDisposition(str, Enum):
+    """ADR-0009 clause 3 — the gate verdict a segment or job carries."""
+    PASS = "PASS"
+    REVIEW_REQUIRED = "REVIEW_REQUIRED"
+    BLOCKED = "BLOCKED"
+
+
+class MqmSummary(BaseModel):
+    """The MQM 2.0 score and the exact profile version that produced it (A6/A8:
+    reproducibility — a regulator must be able to trace a score to a pinned
+    profile version, never an unversioned "current" profile).
+    """
+    score: float
+    profile_id: str
+    profile_version: str
+    critical_count: int
+    major_count: int
+    minor_count: int
+
+
+class ProvenanceRecord(BaseModel):
+    """A6 qualified-supplier telemetry for the LLM call (or TM match) that
+    produced a segment. All fields optional: a value is only ever populated
+    from the artefact that produced it (prompt hash, chain entry, match
+    type) — never defaulted or a fallback survivor (A3/ADR-0009 clause 5).
+    """
+    model: Optional[str] = None
+    model_version: Optional[str] = None
+    prompt_version: Optional[str] = None
+    prompt_content_hash: Optional[str] = None
+    match_type: Optional[str] = None
+    language_tier: Optional[str] = None
+
+
+class AuditRef(BaseModel):
+    """A1/C-8: every result carries a pointer into the tamper-evident chain
+    and a URL that independently re-verifies it — never just a claim.
+    """
+    chain_head_hash: Optional[str] = None
+    verify_url: Optional[str] = None
+
+
 class JobResponse(BaseModel):
     """
     TMX-010: Job Status Response.
@@ -190,6 +241,33 @@ class JobResult(BaseModel):
 
     completed_at: datetime
     contract_version: str = CONTRACT_VERSION
+
+    # TMX-SEAM-WIRE / ADR-0009 clause 3: the result block, wired to the live
+    # verdict + provenance + audit pointer honestly (A3). All four fields are
+    # optional and additive — pre-existing callers reading only the fields
+    # above are unaffected (AC-4).
+    #
+    # `disposition` is derived from the REAL persisted `QualityScorecard.status`
+    # (the legacy count-based `evaluate_verdict` verdict) — never re-derived
+    # from `doc.status` (workflow state, a different concept).
+    disposition: Optional[TranslationDisposition] = None
+    # `provenance` fields are populated ONLY from the job's real
+    # CONFIG_SNAPSHOT_CAPTURED v2 audit event (the same payload
+    # `_config_snapshot.build_config_snapshot` produced at job start) plus the
+    # segments' real `translation_source`. Any field with no artefact to back
+    # it (e.g. `model_version`, `language_tier` — no such artefact exists in
+    # this codebase yet) stays None.
+    provenance: Optional[ProvenanceRecord] = None
+    # `audit` is populated ONLY from the job's real v2 audit chain
+    # (`AuditEventV2`); None if the job has no v2 chain — never a placeholder.
+    audit: Optional[AuditRef] = None
+    # `mqm` MUST stay None: the MQM engine is shadow-only (TMX-MQM-5 series)
+    # and has no consumer on the live verdict — `disposition` above still
+    # comes from the legacy scorer. Synthesizing an MqmSummary here from the
+    # legacy scorer would be the exact unearned-claim defect this program
+    # keeps fixing (A3). This becomes real at the TMX-MQM-5b cutover, when
+    # the MQM verdict actually becomes the live one.
+    mqm: Optional[MqmSummary] = None
 
 class AuditLogEntryResponse(BaseModel):
     sequence_index: int
@@ -311,52 +389,12 @@ class OrgAuditVerificationResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # TMX-SEAM-CONTRACT / ADR-0009 clause 3 — the result block.
 #
-# NOT wired into any live route this loop (schema only — see worksheet
-# .context/loops/TMX-SEAM-CONTRACT.md scope note). A future loop composes
-# these into JobResult / a v2 result route.
+# `TranslationDisposition` / `MqmSummary` / `ProvenanceRecord` / `AuditRef`
+# now live above `JobResult` (TMX-SEAM-WIRE) so the live `/result` route can
+# carry them without a forward reference. `SegmentResult` / `JobResultResponse`
+# below still compose those shared models; neither is wired to a route yet —
+# a future loop composes them into a per-segment / v2 result route.
 # ---------------------------------------------------------------------------
-
-class TranslationDisposition(str, Enum):
-    """ADR-0009 clause 3 — the gate verdict a segment or job carries."""
-    PASS = "PASS"
-    REVIEW_REQUIRED = "REVIEW_REQUIRED"
-    BLOCKED = "BLOCKED"
-
-
-class MqmSummary(BaseModel):
-    """The MQM 2.0 score and the exact profile version that produced it (A6/A8:
-    reproducibility — a regulator must be able to trace a score to a pinned
-    profile version, never an unversioned "current" profile).
-    """
-    score: float
-    profile_id: str
-    profile_version: str
-    critical_count: int
-    major_count: int
-    minor_count: int
-
-
-class ProvenanceRecord(BaseModel):
-    """A6 qualified-supplier telemetry for the LLM call (or TM match) that
-    produced a segment. All fields optional: a value is only ever populated
-    from the artefact that produced it (prompt hash, chain entry, match
-    type) — never defaulted or a fallback survivor (A3/ADR-0009 clause 5).
-    """
-    model: Optional[str] = None
-    model_version: Optional[str] = None
-    prompt_version: Optional[str] = None
-    prompt_content_hash: Optional[str] = None
-    match_type: Optional[str] = None
-    language_tier: Optional[str] = None
-
-
-class AuditRef(BaseModel):
-    """A1/C-8: every result carries a pointer into the tamper-evident chain
-    and a URL that independently re-verifies it — never just a claim.
-    """
-    chain_head_hash: Optional[str] = None
-    verify_url: Optional[str] = None
-
 
 class SegmentResult(BaseModel):
     """One segment's disposition, MQM summary, provenance and audit pointer."""
