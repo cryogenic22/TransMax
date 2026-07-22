@@ -1,0 +1,1399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TransMax — Program Status &amp; Delivery Plan · 21 Jul 2026</title>
+<style>
+/* ============================================================================
+   TransMax program status — 2026-07-21
+   Palette derives from the product's own TMX-3601 tokens (frontend/app/globals.css):
+   violet accent, status-lifecycle hues. Maturity is a FOUR-STATE vocabulary
+   (live / partial / dark / absent) because the program's real disease is
+   disconnection, not incompleteness — "dark" needs a name and a form.
+   ========================================================================== */
+
+:root {
+  --bg:        #F4F4F7;
+  --surface:   #FFFFFF;
+  --surface-2: #FAFAFB;
+  --sunken:    #EDEDF2;
+  --ink:       #15161D;
+  --ink-2:     #3B3C49;
+  --muted:     #6E6E80;   /* violet-biased grey, not a neutral default */
+  --faint:     #9A9AAB;
+  --rule:      #E2E2EA;
+  --rule-2:    #CFCFDA;
+
+  --accent:      #6D4BE0;
+  --accent-soft: #F1EDFE;
+  --accent-line: #D7CCFA;
+
+  --live:      #0B7A52;   --live-bg:      #E4F4EC;
+  --partial:   #2F6389;   --partial-bg:   #E4EEF6;
+  --dark:      #9A6208;   --dark-bg:      #FAF0DC;
+  --absent:    #A93226;   --absent-bg:    #FAE7E4;
+
+  --sans: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Cascadia Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+
+  --shadow: 0 1px 2px rgba(21,22,29,.05), 0 8px 24px rgba(21,22,29,.05);
+  --maxw: 1120px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:        #0C0D13;
+    --surface:   #14151D;
+    --surface-2: #191A24;
+    --sunken:    #101119;
+    --ink:       #E9E9F1;
+    --ink-2:     #C2C2D0;
+    --muted:     #9494A6;
+    --faint:     #6E6E80;
+    --rule:      #262834;
+    --rule-2:    #333648;
+
+    --accent:      #A78BFA;
+    --accent-soft: rgba(167,139,250,.10);
+    --accent-line: rgba(167,139,250,.30);
+
+    --live:      #4ADE9B;   --live-bg:      rgba(16,122,82,.18);
+    --partial:   #7FB6E0;   --partial-bg:   rgba(47,99,137,.20);
+    --dark:      #F0B429;   --dark-bg:      rgba(154,98,8,.20);
+    --absent:    #F79489;   --absent-bg:    rgba(169,50,38,.20);
+
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:#0C0D13; --surface:#14151D; --surface-2:#191A24; --sunken:#101119;
+  --ink:#E9E9F1; --ink-2:#C2C2D0; --muted:#9494A6; --faint:#6E6E80;
+  --rule:#262834; --rule-2:#333648;
+  --accent:#A78BFA; --accent-soft:rgba(167,139,250,.10); --accent-line:rgba(167,139,250,.30);
+  --live:#4ADE9B; --live-bg:rgba(16,122,82,.18);
+  --partial:#7FB6E0; --partial-bg:rgba(47,99,137,.20);
+  --dark:#F0B429; --dark-bg:rgba(154,98,8,.20);
+  --absent:#F79489; --absent-bg:rgba(169,50,38,.20);
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+}
+:root[data-theme="light"] {
+  --bg:#F4F4F7; --surface:#FFFFFF; --surface-2:#FAFAFB; --sunken:#EDEDF2;
+  --ink:#15161D; --ink-2:#3B3C49; --muted:#6E6E80; --faint:#9A9AAB;
+  --rule:#E2E2EA; --rule-2:#CFCFDA;
+  --accent:#6D4BE0; --accent-soft:#F1EDFE; --accent-line:#D7CCFA;
+  --live:#0B7A52; --live-bg:#E4F4EC;
+  --partial:#2F6389; --partial-bg:#E4EEF6;
+  --dark:#9A6208; --dark-bg:#FAF0DC;
+  --absent:#A93226; --absent-bg:#FAE7E4;
+  --shadow:0 1px 2px rgba(21,22,29,.05), 0 8px 24px rgba(21,22,29,.05);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--sans); font-size: 15.5px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; animation: none !important; }
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+/* ---------- masthead ---------- */
+.masthead {
+  position: sticky; top: 0; z-index: 60;
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+}
+.masthead-in {
+  max-width: var(--maxw); margin: 0 auto; padding: 9px 28px;
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: baseline; gap: 9px; }
+.brand b { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+.brand span {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--muted);
+}
+.secnav { display: flex; gap: 3px; flex-wrap: wrap; margin-left: auto; }
+.secnav a {
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  padding: 4px 8px; border-radius: 5px;
+}
+.secnav a:hover { background: var(--sunken); color: var(--ink); text-decoration: none; }
+
+/* ---------- layout ---------- */
+.wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
+section { padding: 46px 0; border-top: 1px solid var(--rule); }
+section:first-of-type { border-top: none; }
+
+.eyebrow {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
+}
+h1 {
+  font-size: clamp(28px, 4.4vw, 41px); line-height: 1.1; letter-spacing: -.024em;
+  font-weight: 650; margin: 0 0 14px; text-wrap: balance; max-width: 20ch;
+}
+h2 {
+  font-size: clamp(21px, 2.6vw, 26px); line-height: 1.2; letter-spacing: -.018em;
+  font-weight: 650; margin: 0 0 8px; text-wrap: balance;
+}
+h3 {
+  font-size: 16px; font-weight: 650; letter-spacing: -.008em;
+  margin: 26px 0 10px; text-wrap: balance;
+}
+h4 {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); font-weight: 600;
+  margin: 0 0 8px;
+}
+p { margin: 0 0 13px; max-width: 74ch; color: var(--ink-2); }
+.lede { font-size: 17px; line-height: 1.55; color: var(--ink-2); max-width: 70ch; }
+.sub { color: var(--muted); font-size: 14px; max-width: 74ch; }
+small { font-size: 12.5px; color: var(--muted); }
+
+.thesis {
+  font-family: var(--serif); font-size: 19px; line-height: 1.5;
+  color: var(--ink); border-left: 2px solid var(--accent);
+  padding: 2px 0 2px 20px; margin: 22px 0; max-width: 62ch;
+}
+.thesis em { font-style: italic; }
+
+/* ---------- chips ---------- */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 4px; border: 1px solid transparent;
+}
+.chip::before { content:""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.c-live    { color: var(--live);    background: var(--live-bg);    border-color: color-mix(in srgb, var(--live) 28%, transparent); }
+.c-partial { color: var(--partial); background: var(--partial-bg); border-color: color-mix(in srgb, var(--partial) 28%, transparent); }
+/* DARK is the report's central idea — dashed border reads as "not wired" */
+.c-dark    { color: var(--dark);    background: var(--dark-bg);    border: 1px dashed color-mix(in srgb, var(--dark) 50%, transparent); }
+.c-dark::before { border-radius: 0; transform: rotate(45deg); }
+.c-absent  { color: var(--absent);  background: var(--absent-bg);  border-color: color-mix(in srgb, var(--absent) 28%, transparent); }
+.c-new {
+  color: var(--accent); background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+.c-new::before { display: none; }
+
+.tag {
+  display: inline-block; font-family: var(--mono); font-size: 10.5px;
+  color: var(--muted); border: 1px solid var(--rule-2); border-radius: 4px;
+  padding: 1px 6px; white-space: nowrap;
+}
+code, .id {
+  font-family: var(--mono); font-size: .875em;
+  background: var(--sunken); padding: 1px 5px; border-radius: 4px;
+  color: var(--ink-2); word-break: break-word;
+}
+
+/* ---------- legend ---------- */
+.legend {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 10px; margin: 26px 0 4px;
+}
+.legend div {
+  background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 9px; padding: 12px 14px;
+}
+.legend p { margin: 7px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); max-width: none; }
+
+/* ---------- stat tiles ---------- */
+.stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px; margin: 28px 0 8px;
+}
+.stat {
+  background: var(--surface); border: 1px solid var(--rule); border-radius: 11px;
+  padding: 16px 17px; box-shadow: var(--shadow);
+}
+.stat .n {
+  font-family: var(--mono); font-size: 28px; font-weight: 600; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.stat .k { font-size: 12.5px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+.stat.flag { border-color: color-mix(in srgb, var(--absent) 40%, var(--rule)); }
+.stat.flag .n { color: var(--absent); }
+.stat.warn .n { color: var(--dark); }
+.stat.good .n { color: var(--live); }
+
+/* ---------- cards ---------- */
+.card {
+  background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 11px; padding: 18px 20px; box-shadow: var(--shadow);
+}
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+
+/* ---------- tables ---------- */
+.scroll { overflow-x: auto; margin: 14px 0; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 13.5px; }
+thead th {
+  text-align: left; font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); font-weight: 600;
+  padding: 10px 14px; background: var(--surface-2); border-bottom: 1px solid var(--rule);
+  white-space: nowrap; position: sticky; top: 0;
+}
+tbody td { padding: 10px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; line-height: 1.45; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--surface-2); }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+td.ev { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+td.nowrap { white-space: nowrap; }
+
+/* ---------- architecture stack ---------- */
+.stack { display: flex; flex-direction: column; gap: 8px; margin: 20px 0; }
+.layer {
+  display: grid; grid-template-columns: 150px 1fr; gap: 0;
+  background: var(--surface); border: 1px solid var(--rule);
+  border-radius: 10px; overflow: hidden;
+}
+.layer-l {
+  padding: 15px 16px; border-right: 1px solid var(--rule); background: var(--surface-2);
+  display: flex; flex-direction: column; gap: 8px; align-items: flex-start;
+}
+.layer-l b { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; line-height: 1.35; }
+.layer-r { padding: 15px 17px; min-width: 0; }
+.layer-r .has { font-size: 13.5px; color: var(--ink-2); margin: 0 0 6px; max-width: none; }
+.layer-r .gap { font-size: 13px; color: var(--muted); margin: 0; max-width: none; }
+.layer-r .gap b { color: var(--absent); font-weight: 600; }
+.layer[data-m="live"]    { border-left: 3px solid var(--live); }
+.layer[data-m="partial"] { border-left: 3px solid var(--partial); }
+.layer[data-m="dark"]    { border-left: 3px dashed var(--dark); }
+.layer[data-m="absent"]  { border-left: 3px solid var(--absent); }
+@media (max-width: 620px) {
+  .layer { grid-template-columns: 1fr; }
+  .layer-l { border-right: none; border-bottom: 1px solid var(--rule); flex-direction: row; align-items: center; }
+}
+
+/* ---------- hazards ---------- */
+.haz { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+.hz {
+  background: var(--surface); border: 1px solid var(--rule); border-radius: 10px;
+  padding: 14px 17px; border-left: 3px solid var(--rule-2);
+}
+.hz[data-s="critical"] { border-left-color: var(--absent); }
+.hz[data-s="high"]     { border-left-color: var(--dark); }
+.hz[data-s="medium"]   { border-left-color: var(--partial); }
+.hz-h { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 5px; }
+.hz-h b { font-size: 14.5px; font-weight: 650; }
+.hz p { margin: 0; font-size: 13.5px; color: var(--ink-2); max-width: none; }
+.hz .ev { display: block; font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+
+/* ---------- verdict columns ---------- */
+.cols4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 18px 0; }
+.col { background: var(--surface); border: 1px solid var(--rule); border-radius: 11px; padding: 16px 18px; }
+.col h4 { color: var(--ink); font-size: 11.5px; }
+.col ul { margin: 0; padding-left: 17px; }
+.col li { font-size: 13.5px; margin-bottom: 8px; color: var(--ink-2); line-height: 1.45; }
+.col.keep  { border-top: 3px solid var(--live); }
+.col.add   { border-top: 3px solid var(--accent); }
+.col.reject{ border-top: 3px solid var(--absent); }
+.col.ahead { border-top: 3px solid var(--partial); }
+
+/* ---------- track cards ---------- */
+.tracks { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 14px; margin: 18px 0; }
+.track { background: var(--surface); border: 1px solid var(--rule); border-radius: 11px; padding: 17px 19px; }
+.track-h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+.track-h .t { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 600; }
+.track-h b { font-size: 15.5px; font-weight: 650; letter-spacing: -.01em; }
+.track .why { font-size: 13px; color: var(--muted); margin: 0 0 11px; max-width: none; }
+.track .ids { display: flex; flex-wrap: wrap; gap: 5px; }
+.track .ids span {
+  font-family: var(--mono); font-size: 10.5px; color: var(--ink-2);
+  background: var(--sunken); border-radius: 4px; padding: 2px 6px;
+}
+.track .ids span.n { color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-line); }
+
+/* ---------- waves ---------- */
+.waves { display: flex; flex-direction: column; gap: 0; margin: 20px 0; }
+.wave {
+  display: grid; grid-template-columns: 120px 1fr; gap: 20px;
+  padding: 20px 0; border-top: 1px solid var(--rule);
+}
+.wave:first-child { border-top: none; }
+.wave-l { position: relative; }
+.wave-l .w { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+.wave-l .when { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 4px; display: block; }
+.wave-r b.title { display: block; font-size: 16px; font-weight: 650; letter-spacing: -.01em; margin-bottom: 7px; }
+.wave-r ul { margin: 0 0 11px; padding-left: 17px; }
+.wave-r li { font-size: 13.5px; color: var(--ink-2); margin-bottom: 5px; line-height: 1.45; }
+.gate {
+  display: flex; gap: 9px; align-items: flex-start;
+  background: var(--surface-2); border: 1px solid var(--rule);
+  border-radius: 8px; padding: 10px 13px; font-size: 13px; color: var(--ink-2);
+}
+.gate b { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); flex-shrink: 0; padding-top: 2px; }
+@media (max-width: 620px) { .wave { grid-template-columns: 1fr; gap: 8px; } }
+
+/* ---------- decision list ---------- */
+ol.dec { counter-reset: d; list-style: none; padding: 0; margin: 16px 0; display: flex; flex-direction: column; gap: 9px; }
+ol.dec li {
+  counter-increment: d; position: relative; padding: 13px 16px 13px 46px;
+  background: var(--surface); border: 1px solid var(--rule); border-radius: 9px;
+  font-size: 14px; color: var(--ink-2); line-height: 1.5;
+}
+ol.dec li::before {
+  content: counter(d); position: absolute; left: 15px; top: 13px;
+  font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+ol.dec li b { color: var(--ink); }
+
+/* ---------- footer ---------- */
+footer { border-top: 1px solid var(--rule); padding: 32px 0 60px; }
+footer p { font-size: 12.5px; color: var(--muted); max-width: 78ch; }
+.method { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 16px; }
+.method div { font-size: 12.5px; color: var(--muted); }
+.method b { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 5px; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-in">
+    <div class="brand"><b>TransMax</b><span>Program status</span></div>
+    <nav class="secnav" aria-label="Sections">
+      <a href="#s1">§1 Status</a>
+      <a href="#s2">§2 Architecture</a>
+      <a href="#s3">§3 Working</a>
+      <a href="#s4">§4 Hazards</a>
+      <a href="#s5">§5 Concord read</a>
+      <a href="#s6">§6 Backlog</a>
+      <a href="#s7">§7 Plan</a>
+      <a href="#s8">§8 reSCApe</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ===================== VERDICT ===================== -->
+<section id="s0">
+  <div class="eyebrow">21 July 2026 · branch feat/vision-delivery-2 @ 8e600e9 · 2 commits ahead of origin/main</div>
+  <h1>The engine is real. Almost none of it is switched on.</h1>
+
+  <p class="lede">
+    TransMax has built a defensibility core with genuine regulatory substance — a chained,
+    independently re-computable audit ledger with Merkle day-anchors; a pure MQM&nbsp;2.0 scoring
+    engine with versioned content-type profiles; an independent judge with planted-defect recall,
+    Cohen's&nbsp;κ and a CI reliability gate; prompt-version pinning; an eval harness; a ratchet.
+    That work is good and it is the moat.
+  </p>
+
+  <p class="lede">
+    It is also, in fifteen separate places, wired to nothing.
+  </p>
+
+  <div class="thesis">
+    The program's failure mode is not incompleteness — it is <em>disconnection</em>. The MQM engine's
+    cutover flag <code>mqm_engine_enabled</code> is declared at <code>config.py:113</code> and read by
+    <em>zero</em> lines of application code. The audit-chain UI component exists and is imported by
+    nothing. The MCP server exposes six tools and is imported by nothing. The strongest asset in the
+    product is invisible to every user who might be persuaded by it.
+  </div>
+
+  <div class="stats">
+    <div class="stat good"><div class="n">155</div><div class="k">loop worksheets closed · 2 carry open work</div></div>
+    <div class="stat good"><div class="n">1,409</div><div class="k">backend tests collected · 161 frontend</div></div>
+    <div class="stat warn"><div class="n">15</div><div class="k">capabilities built, tested, not connected</div></div>
+    <div class="stat flag"><div class="n">6 / 6</div><div class="k">release red-stops still open — the gate is blocked regardless of score</div></div>
+  </div>
+
+  <h3>The maturity vocabulary used throughout this report</h3>
+  <p class="sub">
+    Percentages are the vacuous-green hazard in miniature, so this report does not use them. Every
+    capability below is placed in one of four states, each backed by a file reference you can check.
+  </p>
+  <div class="legend">
+    <div>
+      <span class="chip c-live">Live</span>
+      <p>In the default production path today, changing real outcomes.</p>
+    </div>
+    <div>
+      <span class="chip c-partial">Partial</span>
+      <p>Genuinely there, but one layer of several, or missing a dimension the vision requires.</p>
+    </div>
+    <div>
+      <span class="chip c-dark">Dark</span>
+      <p>Built, tested, merged — and behind a default-off flag or with zero callers. Cost paid, value not collected.</p>
+    </div>
+    <div>
+      <span class="chip c-absent">Absent</span>
+      <p>Not in the code. Verified by repo-wide search, not assumed.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== §1 STATUS ===================== -->
+<section id="s1">
+  <div class="eyebrow">§1</div>
+  <h2>Where we are</h2>
+  <p class="sub">Counted from the repository and the worksheet ledger on 21 July 2026, not from narrative status files.</p>
+
+  <div class="grid3" style="margin-top:20px">
+    <div class="card">
+      <h4>Code</h4>
+      <p style="margin:0;font-size:13.5px">139 Python modules / 25,047 lines in <code>app/</code>. 13 frontend routes,
+      all under the canonical <code>/workspace/*</code> IA — the legacy top-level routes are gone,
+      replaced by 308 redirects. A7 is closed.</p>
+    </div>
+    <div class="card">
+      <h4>Tests</h4>
+      <p style="margin:0;font-size:13.5px">1,409 backend tests collect; 1,375 passed in the last full CI run.
+      Frontend: 123 vitest + 24 Playwright e2e + 14 live-stack integration.
+      The ratchet holds 17 metrics and has never been loosened.</p>
+    </div>
+    <div class="card">
+      <h4>Gates</h4>
+      <p style="margin:0;font-size:13.5px">6 CI workflows. Unit Tests, ratchet, golden eval and the
+      judge-reliability drift gate are green. Secret-scan, Quality Gate (ruff debt) and Frontend
+      (missing Linux snapshot) are red — all pre-existing on <code>main</code>.</p>
+    </div>
+  </div>
+
+  <h3>The three things a buyer would notice first</h3>
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr><th>What</th><th>State</th><th>Consequence</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Quality verdicts are still the legacy count-based gate</b></td>
+          <td class="nowrap"><span class="chip c-dark">Dark</span></td>
+          <td>The MQM engine runs in shadow and logs a diff. <code>evaluate_verdict</code> in
+              <code>quality_gate.py:364</code> remains authoritative. The defensibility pillar is
+              observational.</td>
+        </tr>
+        <tr>
+          <td><b>The live pilot is open to the internet</b></td>
+          <td class="nowrap"><span class="chip c-absent">Absent</span></td>
+          <td>No deploy config sets <code>APP_ENV</code>, so Railway runs <code>app_env=dev</code> /
+              <code>auth_mode=none</code>. The JWT wall is built and default-off, awaiting a flag flip.</td>
+        </tr>
+        <tr>
+          <td><b>Nothing renders the audit chain</b></td>
+          <td class="nowrap"><span class="chip c-dark">Dark</span></td>
+          <td>A verifier endpoint returns chain integrity; <code>AuditTimeline.tsx</code> can draw it;
+              zero pages import it. Our hardest-won evidence never reaches a screen.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>The release gate, honestly</h3>
+  <p>
+    The tracked scorecard (<code>regulatory-grade-progress-scorecard.yaml</code>) defines eleven
+    weighted workstreams and six mandatory red-stops. <b>All six red-stops are open</b>, and the file's
+    own rule is <code>mandatory_red_stops_must_be_clear: true</code> — so the gate reads
+    <em>blocked</em> irrespective of any score. Weighting the eleven baselines gives 36.9 against a
+    controlled-pilot threshold of 80.
+  </p>
+  <p class="sub">
+    That number is arithmetic over the file's values; the YAML states neither a total nor a RAG status.
+    It should be read as a truthful baseline, not a regression — the scorecard was designed to read low
+    at first, and this is the first read.
+  </p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Red-stop</th><th>Statement</th><th>Owning ticket</th></tr></thead>
+      <tbody>
+        <tr><td class="ev">RS-01</td><td>Two execution engines can produce materially different regulated outcomes</td><td class="ev">SDK retirement (E11)</td></tr>
+        <tr><td class="ev">RS-02</td><td>SDK emits placeholder output when no provider is available</td><td class="ev">TMX-SDK-FAILCLOSED</td></tr>
+        <tr><td class="ev">RS-03</td><td>Regulated job identity and audit-v2 identity are not unified</td><td class="ev">TMX-3221</td></tr>
+        <tr><td class="ev">RS-04</td><td>Production tenant identity is not derived from authenticated claims</td><td class="ev">TMX-3013 / TMX-PRODSAFE-DEPLOY-ENV</td></tr>
+        <tr><td class="ev">RS-05</td><td>Readiness reporting can say READY with no operational evidence</td><td class="ev">TMX-RELEASE-SCORECARD</td></tr>
+        <tr><td class="ev">RS-06</td><td>Source-language detection can default to English after error</td><td class="ev">TMX-LANGDETECT-HOLD</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="sub">
+    Five of the six clear inside the ADR-0008 spine that is already queued. That cluster is the highest-leverage
+    work on the board by a wide margin.
+  </p>
+</section>
+
+<!-- ===================== §2 ARCHITECTURE ===================== -->
+<section id="s2">
+  <div class="eyebrow">§2</div>
+  <h2>Architecture, measured against the target stack</h2>
+  <p class="sub">
+    Six layers, from the callers down to the governance plane. Each row states what exists in
+    <code>app/</code> today and what the layer is missing.
+  </p>
+
+  <div class="stack">
+
+    <div class="layer" data-m="partial">
+      <div class="layer-l"><b>Callers</b><span class="chip c-partial">Partial</span></div>
+      <div class="layer-r">
+        <p class="has">12 REST routers. Upload a document, translate a document, download a document,
+        patch a segment, verify a chain, export an audit bundle.</p>
+        <p class="gap"><b>Missing:</b> any component- or delta-shaped entry point. There is no
+        &ldquo;here are three changed statements, tell me what you already have&rdquo; call. The MCP
+        server exists but is imported nowhere and absent from <code>.mcp.json</code>.
+        <code>webhook_url</code> is accepted in the v1 schema and never fired.</p>
+      </div>
+    </div>
+
+    <div class="layer" data-m="absent">
+      <div class="layer-l"><b>Agent layer</b><span class="chip c-absent">Absent</span></div>
+      <div class="layer-r">
+        <p class="has">&mdash;</p>
+        <p class="gap"><b>Missing entirely:</b> the tool router, policy guard, idempotency keys and
+        callback dispatch that would let an autonomy boundary live in the API rather than in the
+        caller's goodwill. Today RBAC guards routes; nothing refuses an action <em>because it would
+        bypass a review gate</em>.</p>
+      </div>
+    </div>
+
+    <div class="layer" data-m="partial">
+      <div class="layer-l"><b>Workflow</b><span class="chip c-partial">Partial</span></div>
+      <div class="layer-r">
+        <p class="has">A LangGraph pipeline with real state transitions, a budget guard, a drift gate
+        that forces human review, and a stuck-job sweeper.</p>
+        <p class="gap"><b>Missing:</b> durable execution — <code>queue_service.py</code> is a 32-line
+        wrapper over FastAPI <code>BackgroundTasks</code>, so jobs die with the process. No SLA clock,
+        no pathway concept (standard / urgent-safety / linguistic), no vendor routing, and the sweeper
+        is default-off.</p>
+      </div>
+    </div>
+
+    <div class="layer" data-m="live">
+      <div class="layer-l"><b>Intelligence</b><span class="chip c-live">Live</span></div>
+      <div class="layer-r">
+        <p class="has">Terminology-constrained LLM drafting through a versioned prompt registry with
+        content hashes; per-call token and cost telemetry into the audit chain; back-translation with a
+        semantic-drift gate that escalates to human review; a prompt-injection gate on source text.</p>
+        <p class="gap"><b>Missing:</b> alignment and memory mining (no way to warm-start an estate from
+        a customer's existing translations), and the model router is off, so the &ldquo;ensemble&rdquo;
+        is one model sampled twice — self-consistency, not independence.</p>
+      </div>
+    </div>
+
+    <div class="layer" data-m="partial">
+      <div class="layer-l"><b>Deterministic core</b><span class="chip c-partial">Partial</span></div>
+      <div class="layer-r">
+        <p class="has">Stable UUID segments with element metadata and gate results. Exact-match TM
+        binding that genuinely bypasses the LLM. Forbidden and strict glossary terms enforced as
+        <em>hard</em> CRITICAL defects that set a segment to BLOCKED — enforcement is real, not advisory.</p>
+        <p class="gap"><b>Missing:</b> the reuse layer that makes the economics work. Segments are
+        cascade-deleted children of a document; a repo-wide search for component, statement or
+        cross-language identity returns <b>zero matches</b>. Fuzzy matching is not in the production
+        path and returns a hardcoded score. QRD exists only as heading strings — there is no
+        identifier-bound standard text that never reaches MT. Termbases are one flat list, not the
+        layered MedDRA / EDQM / QRD / product stack the knowledge ADR specifies.</p>
+      </div>
+    </div>
+
+    <div class="layer" data-m="partial">
+      <div class="layer-l"><b>Governance plane</b><span class="chip c-partial">Partial</span></div>
+      <div class="layer-r">
+        <p class="has">A domain-separated chained-hash ledger (v2) with an <em>independently
+        re-implemented</em> verifier — two implementations agreeing is the spec check — plus a
+        tenant-scoped verification API, Merkle day-anchor builder with S3 Object Lock fields, tenant
+        scoping, RBAC on every privileged route, and structured auth-event auditing.</p>
+        <p class="gap"><b>Missing:</b> e-signature. A repo-wide search for signer identity,
+        meaning-of-signature or Part&nbsp;11 signing returns one aspirational docstring and no
+        implementation; approval is a bare status flip and there is no lock state at all. The v2 chain
+        also cannot hold system events — <code>job_id</code> is NOT NULL, so a glossary edit, a role
+        change or a flag flip has nowhere chained to go.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <h3>The dark inventory</h3>
+  <p>
+    This is the table that matters. Fifteen capabilities are built, tested, merged and unreachable.
+    Every row is engineering already paid for; every row is value not yet collected. Several unlock
+    with a config change rather than a sprint.
+  </p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Capability</th><th>Where</th><th>Why it is dark</th></tr></thead>
+      <tbody>
+        <tr><td>MQM&nbsp;2.0 scoring engine</td><td class="ev">app/services/mqm_engine.py:110</td><td><code>mqm_engine_enabled</code> declared at <code>config.py:113</code>; read by zero code paths</td></tr>
+        <tr><td>Independent judge</td><td class="ev">app/agents/nodes/mqm_shadow.py:112</td><td><code>mqm_judge_shadow_enabled = False</code></td></tr>
+        <tr><td>Ensemble + inter-judge κ</td><td class="ev">app/agents/nodes/mqm_shadow.py:186</td><td><code>mqm_ensemble_shadow_enabled = False</code></td></tr>
+        <tr><td>QRD structural checks</td><td class="ev">app/core/regulatory_profiles.py:162</td><td><code>enable_qrd_checks = False</code></td></tr>
+        <tr><td>MCP server, 6 tools</td><td class="ev">transmax_mcp/server.py:27</td><td>zero imports from <code>app/</code>; not registered in <code>.mcp.json</code></td></tr>
+        <tr><td>Standalone SDK, ~60 files</td><td class="ev">transmax_sdk/</td><td>zero imports from <code>app/</code>; a parallel TM, glossary and quality gate that will drift</td></tr>
+        <tr><td>Fuzzy TM matching</td><td class="ev">app/services/db_service.py:280</td><td>the graph never calls it, and it returns a hardcoded <code>0.9</code></td></tr>
+        <tr><td>Audit-chain UI (chain head + timeline)</td><td class="ev">components/compliance/AuditTimeline.tsx</td><td>0 import sites</td></tr>
+        <tr><td>Segment defect + provenance UI</td><td class="ev">components/review/ReviewSegment.tsx</td><td>0 import sites — the purpose-built reviewer row is unused</td></tr>
+        <tr><td>Merkle day-anchor builder</td><td class="ev">app/services/audit_anchor.py:428</td><td>no scheduler ever calls it</td></tr>
+        <tr><td>Stuck-job sweeper</td><td class="ev">scripts/stuck_job_sweeper.py</td><td><code>stuck_job_sweep_enabled = False</code></td></tr>
+        <tr><td>Model router / true multi-model ensemble</td><td class="ev">app/core/config.py:184</td><td><code>enable_llm_router = False</code></td></tr>
+        <tr><td>JWT authentication wall</td><td class="ev">AUTH_MODE</td><td>default <code>none</code>; flag flip is Kapil-gated</td></tr>
+        <tr><td>Docling parser + canonical IR</td><td class="ev">app/services/parsing/</td><td>upload route not wired (TMX-PARSE-2)</td></tr>
+        <tr><td>PRS quality-gate scorer</td><td class="ev">quality-gate/</td><td>threshold 85 configured; workflow never installed into <code>.github/workflows</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== §3 WORKING ===================== -->
+<section id="s3">
+  <div class="eyebrow">§3</div>
+  <h2>What is genuinely working</h2>
+  <p class="sub">Live in the default path, with tests, and defensible in a room with a CSV lead.</p>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Capability</th><th>Evidence</th><th>Why it counts</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>Tamper-evident audit ledger v2</b></td>
+          <td class="ev">audit_writer_v2.py · audit_verifier_v2.py (676 ln)</td>
+          <td>Domain-separated chained SHA-256 with a genesis constant and a second, independent
+              re-implementation used as the spec check. Tampering with a payload, a hash or a sequence
+              is classified into seven distinct findings. This is stronger than anything the category sells.</td>
+        </tr>
+        <tr>
+          <td><b>Chain verification as an API</b></td>
+          <td class="ev">GET /api/v1/audit/{job}/verify_v2, /verify_v2/org</td>
+          <td>A regulator's question — &ldquo;prove this was not edited&rdquo; — is a request, not a project.</td>
+        </tr>
+        <tr>
+          <td><b>Deterministic quality gates that block</b></td>
+          <td class="ev">quality_gate.py:160–190, 364–389</td>
+          <td>Strict glossary terms, numeric mismatch, frequency, negation and prompt injection are
+              real CRITICAL defects that set a segment BLOCKED. Terminology enforcement is a
+              constraint here, not a suggestion.</td>
+        </tr>
+        <tr>
+          <td><b>Judge reliability measured, and gating CI</b></td>
+          <td class="ev">judge_eval.py · scripts/judge_eval_gate.py · eval.yml</td>
+          <td>Planted-defect recall ≥ 0.75, precision ≥ 0.5, Cohen's κ, and a rolling-window drift gate
+              that fails the build on regression. Very few teams can show this.</td>
+        </tr>
+        <tr>
+          <td><b>Qualified-supplier telemetry (A6)</b></td>
+          <td class="ev">LLM_USAGE_RECORDED events · model_pricing.py · prompt registry</td>
+          <td>Model, prompt version, content hash, tokens and cost land in the immutable chain — the
+              EU AI Act technical-documentation obligation, satisfied by construction.</td>
+        </tr>
+        <tr>
+          <td><b>Multi-tenancy with a self-policing invariant</b></td>
+          <td class="ev">tenant_scoped.py · test_no_default_org_id_in_services.py</td>
+          <td>Tenant scoping is enforced, and a test walks <code>app/</code> to prevent the old
+              default-org literal creeping back. The discipline is mechanised, not remembered.</td>
+        </tr>
+        <tr>
+          <td><b>Format fidelity on DOCX</b></td>
+          <td class="ev">FidelityGate · docx round-trip suite</td>
+          <td>Tracked changes, headers, footers, tables and notes survive the round trip.</td>
+        </tr>
+        <tr>
+          <td><b>The loop discipline itself</b></td>
+          <td class="ev">155 worksheets · 132 resolve to commits on origin/main · 0 stale-state</td>
+          <td>An 8-stage loop with red-team gates, a drift auditor and a never-loosened ratchet. The
+              process is the reason the codebase is defensible at all — and it caught a false-positive
+              ticket before a sprint was spent on it.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== §4 HAZARDS ===================== -->
+<section id="s4">
+  <div class="eyebrow">§4</div>
+  <h2>Improvement areas</h2>
+  <p class="sub">
+    Ordered by what would embarrass us first. Six were found during this review and are not on any
+    board — those carry a <span class="chip c-new">New</span> mark. Each was verified in the file, not inferred.
+  </p>
+
+  <div class="haz">
+
+    <div class="hz" data-s="critical">
+      <div class="hz-h"><b>H1 · Fabricated compliance claims render as live status</b>
+        <span class="chip c-new">New</span><span class="tag">A3</span></div>
+      <p>The Control Tower compliance tab hardcodes &ldquo;Zero Retention (Azure OpenAI)&rdquo;,
+      &ldquo;Policy Active: NO_STORE&rdquo; and &ldquo;Scrubber Active: NER_V2_EN&rdquo; as static JSX,
+      complete with animated pulse dots that read as a live feed. The product does not use Azure
+      OpenAI; the PII service is regex-only (known issue C-12); there is no NER_V2_EN. The Trust Center
+      page carries the literal comment <em>&ldquo;A3: real posture only — no fabricated Zero Retention /
+      AES-256 / NER_V2&rdquo;</em> and fetches the real posture — so the honest replacement was built and
+      the fabrication was never removed. This is the exact failure the scorecard exists to prevent,
+      shipped on a compliance screen.</p>
+      <span class="ev">frontend/components/control_views/ComplianceView.tsx:30–86 · contradicts frontend/app/workspace/trust/page.tsx:388</span>
+    </div>
+
+    <div class="hz" data-s="critical">
+      <div class="hz-h"><b>H2 · The live pilot accepts unauthenticated privileged calls</b><span class="tag">RS-04</span></div>
+      <p>No deploy configuration sets <code>APP_ENV</code>, so the Railway deployment resolves to
+      <code>app_env=dev</code> with <code>auth_mode=none</code>. The production-safety guard exempts
+      dev, so it does not fire. Every route the RBAC sweep guarded is reachable without a token.</p>
+      <span class="ev">TMX-PRODSAFE-DEPLOY-ENV · app/core/config.py assert_production_safe()</span>
+    </div>
+
+    <div class="hz" data-s="critical">
+      <div class="hz-h"><b>H3 · An OpenAI key remains in committed history</b><span class="tag">Kapil-gated</span></div>
+      <p>Blocks the secret-scan CI gate and is the first red-stop any diligence process will find.
+      Rotation must happen in the OpenAI dashboard before the history purge can run.</p>
+      <span class="ev">TMX-3000 · .env</span>
+    </div>
+
+    <div class="hz" data-s="critical">
+      <div class="hz-h"><b>H4 · The SDK fabricates translations when no model is configured</b><span class="tag">RS-02</span></div>
+      <p>Returns <code>[target] source</code> labelled as machine translation, and <code>{}</code> on a
+      parse error. Not in the live REST path today, but it must not ship as a surface. The fix loop is
+      open at stage 2 of 8.</p>
+      <span class="ev">transmax_sdk/pipeline/pipeline.py:113, :311 · TMX-SDK-FAILCLOSED</span>
+    </div>
+
+    <div class="hz" data-s="high">
+      <div class="hz-h"><b>H5 · A callback URL is accepted and never called</b>
+        <span class="chip c-new">New</span><span class="tag">A3</span></div>
+      <p><code>webhook_url</code> appears exactly once in the whole of <code>app/</code> — as a field on
+      the v1 request schema. There is no dispatch code anywhere. An integrator who supplies a callback
+      gets silence and no error, which is the definition of a silent failure in a regulated path.
+      Either fire it or reject the field.</p>
+      <span class="ev">app/schemas/api_v1.py:57 · zero dispatch sites repo-wide</span>
+    </div>
+
+    <div class="hz" data-s="high">
+      <div class="hz-h"><b>H6 · Source language silently defaults to English</b><span class="tag">RS-06</span></div>
+      <p>Low-confidence or failed detection falls back to <code>en</code> rather than raising a
+      confirmation hold. A mis-detected source silently mistranslates an entire document.</p>
+      <span class="ev">app/agents/graph.py:120–130 · TMX-LANGDETECT-HOLD</span>
+    </div>
+
+    <div class="hz" data-s="high">
+      <div class="hz-h"><b>H7 · The v1 path rebuilds output with a string join</b></div>
+      <p><code>". ".join(...)</code> discards structure on reconstruction, and the job runs on
+      in-process background tasks that do not survive a restart.</p>
+      <span class="ev">app/api/v1/translations.py:79, :140 · TMX-V1-DURABLE-IR</span>
+    </div>
+
+    <div class="hz" data-s="high">
+      <div class="hz-h"><b>H8 · Fuzzy TM returns a fabricated similarity score</b>
+        <span class="chip c-new">New</span><span class="tag">A3</span></div>
+      <p>The pgvector fuzzy path returns a hardcoded <code>"score": 0.9</code> regardless of actual
+      cosine distance. It is dead in the graph today, which is the only reason it is not already
+      producing false confidence — but it is a shipped function that invents a number. Compute it or
+      delete the path.</p>
+      <span class="ev">app/services/db_service.py:294</span>
+    </div>
+
+    <div class="hz" data-s="high">
+      <div class="hz-h"><b>H9 · The v2 chain cannot record anything that is not a job</b></div>
+      <p><code>job_id</code> is NOT NULL and the chain is keyed <code>(job_id, sequence_index)</code>.
+      A glossary edit, a role change, a threshold flip or a termbase promotion has no chained home. An
+      inspector asking &ldquo;who changed the terminology, and when?&rdquo; cannot be answered from the
+      ledger. This blocks two already-written tickets.</p>
+      <span class="ev">app/models/audit_v2.py:67 · TMX-SYS-AUDIT-STREAM blocks TMX-3052c, TMX-3104a</span>
+    </div>
+
+    <div class="hz" data-s="high">
+      <div class="hz-h"><b>H10 · Jobs die with the process</b></div>
+      <p><code>queue_service.py</code> is 32 lines over FastAPI <code>BackgroundTasks</code>. No broker,
+      no worker pool, no durable state. A restart mid-translation loses the run, and the sweeper that
+      would recover it is default-off.</p>
+      <span class="ev">app/services/queue_service.py · stuck_job_sweep_enabled = False</span>
+    </div>
+
+    <div class="hz" data-s="medium">
+      <div class="hz-h"><b>H11 · A French SmPC profile contains an English mandatory heading</b>
+        <span class="chip c-new">New</span></div>
+      <p><code>EMA_SMPC_FR_FR</code> lists <code>"5. PHARMACOLOGICAL PROPERTIES"</code> among five
+      correct French headings. A correctly-formatted French SmPC would be flagged for a missing
+      mandatory section. Latent only because <code>enable_qrd_checks</code> is off — it becomes a live
+      false positive the moment that READY flag flips, which is precisely the kind of landmine a
+      default-off flag hides.</p>
+      <span class="ev">app/core/regulatory_profiles.py:40</span>
+    </div>
+
+    <div class="hz" data-s="medium">
+      <div class="hz-h"><b>H12 · The document scorecard first-paints mock numbers</b>
+        <span class="chip c-new">New</span><span class="tag">A3</span></div>
+      <p>Initial state is a hardcoded <code>overall_score: 94</code> with a &ldquo;Negation Safety&rdquo;
+      bar at 88. The real calculation overwrites it in an effect, but a reviewer sees invented quality
+      figures on first render.</p>
+      <span class="ev">frontend/app/workspace/documents/[id]/page.tsx:56–68</span>
+    </div>
+
+    <div class="hz" data-s="medium">
+      <div class="hz-h"><b>H13 · Two identity models, and six single-source-of-truth forks</b><span class="tag">RS-03</span></div>
+      <p>The graph's string <code>Document</code> identity and the v2 UUID <code>TranslationJob</code>
+      identity are unreconciled (A4). Alongside it: two quality scorers, two tier vocabularies, two
+      profile systems, two reviewer surfaces, two audit chains and two TM tables. Every fork is a
+      reconcile-before-build hazard, and the MQM cutover would bake the identity split into the audit
+      trail if it landed first.</p>
+      <span class="ev">app/agents/runner.py:31 vs app/models/audit_v2.py:65–67 · TMX-3221</span>
+    </div>
+
+    <div class="hz" data-s="medium">
+      <div class="hz-h"><b>H14 · The PRS quality gate is configured but not enforced</b>
+        <span class="chip c-new">New</span></div>
+      <p>Threshold 85 is set in two config layers and the workflow template exists in
+      <code>quality-gate/workflows/</code> — but it was never installed into <code>.github/workflows/</code>.
+      It runs only as a local pre-commit hook, so CI does not enforce it. A sidebar link to
+      <code>/settings</code> also points at a route that does not exist.</p>
+      <span class="ev">quality-gate/quality-gate.config.json · frontend/components/Sidebar.tsx:219</span>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================== §5 CONCORD ===================== -->
+<section id="s5">
+  <div class="eyebrow">§5</div>
+  <h2>Reading the Concord vision against our own</h2>
+  <p class="lede">
+    The headline finding is that Concord is not a competing roadmap — most of it is a restatement of
+    doctrine we have already written down, sometimes in more depth than the vision document itself
+    reaches. Its value is concentrated in one structural idea and a handful of presentational ones.
+  </p>
+
+  <div class="thesis">
+    Concord is a <em>demand-side</em> vision: statements, reuse, cost per changed statement, a service
+    that is called rather than visited. Ours has been a <em>supply-side</em> vision: evidence, judges,
+    ledgers, calibration. We have been building the thing that makes the promise defensible while the
+    promise itself stayed abstract. The two meet at exactly one place in the code — segment identity.
+  </div>
+
+  <div class="cols4">
+    <div class="col keep">
+      <h4>Confirms — no new work</h4>
+      <ul>
+        <li>Deterministic floor before stochastic judges. Already our A2 plus the no-vacuous-green principle.</li>
+        <li>Terminology as constraint, not suggestion. Our knowledge ADR is <em>finer</em>: four enforcement levels (suggested / preferred / required / locked) against Concord's binary.</li>
+        <li>Layered termbases. Already specified as a five-store asset map with precedence, plus a nomenclature graph with effective-dating that Concord has no equivalent for.</li>
+        <li>GAMP&nbsp;5 posture, model change control, ALCOA+, human accountability. All already written into A1/A6/A8 and the regulatory pack.</li>
+        <li>MCP deferred to a later phase — its own roadmap places the agent at months 6–12, matching our v3.1 deferral.</li>
+      </ul>
+    </div>
+
+    <div class="col add">
+      <h4>Adds — genuinely new</h4>
+      <ul>
+        <li><b>The component translation graph.</b> Statements as first-class nodes, translations bound to them, multilingual state queryable, approved text locking back as a reusable asset. We have <em>zero</em> code for this.</li>
+        <li><b>Delta-only intake.</b> Submit changed components, get bound results. Follows directly from the graph and inverts our document-upload API shape.</li>
+        <li><b>Reuse economics as the product metric</b> — cost per changed statement, reuse rate. Our metrics are all quality and cycle time; none is economic.</li>
+        <li><b>Legacy estate onboarding</b> — alignment plus memory mining, so a pilot starts warm. Without it reuse begins at zero and the entire economic story fails on day one.</li>
+        <li><b>Standard text bound by identifier</b>, never sent to MT, never editable. Ours is heading strings for validation only.</li>
+        <li><b>Refusal as a product surface.</b> Demonstrating the system declining an unsafe action is the most persuasive thing a regulated buyer can watch. We fail loud everywhere and surface it nowhere.</li>
+        <li><b>A provenance vocabulary for the UI</b> — bound / constrained / AI-assist / AI-built / human, each carrying its own rule. We have the audit data and no language for it.</li>
+        <li>Two lifecycle states we lack: <em>leveraged</em> (delta isolated) and <em>locked</em> (assets written back).</li>
+      </ul>
+    </div>
+
+    <div class="col reject">
+      <h4>Reject or reframe</h4>
+      <ul>
+        <li><b>A scalar QE score driving routing.</b> Weaker than what we already have and it reintroduces vacuous green through the back door. Derive a QE-style band <em>from</em> the MQM score for display; keep the span-level annotation as the record. Do not adopt a second quality instrument.</li>
+        <li><b>Reuse rate above 85% as a headline.</b> Dangerous unless binding revalidates. An exact match bound without re-running the deterministic checks propagates a stale error at scale under an audit line that reads &ldquo;bound&rdquo;. Our rule should be stricter than the source document's: TM entries carry the termbase and profile version they were approved under, and binding still runs the cheap deterministic gates even though it skips the model.</li>
+        <li><b>Embedded-first.</b> The right end state, the wrong starting point — our pilot buyers have no labelling platform to call from. Stay hub-first, but shape the API around components now so embedded mode is later a thin adapter rather than a rewrite.</li>
+        <li><b>A separate SDK quality path.</b> Adopt the external pack's harder rule instead: no surface may be weaker than the engine. That retires our SDK fork rather than blessing it.</li>
+      </ul>
+    </div>
+
+    <div class="col ahead">
+      <h4>Where we are already ahead</h4>
+      <ul>
+        <li>Concord says &ldquo;immutable audit trail&rdquo;. We have a domain-separated hash chain, an independently re-implemented verifier, day-level Merkle anchors and a verification API.</li>
+        <li>Concord says &ldquo;QE calibration reviewed quarterly&rdquo;. We have planted-defect recall, precision floors, Cohen's κ and a CI gate that fails the build on drift.</li>
+        <li>Concord's termbase layering versus our five-store asset map with enforcement levels, a nomenclature graph, effective-dating and a strictly-negative Black Book.</li>
+        <li>Prompt-version pinning with content hashes; a ratchet that only tightens; a golden eval corpus.</li>
+      </ul>
+      <p class="why" style="margin-top:10px">These are the things to protect in any replan — and the things to put on a screen, because right now a buyer cannot see any of them.</p>
+    </div>
+  </div>
+
+  <h3>The strategic consequence <span class="chip c-new">Revised</span></h3>
+  <p>
+    The component graph is the highest-value idea in the Concord material — and TransMax should not
+    build it. <b>reSCApe already owns it</b>, in shipped code. See <a href="#s8">§8</a>, which
+    supersedes the conclusion originally drawn here.
+  </p>
+  <p>
+    What survives from this section is the sequencing constraint: segments today are cascade-deleted
+    children of a document, and the unreconciled split between the graph's string <code>Document</code>
+    and the ledger's UUID <code>TranslationJob</code> must be settled before anything binds to it. That
+    still makes <b>TMX-3221 the gateway ticket</b> — but its target changes. The canonical job
+    aggregate must be designed to carry a <em>foreign</em> component reference, so it is done once.
+  </p>
+</section>
+
+<!-- ===================== §6 BACKLOG ===================== -->
+<section id="s6">
+  <div class="eyebrow">§6</div>
+  <h2>The backlog is now a liability</h2>
+  <p class="lede">
+    Loop discipline is holding — 155 worksheets, 132 resolving cleanly to commits on
+    <code>origin/main</code>, zero stale-state. The <em>board</em> is where the entropy went.
+  </p>
+
+  <div class="stats">
+    <div class="stat flag"><div class="n">95</div><div class="k">ticket IDs that exist only as prose inside another ticket's notes — no row, no owner, no status</div></div>
+    <div class="stat warn"><div class="n">21</div><div class="k">distinct status strings for what should be five states</div></div>
+    <div class="stat warn"><div class="n">3</div><div class="k">colliding numbering schemes in simultaneous use</div></div>
+    <div class="stat flag"><div class="n">3</div><div class="k">strategy documents untracked in git — a fresh clone cannot reproduce the plan</div></div>
+  </div>
+
+  <h3>Diagnosis</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Symptom</th><th>Measured</th><th>Why it matters</th></tr></thead>
+      <tbody>
+        <tr><td>Spawned tickets never land on the board</td><td class="num">95 of 246</td>
+            <td>Every loop spawns follow-ups into prose. They have no owner and no status, so they are invisible debt that nobody can triage or drop.</td></tr>
+        <tr><td>Status vocabulary has drifted open</td><td class="num">21 variants</td>
+            <td><code>[Done, pending push]</code>, <code>[Done, this session]</code>, <code>[Done partial]</code>, <code>[Pod B's lane]</code> — the board cannot be counted mechanically, so drift auditing needs human interpretation.</td></tr>
+        <tr><td>The board contradicts itself</td><td class="num">4 rows</td>
+            <td>Four <code>[READY]</code> entries are marked Done by tables lower in the same file. One shipped ticket is absent entirely.</td></tr>
+        <tr><td>Worksheet headers carry stale prose</td><td class="num">52 files</td>
+            <td>&ldquo;pending push&rdquo; text left after PR #14 and #20 merged inflates the drift auditor's in-flight count from ~2 to 19.</td></tr>
+        <tr><td>Ticket-ID namespace is not unique</td><td class="num">≥3 collisions</td>
+            <td><code>TMX-3618</code> names two unrelated tickets; the file itself annotates <code>TMX-3604</code> and <code>TMX-3705</code> prefix collisions. For a program whose thesis is stable identity (A5), this is an uncomfortable irony.</td></tr>
+        <tr><td>Three numbering axes in use at once</td><td class="num">E1–E14 · E1–E11 · WS0–WS10</td>
+            <td>The vision epics and the v3 plan epics share numbers and mean different things. Every cross-reference costs a translation step.</td></tr>
+        <tr><td>The delivery backlog is stale and miscounted</td><td class="num">71 rows, 48 open</td>
+            <td>Referenced as &ldquo;~55 loops&rdquo;; four rows shown open have shipped. Phases 3–5 hold 39 tickets with zero worksheets between them.</td></tr>
+        <tr><td>The program-brain file is six months old</td><td class="num">2026-01-17</td>
+            <td><code>.context/status.md</code> still describes agents as mocks and claims no known issues, against A10's session-end update requirement.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Seven rules to close it down</h3>
+  <ol class="dec">
+    <li><b>One ID namespace, uniqueness enforced.</b> Extend the drift auditor to fail on a duplicate or unregistered ID. A ticket mentioned in prose without a row is a lint error, not a plan.</li>
+    <li><b>Five states, no more.</b> <code>READY · WIP · BLOCKED · DONE · DROPPED</code>. &ldquo;Done pending push&rdquo; is not Done — CLAUDE.md already says so; make the vocabulary make it impossible to write.</li>
+    <li><b>Spawn triage within one batch.</b> Every follow-up gets promoted, parked or dropped before the next batch closes. Default is <em>drop</em>. The anti-bloat gate applies to tickets exactly as it applies to code.</li>
+    <li><b>One epic axis.</b> Vision E1–E14 is canonical; the v3 E1–E11 set is substrate folded underneath it; WS0–WS10 is a lens for the scorecard and never a roadmap. Publish the map once, then stop cross-referencing.</li>
+    <li><b>Commit the strategy.</b> ADR-0008, the external pack and the scorecard YAML are untracked. The ADR designates the scorecard a tracked release-gate artifact; it is not tracked. This is a Tier-0 entropy hit against A10.</li>
+    <li><b>One release gate.</b> The scorecard is the only readiness signal. Retire story-point-weighted percentage dashboards — an estimate rendered as a progress bar is a vacuous-green vector by construction.</li>
+    <li><b>Regenerate, don't maintain.</b> The board should be derived from worksheet headers and git, the way the drift auditor already reads them. Hand-maintained state is what produced the four self-contradictions.</li>
+  </ol>
+
+  <h3>The work, re-cut into six tracks</h3>
+  <p class="sub">
+    Outcome-shaped rather than pod-shaped, because work now happens as loops on a branch rather than in
+    parallel pods. Items marked in violet are new, arising from this review or from the Concord read.
+  </p>
+
+  <div class="tracks">
+    <div class="track">
+      <div class="track-h"><span class="t">T1</span><b>Evidence a regulator can hold</b></div>
+      <p class="why">Close the ledger's structural gaps and — critically — put the evidence on a screen.</p>
+      <div class="ids">
+        <span>TMX-SYS-AUDIT-STREAM</span><span>TMX-3052c</span><span>TMX-3104a</span>
+        <span>TMX-AUTH-AUDIT-CHAIN</span><span>TMX-ANCHOR-SCHED</span><span>TMX-AUDIT-V2-CUTOVER</span>
+        <span>TMX-REGPACK-REAL</span><span>TMX-VAL-REG</span><span class="n">RENDER-THE-CHAIN</span>
+      </div>
+    </div>
+
+    <div class="track">
+      <div class="track-h"><span class="t">T2</span><b>The verdict becomes the engine's</b></div>
+      <p class="why">Give <code>mqm_engine_enabled</code> a consumer. Everything else in the keystone is already built.</p>
+      <div class="ids">
+        <span>TMX-MQM-1a</span><span>TMX-MQM-5b</span><span>TMX-MQM-6-wire</span><span>TMX-MQM-4b</span>
+        <span>TMX-MQM-5c-deepen</span><span>TMX-MQM-EVAL-KAPPA-JOIN</span><span>TMX-MQM-EVAL-GOLD</span>
+        <span>TMX-MQM-CALIBRATE</span><span>TMX-QRD-1</span><span>TMX-QRD-2</span>
+      </div>
+    </div>
+
+    <div class="track">
+      <div class="track-h"><span class="t">T3</span><b>The governed asset layer &amp; the reuse economy</b></div>
+      <p class="why">The five knowledge stores, then the component graph they make valuable. The commercial story lives here.</p>
+      <div class="ids">
+        <span>TMX-3221</span><span>TMX-ENF-LEVELS</span><span>TMX-PRECEDENCE</span><span>TMX-TM-UNIFY</span>
+        <span>TMX-BB-1…6</span><span>TMX-NOM-1</span><span>TMX-NOM-2</span><span>TMX-STYLE-1</span>
+        <span>TMX-STABLE-IDS</span><span>TMX-SECTION-PATH</span>
+        <span class="n">COMPONENT-REF</span><span class="n">TM-LEVERAGE-STAGE</span>
+        <span class="n">BIND-REVALIDATE</span><span class="n">STANDARD-TEXT-BINDER</span>
+        <span class="n">DELTA-ENDPOINT</span><span class="n">ALIGN-MINE</span><span class="n">REUSE-ANALYTICS</span>
+      </div>
+    </div>
+
+    <div class="track">
+      <div class="track-h"><span class="t">T4</span><b>A surface that earns the signature</b></div>
+      <p class="why">Three purpose-built components already exist and are imported nowhere. Wire them, then remove the fabrications.</p>
+      <div class="ids">
+        <span>TMX-COCKPIT-1</span><span>TMX-COCKPIT-2</span><span>TMX-ESIG-1</span><span>TMX-ESIG-2</span>
+        <span>TMX-QUERY-1</span>
+        <span class="n">WIRE-ORPHANS</span><span class="n">KILL-FABRICATED-POSTURE</span>
+        <span class="n">KILL-MOCK-SCORECARD</span><span class="n">SEGMENT-CONTRACT</span><span class="n">TERM-HITS-INLINE</span>
+      </div>
+    </div>
+
+    <div class="track">
+      <div class="track-h"><span class="t">T5</span><b>Callable, and safely so</b></div>
+      <p class="why">One engine, thin surfaces. No surface weaker than the kernel — which means retiring the fork, not hardening it.</p>
+      <div class="ids">
+        <span>TMX-SDK-FAILCLOSED</span><span>TMX-3224…3232</span>
+        <span class="n">SDK-RETIRE</span><span class="n">POLICY-GUARD</span>
+        <span class="n">REFUSAL-AUDIT</span><span class="n">WEBHOOK-FIRE-OR-REJECT</span>
+      </div>
+    </div>
+
+    <div class="track">
+      <div class="track-h"><span class="t">T6</span><b>It runs when nobody is watching</b></div>
+      <p class="why">Durability, tenancy, secrets and the release gate. Unglamorous and pilot-blocking.</p>
+      <div class="ids">
+        <span>TMX-RELEASE-SCORECARD</span><span>TMX-V1-DURABLE-IR</span><span>TMX-ORCH-CHECKPOINT&nbsp;B</span>
+        <span>TMX-PRODSAFE-DEPLOY-ENV</span><span>TMX-3000</span><span>TMX-3001</span><span>TMX-3002</span>
+        <span>TMX-AUTH-WALL</span><span>TMX-3013</span><span>TMX-RUFF-SWEEP</span><span>TMX-FE-SNAPSHOT</span>
+        <span>TMX-TIER-1…3</span><span class="n">PRS-INTO-CI</span><span class="n">BOARD-HYGIENE</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== §7 PLAN ===================== -->
+<section id="s7">
+  <div class="eyebrow">§7</div>
+  <h2>The plan</h2>
+  <p class="lede">
+    Seven waves. Each closes with a gate that is checkable, not asserted. The first three change no
+    architecture — they stop the product from claiming things that are not true, make the existing
+    evidence visible, and settle identity before anything is built on top of it.
+  </p>
+
+  <div class="waves">
+
+    <div class="wave">
+      <div class="wave-l"><div class="w">Wave 0</div><span class="when">now · ~6 loops<br/>all two-way</span></div>
+      <div class="wave-r">
+        <b class="title">Stop the surfaces that lie</b>
+        <ul>
+          <li>Delete the fabricated compliance posture cards; the honest Trust Center version already exists <span class="tag">H1</span></li>
+          <li>Remove the first-paint mock scorecard <span class="tag">H12</span></li>
+          <li>Fire the webhook or reject the field <span class="tag">H5</span></li>
+          <li>Compute the fuzzy TM score or delete the dead path <span class="tag">H8</span></li>
+          <li>Fix the English heading in the French SmPC profile before the QRD flag is ever flipped <span class="tag">H11</span></li>
+          <li>Finish <code>TMX-SDK-FAILCLOSED</code> (at stage 2 of 8) and <code>TMX-LANGDETECT-HOLD</code></li>
+          <li>Commit ADR-0008, the external pack and the scorecard YAML</li>
+        </ul>
+        <div class="gate"><b>Gate</b><span>No fabricated signal anywhere in the product; red-stops RS-02 and RS-06 clear; a fresh clone can reproduce the strategy.</span></div>
+      </div>
+    </div>
+
+    <div class="wave">
+      <div class="wave-l"><div class="w">Wave 1</div><span class="when">next · ~4 loops<br/>two-way</span></div>
+      <div class="wave-r">
+        <b class="title">Make the evidence visible and the gate real</b>
+        <ul>
+          <li><code>TMX-RELEASE-SCORECARD</code> — a signed scorecard recomputed only from attached evidence <span class="tag">RS-05</span></li>
+          <li>Wire <code>AuditTimeline</code> and the provenance chip to the live <code>verify_v2</code> endpoint — the single highest-value UI change available, because it turns our best asset into something a buyer can see</li>
+          <li>Install the PRS gate into CI <span class="tag">H14</span></li>
+          <li>Board hygiene: five-state vocabulary, 95 orphan IDs adopted or dropped, 52 stale headers swept, uniqueness lint added</li>
+        </ul>
+        <div class="gate"><b>Gate</b><span>One readiness signal, computed from evidence. Chain integrity visible in the product. The board can be counted by a script.</span></div>
+      </div>
+    </div>
+
+    <div class="wave">
+      <div class="wave-l"><div class="w">Wave 2</div><span class="when">Kapil-gated<br/><b style="color:var(--absent)">one-way</b></span></div>
+      <div class="wave-r">
+        <b class="title">Settle identity before building on it</b>
+        <ul>
+          <li><code>TMX-3221</code> — one canonical job aggregate; reconcile the string <code>Document</code> and UUID <code>TranslationJob</code> lineages <span class="tag">RS-03</span></li>
+          <li>Add an additive <code>component_ref</code> to the segment contract — two-way, no migration of meaning, and the precondition for everything in T3</li>
+        </ul>
+        <div class="gate"><b>Gate</b><span>A job runs and verifies end to end on one identity lineage. Requires an explicit go — the migration is not reversible.</span></div>
+      </div>
+    </div>
+
+    <div class="wave">
+      <div class="wave-l"><div class="w">Wave 3</div><span class="when">Kapil-gated<br/><b style="color:var(--absent)">one-way</b></span></div>
+      <div class="wave-r">
+        <b class="title">The verdict becomes the engine's</b>
+        <ul>
+          <li><code>TMX-MQM-1a</code> — persist the annotation table so judge and human labels can be joined</li>
+          <li>Review the shadow diff, then <code>TMX-MQM-5b</code> — engine as sole decider, self-certification stripped, gates demoted to annotators</li>
+          <li>Wire the bounded revise loop; turn on QRD checks once the profile bug is fixed; close the judge↔human κ join</li>
+        </ul>
+        <div class="gate"><b>Gate</b><span><code>mqm_engine_enabled</code> has a consumer. An unresolved critical finding cannot reach approval. Judge reliability is measured against human gold, not asserted.</span></div>
+      </div>
+    </div>
+
+    <div class="wave">
+      <div class="wave-l"><div class="w">Wave 4</div><span class="when">the commercial wave</span></div>
+      <div class="wave-r">
+        <b class="title">The governed asset layer and the reuse economy</b>
+        <ul>
+          <li>Enforcement levels, precedence resolution, TM unification, Black Book and nomenclature stores</li>
+          <li>TM leverage as an explicit pipeline stage with exact-match locking — and <b>revalidation on bind</b>, so a bound segment still passes the deterministic gates under the termbase version current today</li>
+          <li>Standard text bound by identifier, never sent to a model</li>
+          <li>A delta endpoint; alignment and memory mining so a pilot estate starts warm; reuse and cost-per-changed-statement analytics</li>
+        </ul>
+        <div class="gate"><b>Gate</b><span>Reuse rate is a measured number on real customer content, and every bound segment carries the termbase and profile version it was validated against.</span></div>
+      </div>
+    </div>
+
+    <div class="wave">
+      <div class="wave-l"><div class="w">Wave 5</div><span class="when">signature &amp; socket</span></div>
+      <div class="wave-r">
+        <b class="title">Sign it, then let it be called</b>
+        <ul>
+          <li>Part&nbsp;11 e-signature — signer identity, meaning of signature, re-authentication, immutable binding to version and timestamp. Currently one docstring and no implementation, and it is the largest single regulatory hole in the product</li>
+          <li>Policy guard at the tool boundary, with refusals recorded as first-class audit events and surfaced in the UI</li>
+          <li>Retire the SDK's independent pipeline; one kernel, thin surfaces <span class="tag">RS-01</span></li>
+        </ul>
+        <div class="gate"><b>Gate</b><span>A submission-bound segment cannot be locked without a qualified signature, and the refusal is evidence. No surface is weaker than the engine.</span></div>
+      </div>
+    </div>
+
+    <div class="wave">
+      <div class="wave-l"><div class="w">Wave 6</div><span class="when">pilot-ready</span></div>
+      <div class="wave-r">
+        <b class="title">Operate</b>
+        <ul>
+          <li>Durable execution and a checkpointer, so a restart does not lose a run</li>
+          <li>Auth wall on; <code>APP_ENV=production</code> set in deploy; key rotated and history purged</li>
+          <li>Risk-tier routing, SLA clocks and pathways; the validation pack generated rather than assembled</li>
+        </ul>
+        <div class="gate"><b>Gate</b><span>Scorecard ≥ 80 with all six red-stops clear, on evidence, reproducibly.</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <h3>What only you can unblock</h3>
+  <p class="sub">Seven of these are already blocking loops that are otherwise ready to run.</p>
+  <ol class="dec">
+    <li><b>Rotate the OpenAI key</b> in the dashboard so the history purge can run. Blocks <code>TMX-3000</code>, the secret-scan gate, and any technical diligence.</li>
+    <li><b>Confirm <code>git rm --cached</code></b> for the committed database artefacts. Blocks <code>TMX-3002</code>, which has been WIP since Sprint 0.</li>
+    <li><b>Set <code>APP_ENV=production</code> and flip <code>AUTH_MODE=jwt</code></b> on the deployment. The pilot is currently open access. The wall is built and tested behind the flag.</li>
+    <li><b>Approve the identity migration</b> (<code>TMX-3221</code>). One-way. Everything in the reuse track waits behind it.</li>
+    <li><b>Approve the MQM verdict cutover</b> (<code>TMX-MQM-5b</code>) after reviewing the shadow report. One-way, and the whole keystone is inert until it lands.</li>
+    <li><b>Decide on the component graph.</b> The strategic call in this document. It is the difference between selling document translation with a good audit trail and selling a governed multilingual asset — but it is a data-model commitment, and it must follow identity, not race it.</li>
+    <li><b>Close the standing steering decisions</b> — pilot customer profile, identity provider, secrets vault. They have blocked sprint planning since May.</li>
+  </ol>
+</section>
+
+<!-- ===================== §8 reSCApe ===================== -->
+<section id="s8">
+  <div class="eyebrow">§8 · added after reviewing Scriptiva_SCA</div>
+  <h2>reSCApe changes the answer</h2>
+  <p class="lede">
+    The component translation graph — the one idea §5 identified as genuinely new and worth
+    building — is <b>already built, in the other repo</b>. reSCApe owns component identity,
+    versioning, effective dating, lineage, markets, label scope and, it turns out, a working
+    Part&nbsp;11 signature service. TransMax must not build a second one of any of them.
+  </p>
+
+  <div class="thesis">
+    The two products are not peers. reSCApe is the <em>product</em>: it owns what a statement is,
+    which version is effective, which markets carry it and who signed it. TransMax is the
+    <em>engine</em>: given a statement version and a target locale, it produces a translation with a
+    quality adjudication, a provenance record and a verifiable audit entry. One owns the content
+    graph; the other owns the language layer. Neither should own both.
+  </div>
+
+  <h3>The integration already exists, and it is the worst kind</h3>
+
+  <div class="haz">
+    <div class="hz" data-s="critical">
+      <div class="hz-h"><b>TransMax is vendored into reSCApe as a git submodule pinned to 3 March 2026</b>
+        <span class="chip c-new">New</span></div>
+      <p>
+        <code>.gitmodules</code> points <code>packages/transmax</code> at the TransMax GitHub repo,
+        pinned at <code>274557a</code> — the <b>second commit in TransMax's entire history</b>. Every
+        piece of defensibility work since then is absent from what reSCApe actually runs: no audit
+        ledger v2, no verifier, no Merkle anchors, no MQM engine, no multi-tenancy, no prompt
+        registry, no injection or budget guard, no drift gate. reSCApe offers a
+        <code>"transmax"</code> provider tier whose pharma-grade quality checks come from a
+        pre-moat snapshot.
+      </p>
+      <span class="ev">Scriptiva_SCA/.gitmodules · submodule HEAD 274557a (2026-03-03) vs TransMax main 8e600e9 (2026-07-21)</span>
+    </div>
+
+    <div class="hz" data-s="critical">
+      <div class="hz-h"><b>The bridge imports TransMax internals by file path, and fails open</b>
+        <span class="chip c-new">New</span><span class="tag">A3</span></div>
+      <p>
+        <code>transmax_bridge.py</code> loads <code>app/services/quality_gate.py</code> out of the
+        submodule under a mangled <code>transmax_</code> namespace, to dodge a package collision with
+        reSCApe's own <code>app</code>. It binds to a module TransMax refactors freely — 802 lines and
+        already on the split list. Six <code>return None</code> paths silently downgrade to
+        glossary-deterministic mode, and semantic similarity falls back to a token-overlap heuristic —
+        while the response still reports <code>mode: "transmax_ai"</code>. A provenance claim that the
+        engine never earned. And to be precise: <b>TransMax does not do the translating.</b>
+        <code>_run_transmax_pipeline</code> calls reSCApe's own AI provider and runs the TransMax
+        quality gate only as a post-hoc QC step — because, as its own docstring says,
+        <em>&ldquo;the full TransMax LangGraph pipeline requires its own database&rdquo;</em>. The
+        bridge's author already identified the correct architecture and worked around it. That
+        sentence is the whole argument for making this a service.
+      </p>
+      <span class="ev">apps/api/app/services/transmax_bridge.py:1-140, :324 · apps/api/app/services/translation.py:248-255</span>
+    </div>
+
+    <div class="hz" data-s="high">
+      <div class="hz-h"><b>It violates reSCApe's own accepted architecture</b></div>
+      <p>
+        ADR-0004 (<em>Headless core + contract seam</em>, accepted 2026-07-01) states the governing
+        rule: <em>&ldquo;Every consumer binds to a versioned contract, never to backend
+        internals.&rdquo;</em> The TransMax bridge is the clearest violation of that rule anywhere in
+        the portfolio. The fix is not new policy — it is applying policy that already exists across
+        the repo seam.
+      </p>
+      <span class="ev">Scriptiva_SCA/docs/adr/0004-headless-core-contract-seam-v2-frontend.md</span>
+    </div>
+  </div>
+
+  <h3>Who owns what</h3>
+  <p class="sub">
+    A vendored module can live in-process. A regulated engine with its own audit ledger, tenancy and
+    validation evidence cannot — if TransMax runs inside reSCApe, no one can answer whose chain
+    recorded the translation. That is the structural reason this must be a service, not a package.
+  </p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Concern</th><th>Owner</th><th>Status today</th></tr></thead>
+      <tbody>
+        <tr><td>Component identity, version, effective dating</td><td class="nowrap"><b>reSCApe</b></td><td class="ev">shipped — <code>components</code> / <code>component_versions</code></td></tr>
+        <tr><td>Lineage &amp; derivation (CCDS→SmPC/USPI→PIL)</td><td class="nowrap"><b>reSCApe</b></td><td class="ev">shipped + seeded — <code>DerivedMapping</code></td></tr>
+        <tr><td>Markets &amp; label scope hierarchy</td><td class="nowrap"><b>reSCApe</b></td><td class="ev">shipped — <code>Market</code> enum, market-variant components, <code>LabelSet</code></td></tr>
+        <tr><td><b>Language / locale as a modelled dimension</b></td><td class="nowrap"><b>TransMax</b></td><td class="ev"><b>absent on both sides today</b> — see below</td></tr>
+        <tr><td>Change → impact → propagation (the delta)</td><td class="nowrap"><b>reSCApe</b></td><td class="ev">shipped — <code>ChangeEvent → ImpactSet → Task</code></td></tr>
+        <tr><td>Document assembly, render, SPL / FHIR ePI / eCTD</td><td class="nowrap"><b>reSCApe</b></td><td class="ev">shipped, flag-gated</td></tr>
+        <tr><td><b>Part 11 e-signature</b></td><td class="nowrap"><b>reSCApe</b></td><td class="ev">shipped — <code>signature_records</code> with <code>signing_meaning</code>, actor, auth context, manifest hash</td></tr>
+        <tr><td>Deviation / conformance state, variation class</td><td class="nowrap"><b>reSCApe</b></td><td class="ev">modelled, unsurfaced</td></tr>
+        <tr><td><b>Translation execution</b></td><td class="nowrap"><b>TransMax</b></td><td class="ev">shipped — LangGraph pipeline</td></tr>
+        <tr><td><b>Quality adjudication (MQM, judge, deterministic gates)</b></td><td class="nowrap"><b>TransMax</b></td><td class="ev">built; shadow-only</td></tr>
+        <tr><td><b>Translation provenance + tamper-evident chain</b></td><td class="nowrap"><b>TransMax</b></td><td class="ev">shipped — ledger v2 + verifier</td></tr>
+        <tr><td><b>Language assets: TM, termbase, nomenclature, style, Black Book</b></td><td class="nowrap"><b>TransMax</b></td><td class="ev">specified in the knowledge ADR; partially built</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="sub">
+    Contested today and needing a call: reSCApe holds a <code>TranslationGlossary</code> model and an
+    inline <code>PHARMA_GLOSSARY_FR</code>; TransMax holds glossaries, forbidden terms and a five-store
+    knowledge architecture. Terminology must be enforced at decode time, co-located with the
+    generator — so the language assets belong to TransMax, and reSCApe should reference them.
+  </p>
+
+  <h3>The cleanest fact in the whole analysis</h3>
+  <p>
+    <b>reSCApe's component model is monolingual.</b> There is no language or locale column on
+    <code>components</code> or <code>component_versions</code> — one language column exists in
+    twenty-three migrations and it belongs to carton-label specs. The variant selector branches on
+    market only. <code>DerivationType.TRANSLATED_FROM</code> and <code>LOCALIZED_FROM</code> are
+    declared in the enum and written by <em>nothing</em>. reSCApe's own draft architecture note
+    concedes the workaround in writing: locale is routed through
+    <code>market_scope_markets</code> <em>&ldquo;until a dedicated language field exists on
+    Component&rdquo;</em>.
+  </p>
+  <p>
+    This makes the boundary unusually clean. TransMax is not duplicating reSCApe and never was —
+    <b>it supplies the dimension reSCApe does not have.</b> The two systems are orthogonal:
+    reSCApe indexes content by market, TransMax by locale, and the join is a component version.
+  </p>
+  <p>
+    It also names the one blocking prerequisite. Because assembly, the build hash, label sets,
+    approval and signature all operate on Components, a translated label must <em>become</em> a
+    component version in reSCApe, or none of that machinery applies to translations and we would
+    rebuild all of it. That requires <b>a locale column on the component model, in the variant
+    selector, and in the build hash</b> — currently a French and an English label are
+    indistinguishable to <code>build_hash</code>. Under reSCApe's Backend Lock that is an RFC, and it
+    is the first thing to file.
+  </p>
+
+  <p class="sub">
+    Two smaller findings that cut in our favour. reSCApe's translation subsystem is a prototype, not a
+    rival: an in-memory job dict that dies on restart, ten hardcoded languages, and
+    <em>zero</em> references to <code>component_id</code> anywhere in its routes — so there is very
+    little to retire and nothing to build on. And reSCApe's <code>audit_log</code> is
+    <b>not a chained ledger</b> — no <code>prev_hash</code>, no sequence; rows are individually
+    fingerprinted but unlinked, so deleting or reordering one is undetectable. TransMax's ledger is
+    therefore not a duplicate capability. It is the evidence plane the portfolio does not otherwise
+    have.
+  </p>
+
+  <h3>The seam</h3>
+  <p>
+    Not a submodule. A versioned HTTP contract with an async job and a callback, keyed on
+    <b>reSCApe's</b> component version. That single foreign reference is the whole
+    &ldquo;component translation graph&rdquo; TransMax needs — it never invents statement identity and
+    never diffs documents, because reSCApe already versions components and computes the impact set.
+  </p>
+  <p>
+    reSCApe has already specified the memory key, and it is better than the one §5 proposed:
+    <code>(source_component_version.hash_canonical, target_locale, termbase_version_id)</code>.
+    Keying on the <em>content</em> hash means identical text reuses across components; including
+    <code>termbase_version_id</code> means a terminology change automatically invalidates the match.
+    That is the bind-revalidation hazard §5 warned about, solved in the key rather than in a policy
+    someone has to remember. Adopt it verbatim.
+  </p>
+  <p>
+    The good news: <b>most of this contract already exists.</b>
+    <code>app/schemas/api_v1.py</code> has an idempotency key, a governance profile
+    (archetype / risk tier / modality / regulatory profile) and a webhook field, and the v1 routes
+    already expose result, audit-bundle and certificate endpoints. What is missing is a source
+    reference block on the request, a disposition + MQM + provenance block on the response, a webhook
+    that actually fires, and a durable execution path.
+  </p>
+
+  <h3>What this changes in §6 and §7</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Item</th><th>Was</th><th>Now</th></tr></thead>
+      <tbody>
+        <tr><td>Component graph (T3's largest item)</td><td class="ev">build a statement graph in TransMax</td><td>Deleted. Add a foreign <code>component_version_ref</code> and key memory on it. Weeks, not quarters.</td></tr>
+        <tr><td>Part 11 e-signature (Wave 5's largest item)</td><td class="ev">build the signing stack</td><td>Deleted. Consume reSCApe's <code>signature_records</code>; bind a signature reference to the segment disposition.</td></tr>
+        <tr><td>Legacy alignment &amp; memory mining</td><td class="ev">new TransMax epic</td><td>reSCApe has <code>packages/digitization/</code> (ADR-0003) for the Word estate. Coordinate, do not duplicate.</td></tr>
+        <tr><td>T5 &ldquo;callable&rdquo;</td><td class="ev">deferred to v3.1</td><td><b>Promoted</b> — but only the narrow job-contract slice, not REST v2 + SDK + MCP + webhooks.</td></tr>
+        <tr><td>RS-01 &ldquo;two execution engines&rdquo;</td><td class="ev">TransMax app/ vs SDK</td><td><b>Worse than scored.</b> Four paths across two repos, one of them 4.5 months stale.</td></tr>
+        <tr><td>TMX-3221 identity</td><td class="ev">gateway to the reuse economy</td><td>Unchanged in priority, changed in target: the job aggregate must carry a foreign component reference.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>One rule both repos need</h3>
+  <p>
+    Four instances of a single disease turned up across the two codebases:
+    <code>last_derived_at</code> advanced without re-deriving; <code>mode: "transmax_ai"</code>
+    reported over a heuristic fallback; a fabricated compliance posture panel; an SDK emitting
+    <code>[target] source</code> labelled MT. reSCApe already wrote the cure for its own AICAT
+    taxonomy — <em>adopt the vocabulary, derive the value, never store the string</em>. Generalise it:
+  </p>
+  <div class="gate" style="margin-top:14px">
+    <b>Rule</b>
+    <span>A provenance or compliance claim must be <b>derived from the artefact that produced it</b> —
+    a prompt hash, a chain entry, a signature record, a live posture read. Never stored as a string,
+    never asserted by a default, never survived from a fallback path.</span>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap" style="padding:0">
+    <h4>How this report was produced</h4>
+    <p>
+      Every claim above was checked against the repository on 21 July 2026 at
+      <code>feat/vision-delivery-2 @ 8e600e9</code>. Where a subagent reported a finding, the
+      load-bearing ones were re-verified directly: the fabricated compliance cards, the undispatched
+      webhook field, the English heading in the French profile, the orphaned UI components, and the
+      absence of any consumer for <code>mqm_engine_enabled</code>. Nothing here is drawn from
+      <code>.context/status.md</code>, which is six months stale.
+    </p>
+    <div class="method">
+      <div><b>Sources</b>active_tasks.md · 155 loop worksheets · MQM-DELIVERY-BACKLOG · VISION-GAP-ANALYSIS · ADR-0008 · the external engine pack · the progress scorecard · git log · ratchet baseline · the repository itself</div>
+      <div><b>Inputs reviewed</b>concord-translation-agent-vision.md · ConcordHub.jsx — read in full, compared against our own LangOps vision, knowledge ADR, Black Book and nomenclature specs. §8 adds a review of the Scriptiva_SCA (reSCApe) repository: its labelling-spine plan, ADR-0004 contract seam, component and signature models, and the vendored TransMax submodule.</div>
+      <div><b>Deliberately absent</b>Completion percentages. The four-state maturity vocabulary is used instead, because a percentage over a backlog of unknown depth is the vacuous-green hazard this program has already named as its first liability.</div>
+    </div>
+  </div>
+</footer>
+
+</div>
+</body>
+</html>
