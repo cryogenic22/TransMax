@@ -13,6 +13,37 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+
+def _fuzzy_score(distance: float) -> float:
+    """Cosine similarity implied by a pgvector cosine distance.
+
+    pgvector's ``cosine_distance`` is ``1 - cosine_similarity``, so the honest
+    score is exactly ``1 - distance`` (A3: derived from the artefact that
+    produced it, never invented). Distances outside [0.0, 2.0] are
+    geometrically impossible for cosine distance and indicate a corrupted
+    query result — crash early rather than report a number for garbage.
+
+    Pure function (no DB) so SQLite CI can test the mapping without pgvector.
+    """
+    if not 0.0 <= distance <= 2.0:
+        raise ValueError(f"cosine distance {distance!r} outside [0.0, 2.0]")
+    return 1.0 - distance
+
+
+def _assemble_fuzzy_match(source_text: str, target_text: str, distance: float) -> Dict[str, Any]:
+    """Build the fuzzy-TM result dict from a (source, target, distance) row.
+
+    Kept separate from the SQL so the row→result assembly is unit-testable
+    with a stubbed row (TMX-TM-FUZZY-HONEST).
+    """
+    return {
+        "source": source_text,
+        "target": target_text,
+        "score": _fuzzy_score(float(distance)),
+        "type": SubstitutionType.TM_FUZZY.value,
+    }
+
+
 class DatabaseService:
     _instance = None
     _initialized = False
@@ -229,7 +260,8 @@ class DatabaseService:
         """
         Finds the best TM match.
         Priority 1: Exact String Match (Score 1.0)
-        Priority 2: High Semantic Similarity (Score > 0.95)
+        Priority 2: High Semantic Similarity — cosine distance < 0.1, so the
+                    derived score (1 - distance) is > 0.9 (TMX-TM-FUZZY-HONEST).
         """
         from app.models.models import TMSegment
         
@@ -277,23 +309,24 @@ class DatabaseService:
                     # pgvector cosine_distance: <=>
                     # We'll use l2_distance for robustness unless cosine index is explicit.
                     
-                    match = db.query(TMSegment).filter(
+                    # Select the distance the DB computes for ordering into the
+                    # row itself, so the score is DERIVED from it — never a
+                    # constant (A3, TMX-TM-FUZZY-HONEST).
+                    distance_expr = TMSegment.embedding.cosine_distance(query_vec)
+                    row = db.query(
+                        TMSegment.source_text,
+                        TMSegment.target_text,
+                        distance_expr.label("distance"),
+                    ).filter(
                         TMSegment.source_language == source_lang,
                         TMSegment.target_language == target_lang,
-                        TMSegment.embedding.cosine_distance(query_vec) < 0.1 # Very strict fuzzy (0.9 similarity)
-                    ).order_by(TMSegment.embedding.cosine_distance(query_vec)).first()
-                    
-                    if match:
-                         # Distance isn't returned unless explicitly selected;
-                         # the cosine_distance order_by + first() already picked the
-                         # nearest match, so we return it without a recomputed score.
+                        distance_expr < 0.1  # Very strict fuzzy (>= 0.9 similarity)
+                    ).order_by(distance_expr).first()
 
-                         return {
-                            "source": match.source_text,
-                            "target": match.target_text,
-                            "score": 0.9, # Placeholder or calc
-                            "type": "TM_FUZZY" 
-                         }
+                    if row is not None:
+                        return _assemble_fuzzy_match(
+                            row.source_text, row.target_text, row.distance
+                        )
                 except ImportError:
                     logger.warning("langchain_openai not installed, skipping vector search.")
                 except Exception as ve:
