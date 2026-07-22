@@ -1,6 +1,6 @@
 # TMX-AUTH-WALL — Pilot login wall (AUTH_MODE=jwt) + seeded demo account
 
-**State**: `[Done — built behind flag; activation is Kapil's env-var flip]`
+**State**: `[Done]` — built behind flag; activation is Kapil's env-var flip
 **Owner**: Auth & Tenancy
 **Sprint**: 2
 **Started**: 2026-06-14

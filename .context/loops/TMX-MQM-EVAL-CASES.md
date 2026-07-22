@@ -1,6 +1,6 @@
 # TMX-MQM-EVAL-CASES — planted-defect judge fixtures + recall gate
 
-**State**: `[Done, pending push]` · **Owner**: Quality & Regulatory · **Sprint**: Phase 2 seed (E13.S2)
+**State**: `[Done]` · **Owner**: Quality & Regulatory · **Sprint**: Phase 2 seed (E13.S2)
 **Reversibility**: `two-way` (additive data + test). **Pre-mortem**: none. **Blast radius**: new `tests/evals/judge/planted_critical.jsonl` + test.
 
 **Gates**: G1 ✓ (seeds the judge gold set with real planted-defect cases; reuses `compute_judge_reliability`) · G2 N/A · G3 ✓ (demonstrates the leniency-drift recall gate over fixtures).
@@ -18,7 +18,7 @@ Establish the judge-reliability gold set (E13.S2): planted-defect cases (numeric
 Risk: too few cases to be statistically meaningful — this is the seed; README target grows it (50 by GA). No findings.
 
 ## 8. Deploy
-- [ ] Commit: <this commit; SHA backfill> · Pushed: **gated on Kapil** · [x] active_tasks updated
+- [x] Commit: `e03c760` (batched: "TMX-MQM-EVAL/DASH-LABEL/SHADOW-REPORT/EVAL-CASES: judge reliability + honest labels + cutover tool") · Pushed: **gated on Kapil** · [x] active_tasks updated
 
 ## Status log
 | 2026-06-15 | — | `[Done, pending push]` | judge gold-set seeded; recall gate demonstrated |

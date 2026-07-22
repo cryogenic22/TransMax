@@ -1,6 +1,6 @@
 # TMX-MQM-5c — content-type → metric-profile resolution
 
-**State**: `[Done, pending push]` · **Owner**: Quality & Regulatory · **Sprint**: MQM Keystone (Phase 1)
+**State**: `[Done]` · **Owner**: Quality & Regulatory · **Sprint**: MQM Keystone (Phase 1)
 **Reversibility**: `two-way` (additive). **Pre-mortem**: wrong profile → wrong shadow score (shadow only; no live verdict). **Blast radius**: new `resolution.py`; `mqm_shadow.resolve_metric_profile` delegates; `graph.validate_request` stashes `content_metadata`.
 
 **Gates**: G1 ✓ (reconciles the two legacy profile systems onto the registry, replaces the default-only seam, ships tests) · G2 N/A · G3 ✓ (the shadow now scores against the content-appropriate profile).
@@ -18,7 +18,7 @@ Replace the single-default-profile seam with a real map from document content-ty
 Risk: metadata absent → default (documented, safe). Risk: bad profile id → fallback to default (tested). No findings.
 
 ## 8. Deploy
-- [ ] Commit: <this commit; SHA backfill> · Pushed: **gated on Kapil** (`feat/mqm-keystone`) · [x] active_tasks updated
+- [x] Commit: `737993c` (batched: "TMX-MQM-5c/BB-STRICT/AUTH-AUDIT: profile resolution + enforce strict rules + audit access") · Pushed: **gated on Kapil** (`feat/mqm-keystone`) · [x] active_tasks updated
 
 ## Status log
 | 2026-06-15 | — | `[Done, pending push]` | content→profile resolution live (shadow) |

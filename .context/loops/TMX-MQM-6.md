@@ -1,6 +1,6 @@
 # TMX-MQM-6 — ensemble aggregation + conservation constraint (pure)
 
-**State**: `[Done, pending push]` · **Owner**: Agent & AI · **Sprint**: MQM Keystone (Phase 1)
+**State**: `[Done]` · **Owner**: Agent & AI · **Sprint**: MQM Keystone (Phase 1)
 **Reversibility**: `two-way` (pure, additive helpers). **Pre-mortem**: conservation heuristic could false-accept a coincidental match (documented). **Blast radius**: new `app/services/mqm_review.py` only (not yet wired into the live reviser — that lands with the revise loop).
 
 **Gates**: G1 ✓ (the two backstops for *no vacuous green* + *conservation before correctness*; pure + tested) · G2 N/A · G3 ✓ (ensemble takes most-severe + escalates on disagreement; conservation rejects out-of-scope edits).
@@ -18,7 +18,7 @@ Two pure primitives for the critique loop. **Ensemble (§6.4):** merge N judges'
 Risk: conservation substring heuristic false-accepts → acceptable for the backstop; a stricter alignment is a future refinement. Risk: span-key collisions across judges → keyed by segment+dimension+target-text. No findings.
 
 ## 8. Deploy
-- [ ] Commit: <this commit; SHA backfill> · Pushed: **gated on Kapil** · [x] active_tasks updated
+- [x] Commit: `875751c` (batched: "TMX-MQM-4/6/5a-emit: independent judge (shadow) + ensemble/conservation + audit emit") · Pushed: **gated on Kapil** · [x] active_tasks updated
 
 ## Status log
 | 2026-06-15 | — | `[Done, pending push]` | pure helpers ready; wired with the revise loop |

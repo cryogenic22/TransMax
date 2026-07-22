@@ -160,7 +160,14 @@ def parse_worksheet(path: Path) -> Optional[Worksheet]:
             continue
         for match in SHA_RE.finditer(line):
             sha = match.group(1).lower()
-            if len(sha) >= 7 and any(c in sha for c in "abcdef"):
+            # No hex-letter requirement: ~1 in 270 abbreviated 7-char SHAs is
+            # all digits, and rejecting those made the auditor report
+            # MISSING-COMMIT ("lying backlog") against correctly-documented
+            # worksheets — e.g. commit `6536939`. The structural anchor
+            # (COMMIT_DECLARATION_RE, matched above) is what keeps prose
+            # numbers out; the character class was redundant and lossy.
+            # See tests/test_worksheet_parser_numeric_sha.py.
+            if len(sha) >= 7:
                 if sha not in declared_shas:
                     declared_shas.append(sha)
 

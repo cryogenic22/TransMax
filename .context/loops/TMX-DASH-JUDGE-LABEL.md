@@ -1,6 +1,6 @@
 # TMX-DASH-JUDGE-LABEL — honest dashboard agent labels
 
-**State**: `[Done, pending push]` · **Owner**: Reviewer Frontend / Platform · **Sprint**: Phase 0 (honesty)
+**State**: `[Done]` · **Owner**: Reviewer Frontend / Platform · **Sprint**: Phase 0 (honesty)
 **Reversibility**: `two-way`. **Pre-mortem**: none (label-only). **Blast radius**: `app/api/dashboard.py` `_EVENT_TYPE_TO_AGENT` names.
 
 **Gates**: G1 ✓ (closes the A2 cosmetic-mislabel hazard; minimal) · G2 ✓ (audit found GATE_* events presented as "Reviewer agent") · G3 ✓ (the deterministic gate is now labelled honestly).
@@ -18,7 +18,7 @@ The audit (A2) found the dashboard maps deterministic GATE_* events to "Reviewer
 Risk: breaking the canonical-four lane test → averted by keeping ids stable (only names changed). No findings.
 
 ## 8. Deploy
-- [ ] Commit: <this commit; SHA backfill> · Pushed: **gated on Kapil** · [x] active_tasks updated
+- [x] Commit: `e03c760` (batched: "TMX-MQM-EVAL/DASH-LABEL/SHADOW-REPORT/EVAL-CASES: judge reliability + honest labels + cutover tool") · Pushed: **gated on Kapil** · [x] active_tasks updated
 
 ## Status log
 | 2026-06-15 | — | `[Done, pending push]` | deterministic gate no longer mislabelled as an agent |

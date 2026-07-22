@@ -1,6 +1,6 @@
 # TMX-MQM-CAPTURE — reviewer override → learning bridge (gold signal)
 
-**State**: `[Done, pending push]`
+**State**: `[Done]`
 **Owner**: Reviewer Frontend / Quality & Regulatory
 **Sprint**: MQM Keystone (Phase 1)
 **Started**: 2026-06-14
@@ -50,7 +50,7 @@ Risk: background task losing tenant context → tenant-scoped write fails loud �
 No findings — clean.
 
 ## 8. Deploy
-- [ ] Commit: <this commit; SHA backfill>
+- [x] Commit: `70953c9` (batched: "TMX-MQM-5a/CAPTURE: run the MQM engine in shadow + capture reviewer overrides")
 - [ ] Pushed to origin/main: **gated on Kapil** (branch `feat/mqm-keystone`)
 - [x] `.context/active_tasks.md` updated
 
