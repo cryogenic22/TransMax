@@ -57,3 +57,5 @@ node_modules/
 # Regulatory Pack per-release output (TMX-3500); keep .gitkeep
 regulatory_pack/releases/*
 !regulatory_pack/releases/.gitkeep
+.env.*
+*.pyc
