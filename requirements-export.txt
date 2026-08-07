@@ -3,7 +3,7 @@
 #
 # Tier-2 pdf_render (Docling -> reportlab -> pypdfium2) is FULLY PERMISSIVE — no
 # AGPL — and recovers figures via pypdfium2. Prefer it for PDF-only intake.
-pypdfium2>=4,<5          # Apache-2.0 / BSD-3 (Google PDFium) — figure-region raster
+pypdfium2>=5.9.0,<6          # Apache-2.0 / BSD-3 (Google PDFium) — figure-region raster
 fonttools>=4             # MIT — glyph-coverage check (replaces the fitz has_glyph)
 # reportlab (BSD) + Docling are already in the main/parsing requirements.
 #
