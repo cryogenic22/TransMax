@@ -52,7 +52,8 @@ collided with file-upload validation; commit `e212408` unchanged), and the dupli
 merged.
 
 **Orphan-spawn rule (default DROPPED):** the lint also reports ids that appear only in another
-ticket's prose with no row of their own — **97 today**. They are *not* a plan: no owner, no status,
+ticket's prose with no row of their own — **~98 as of 2026-08-07** (authoritative count: run `python
+scripts/audit_worksheet_drift.py --check-ids`; do not hand-maintain this number here). They are *not* a plan: no owner, no status,
 no worksheet. Disposition: an orphan is **DROPPED by default**. Reviving one costs a board row and
 an owner, which is the point — the anti-bloat gate (G1) applies to tickets exactly as it applies to
 code. Do not treat the orphan list as a backlog; treat it as an audit of ideas that were never
@@ -74,8 +75,7 @@ committed to. Remaining sweep work is tracked under TMX-BOARD-HYGIENE.
 | TMX-QRD-FR-HEADING | Fix the English mandatory heading in `EMA_SMPC_FR_FR` | Quality | **WIP (code complete, `7904396`, on feat branch)** | + repo-wide guard test against English marker words in non-EN profiles |
 | TMX-TM-FUZZY-HONEST | Compute the fuzzy TM score or delete the dead path | Pipeline | **WIP (code complete, `c186270`, on feat branch)** | score now derived from real cosine distance via pure `_assemble_fuzzy_match`; unit-testable without pgvector |
 | TMX-SDK-FAILCLOSED | SDK fails closed with typed errors instead of fabricating `[target] source` | Agent+AI | **WIP (code complete, `9c0bf8c`, on feat branch)** | RS-02. Typed `ProviderUnavailableError`/`InvalidModelResponseError`; opt-in passthrough labelled `PASSTHROUGH_UNTRANSLATED`, never "MT"; full SDK suite green |
-| TMX-LANGDETECT-HOLD | Source-language uncertainty becomes an explicit hold, not a silent `en` | Agent+AI | **READY** | RS-06. Batch-A agent died on the monthly spend limit before starting; re-run when limit allows (workflow resume `wf_44cfbe07-ecf`) |
-| TMX-BOARD-HYGIENE | Board sweep: five-state vocabulary, adopt-or-drop the 95 prose-only IDs, sweep 52 stale "pending push" headers | Platform | **WIP** | ID-uniqueness lint slice shipped as TMX-DRIFT-IDLINT (`0c3d1d0`, `--check-ids`); the active_tasks/worksheet sweep remains (orchestrator, main tree) |
+| TMX-BOARD-HYGIENE | Board sweep: five-state vocabulary, adopt-or-drop prose-only orphan IDs, sweep stale "pending push" headers | Platform | **WIP** | ID-uniqueness lint slice shipped as TMX-DRIFT-IDLINT (`0c3d1d0`, `--check-ids`). 2026-08-07 orphan sweep: removed the duplicate `TMX-LANGDETECT-HOLD` board row (stale Batch-A dupe — the canonical row lives in Batch B), promoted the two genuinely-intended orphans (`TMX-AUDITLOG-ERR`, `TMX-VALSUMMARY-VERDICT`) to real rows, de-hardcoded the orphan count. Remaining orphans stay DROPPED by rule; the 13 stale-state worksheets are the seam loops that flip to `[Done]` when PR #22 merges |
 
 ### Batch B — the contract (TransMax, additive, two-way)
 
@@ -113,6 +113,17 @@ committed to. Remaining sweep work is tracked under TMX-BOARD-HYGIENE.
 
 **Ordering:** Batch 0 now (approval latency). Batch A immediately and in parallel — no seam
 decisions needed. B before D. C parallel to B. E after the contract stabilises.
+
+### Spawned by Batch A–E red teams (READY — promoted from orphan prose 2026-08-07)
+
+These were spawned as real follow-ups inside seam red-team notes but never given a row, so the
+`--check-ids` lint flagged them as orphans. Promoted here so intended honesty fixes are not lost to
+the DROPPED-by-default rule. Both still need a worksheet before code.
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-AUDITLOG-ERR | `AuditLogList` must distinguish a failed fetch from an empty log, not render both as "No activity recorded" | Reviewer Frontend | **READY** | A3. Spawned by the TMX-POSTURE-FAB red team. A failed audit-log fetch currently renders identically to a genuinely empty log — a false "clean" compliance signal to a reviewer. Fix: surface a real error state + retry; never present a fetch failure as an empty-but-valid audit history |
+| TMX-VALSUMMARY-VERDICT | `ValidationSummary.decision` must read the real scorecard verdict, not `Document.status` | Quality+Platform | **READY** | Spawned by TMX-SEAM-WIRE. `decision` is derived from `Document.status` rather than the persisted `QualityScorecard.status`, so the summary can disagree with the gate that actually ran — an unearned claim of the C-4 family. Fix: read the real verdict from the same source SEAM-WIRE uses for `disposition` |
 
 ---
 
