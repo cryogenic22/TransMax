@@ -27,7 +27,7 @@ jobs:
           --health-retries 5
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         # Full history so git-SHA resolution works: test_regulatory_pack_traceability
         # and test_audit_worktree_clean shell out to git and need the real commit graph
@@ -68,7 +68,7 @@ jobs:
     needs: [test, frontend]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set up Python 3.11
       uses: actions/setup-python@v4
@@ -120,7 +120,7 @@ jobs:
         working-directory: frontend
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set up Node.js 22
       uses: actions/setup-node@v4
@@ -164,7 +164,7 @@ jobs:
     needs: test
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Build Docker image
       run: docker build -t transmax-app:latest .
