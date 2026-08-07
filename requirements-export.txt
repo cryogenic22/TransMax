@@ -4,7 +4,7 @@
 # Tier-2 pdf_render (Docling -> reportlab -> pypdfium2) is FULLY PERMISSIVE — no
 # AGPL — and recovers figures via pypdfium2. Prefer it for PDF-only intake.
 pypdfium2>=4,<5          # Apache-2.0 / BSD-3 (Google PDFium) — figure-region raster
-fonttools>=4             # MIT — glyph-coverage check (replaces the fitz has_glyph)
+fonttools>=4.63.0             # MIT — glyph-coverage check (replaces the fitz has_glyph)
 # reportlab (BSD) + Docling are already in the main/parsing requirements.
 #
 # Tier-1 pdf_overlay (in-place exact-look overlay) needs PyMuPDF, which is
