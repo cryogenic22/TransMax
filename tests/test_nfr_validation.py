@@ -6,7 +6,7 @@ import logging
 from unittest.mock import patch, MagicMock
 from app.services.db_service import DatabaseService
 from app.services.audit_service import AuditService
-from app.models.database import Document, Segment, DocumentStatus, DEFAULT_ORG_ID
+from app.models.database import Document, Segment, DEFAULT_ORG_ID
 from app.models.models import TranslationJobQueue
 from app.agents.graph import app as workflow_app
 from app.core.profile_enums import TranslationArchetype
@@ -171,12 +171,25 @@ async def test_req_nfr_02_audit_integrity(db_service, audit_service, scaffold_jo
     assert "SCORECARD_GENERATED" in event_types
 
 @pytest.mark.asyncio
-async def test_req_nfr_03_termination_on_block(db_service, scaffold_job):
+async def test_req_nfr_03_termination_on_block(db_service, scaffold_job, monkeypatch):
     """
     REQ-NFR-03: Workflow Termination.
     Input with Critical Defect -> BLOCKED state -> Ends.
     """
     doc_id, job_id, seg_id = scaffold_job
+
+    # This test injects a defect through the LIVE ChatOpenAI path (it patches
+    # ChatOpenAI.ainvoke below), so it opts out of the suite-wide offline fake
+    # installed by the autouse `_hermetic_llm` fixture. The dummy key that
+    # fixture injects lets the client construct; the patch means no real
+    # network call is made, so the test stays hermetic while exercising the
+    # real routing/parsing path.
+    from app.core.config import settings
+    from app.services.llm import reset_llm_cache_for_test
+    import app.agents.nodes.translation_engine_node as engine_node
+    monkeypatch.setattr(settings, "enable_live_llm_inference", True)
+    reset_llm_cache_for_test()
+    engine_node._engine = None  # rebind the singleton to a live ChatOpenAI so the patch below applies
 
     # Inject pharma source text
     session = db_service.get_session()
@@ -186,12 +199,16 @@ async def test_req_nfr_03_termination_on_block(db_service, scaffold_job):
     session.commit()
     session.close()
 
-    # Mock LLM to return proper JSON with a WRONG number (100 instead of 10)
+    # Mock LLM to return proper JSON with a WRONG number (100 instead of 10).
+    # Use a real AIMessage (not a bare MagicMock): the engine now extracts
+    # usage metadata from the response, and a MagicMock's auto-attributes
+    # break that arithmetic — an AIMessage carries the real (empty) usage
+    # shape, matching the deterministic fake model's contract.
+    from langchain_core.messages import AIMessage
     mock_json = json.dumps({
         "segments": [{"id": seg_id, "target_text": "100 mg par jour"}]
     })
-    mock_bad_response = MagicMock()
-    mock_bad_response.content = mock_json
+    mock_bad_response = AIMessage(content=mock_json)
 
     inputs = {
         "doc_id": doc_id,

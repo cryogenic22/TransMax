@@ -177,7 +177,11 @@ class DatabaseService:
                 })
             
             # 2. Fetch TM Matches (Vector Search)
-            if query_text and settings.openai_api_key:
+            # Embeddings are a live-provider call, so they obey the same
+            # gate as chat inference: with enable_live_llm_inference off
+            # (the test path) no network request is made — the suite stays
+            # hermetic and TM vector search is simply skipped.
+            if query_text and settings.openai_api_key and settings.enable_live_llm_inference:
                 try:
                     embeddings_model = OpenAIEmbeddings(api_key=settings.openai_api_key)
                     query_vec = embeddings_model.embed_query(query_text)
@@ -293,9 +297,10 @@ class DatabaseService:
                     "type": SubstitutionType.TM_EXACT.value
                 }
 
-            # 2. Vector Search (If configured and key exists)
-            
-            if settings.openai_api_key:
+            # 2. Vector Search (If configured, key exists, and live provider
+            #    calls are enabled — the offline test path skips embeddings)
+
+            if settings.openai_api_key and settings.enable_live_llm_inference:
                 try:
                     from langchain_openai import OpenAIEmbeddings
                     embeddings_model = OpenAIEmbeddings(api_key=settings.openai_api_key)
@@ -402,9 +407,10 @@ class DatabaseService:
             content_hash = hashlib.sha256(normalized_source.encode('utf-8')).hexdigest()
             segment_hash = str(uuid.uuid4())
             
-            # Generate Embedding
+            # Generate Embedding (live-provider call — skipped on the offline
+            # test path so a clean clone never reaches the network)
             embedding = None
-            if settings.openai_api_key:
+            if settings.openai_api_key and settings.enable_live_llm_inference:
                 try:
                     embeddings_model = OpenAIEmbeddings(api_key=settings.openai_api_key)
                     embedding = embeddings_model.embed_query(normalized_source)

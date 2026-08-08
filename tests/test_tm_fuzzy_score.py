@@ -100,6 +100,7 @@ def test_fuzzy_path_score_derives_from_row_distance(
     mock_session = MagicMock()
     monkeypatch.setattr(service, "get_session", MagicMock(return_value=mock_session))
     monkeypatch.setattr(settings, "openai_api_key", "sk-test-stub-key")
+    monkeypatch.setattr(settings, "enable_live_llm_inference", True)  # opt into the (stubbed) embeddings path
     _stub_langchain_openai(monkeypatch, [0.0] * 1536)
 
     # Exact-hash lookup misses -> the fuzzy branch runs.
@@ -129,6 +130,7 @@ def test_fuzzy_path_perfect_row_scores_one(monkeypatch: pytest.MonkeyPatch) -> N
     mock_session = MagicMock()
     monkeypatch.setattr(service, "get_session", MagicMock(return_value=mock_session))
     monkeypatch.setattr(settings, "openai_api_key", "sk-test-stub-key")
+    monkeypatch.setattr(settings, "enable_live_llm_inference", True)  # opt into the (stubbed) embeddings path
     _stub_langchain_openai(monkeypatch, [0.0] * 1536)
 
     mock_session.query.return_value.filter.return_value.first.return_value = None

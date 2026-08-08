@@ -22,6 +22,47 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 
+@pytest.fixture(autouse=True)
+def _hermetic_llm(monkeypatch):
+    """Make the whole suite hermetic — no test may depend on a real provider
+    credential or reach the network.
+
+    Root cause this closes: `TranslationEngine.__init__` eagerly builds an LLM
+    via `get_llm(task="translate")`, and `settings.enable_live_llm_inference`
+    defaults to ``True`` while `settings.openai_api_key` defaults to ``None``.
+    So on a clean clone (no private ``.env``) merely *constructing* the engine
+    raised ``openai.OpenAIError: Missing credentials`` — the 14 CI failures on
+    PR #22 — and, worse, a run WITH a key made real, paid, non-deterministic
+    provider calls (the local suite took ~8 min for exactly this reason).
+
+    The app already ships the offline path: `get_llm` returns a deterministic
+    fake model when `enable_live_llm_inference` is False. Nothing turned it on
+    for tests. This autouse fixture selects that path by default and injects a
+    dummy key so client construction can never fail. A test that specifically
+    exercises the live-provider wiring re-enables it in its own body (and owns
+    its own mock), so this default does not constrain those.
+    """
+    from app.core.config import settings
+    from app.services import llm as llm_module
+    import app.agents.nodes.translation_engine_node as engine_node
+
+    monkeypatch.setattr(settings, "enable_live_llm_inference", False, raising=False)
+    if not settings.openai_api_key:
+        monkeypatch.setattr(settings, "openai_api_key", "sk-test-not-a-real-key", raising=False)
+
+    # The translation engine is a process singleton whose `self.llm` is bound
+    # once at construction, so a stale binding (and an exhausted fake-model
+    # iterator) otherwise survives across tests. Reset it so each test builds a
+    # fresh engine against the current LLM mode.
+    engine_node._engine = None
+    llm_module.reset_llm_cache_for_test()
+    try:
+        yield
+    finally:
+        engine_node._engine = None
+        llm_module.reset_llm_cache_for_test()
+
+
 @pytest.fixture
 def fresh_engine_for_db(tmp_path, monkeypatch):
     """Yield app.core.database with engine + SessionLocal swapped to a tmp SQLite DB.
