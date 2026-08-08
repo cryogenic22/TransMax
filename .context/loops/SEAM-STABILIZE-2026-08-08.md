@@ -48,6 +48,26 @@ the rewritten main. No reapply needed (confirmed by content, not SHA).
   fix H-VS + H-C9 (code + tests) → commit in coherent slices → push → re-run CI to green →
   file TMX-BLACK-BASELINE + the history-rewrite ADR → address Playwright baseline.
 
+## CI result after the fixes (PR #22 @ `f6a2b3f`, 2026-08-08)
+
+Commits: `53a158e` (hermetic) · `ca717ef` (lang-tiers) · `162e9c3` (valsummary) ·
+`328f939` (CI + governance) · `f6a2b3f` (playwright skip).
+
+**Green (10):** Unit Tests ✅ (the core blocker — passes on Postgres CI, was 14-red) ·
+Frontend ✅ · Code Quality ✅ · gitleaks ✅ · Ratchet ✅ · Docker Build ✅ (was skipped) ·
+Golden eval ✅ · Judge-reliability ✅ · Fresh-context review ✅.
+
+**Was red, now fixed:** Frontend ↔ Backend integration — was ALWAYS skipped before (its
+`needs:` deps failed first), so this was its first-ever run. 5 live-backend 500s, ALL one
+root cause: the live uvicorn backend (cwd=repo root, no `DATABASE_URL`) falls back to the
+committed **stale `transmax.db`**, which predates the `organization_id` (TMX-3011) and
+`is_deleted` (TMX-3015) migrations → tenant-scoped reads 500 on missing columns. The Unit
+Tests job provisions a fresh schema; the integration job never did. Pre-existing, fully
+independent of this stabilization (none of the 5 commits touched `documents.py`/`dashboard.py`/
+`models`/`ci.yml`'s integration job). **Fix (`ci.yml`): a "Provision fresh integration DB
+schema" step (`init_db()`) before the run** — mirrors Unit Tests, no app-code change. Deeper
+follow-up (stop committing `transmax.db`) is the existing TMX-3002.
+
 ## Out of scope for this loop (flag to Kapil)
 - **TMX-3221** audit-v2 identity (one-way).
 - Repo-wide Black reformat (TMX-BLACK-BASELINE — its own PR).
