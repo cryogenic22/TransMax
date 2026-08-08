@@ -95,6 +95,19 @@ jobs:
       working-directory: frontend
       run: npx playwright install --with-deps chromium
 
+    # The live uvicorn backend (playwright.integration.config.ts, cwd=repo
+    # root, no DATABASE_URL) falls back to the committed SQLite transmax.db,
+    # which predates the tenancy (organization_id) and soft-delete (is_deleted)
+    # migrations — so tenant-scoped reads 500 on missing columns. The Unit
+    # Tests job provisions a fresh schema; this job never did (it was skipped
+    # until now). Rebuild the schema from the current models before the run.
+    - name: Provision fresh integration DB schema
+      env:
+        APP_ENV: test
+      run: |
+        rm -f transmax.db
+        python -c "from app.core.database import init_db; init_db()"
+
     - name: Run integration suite (live backend + live frontend)
       working-directory: frontend
       env:

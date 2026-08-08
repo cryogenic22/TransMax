@@ -8,8 +8,8 @@ from transmax_sdk.types import TranslationRequest, TranslationSegment
 class TestPipelineCost:
     @pytest.mark.asyncio
     async def test_no_llm_zero_cost(self):
-        """Without LLM provider, cost should be zero."""
-        pipeline = DefaultTranslationPipeline()
+        """Without LLM provider (explicit passthrough opt-in), cost is zero."""
+        pipeline = DefaultTranslationPipeline(allow_passthrough=True)
         request = TranslationRequest(
             segments=[TranslationSegment(segment_id="s1", source_text="Hello")],
             source_lang="en",
@@ -21,6 +21,7 @@ class TestPipelineCost:
     @pytest.mark.asyncio
     async def test_tm_bypass_zero_cost(self):
         from transmax_sdk.memory.tm import VectorTranslationMemory
+
         tm = VectorTranslationMemory()
         tm.store("Hello", "Bonjour", "en", "fr")
 

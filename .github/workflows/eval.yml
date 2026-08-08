@@ -131,11 +131,15 @@ jobs:
             echo "require=" >> "$GITHUB_OUTPUT"
           fi
 
+      # --check-drift adds rolling-window regression detection (TMX-MQM-EVAL-DRIFT)
+      # on top of the absolute floor. Inert until real history accrues in the
+      # committed baseline (cold start ⇒ INSUFFICIENT_HISTORY / SKIPPED_NO_CURRENT,
+      # defers to the floor); blocks (exit 3) once recall/precision regress.
       - name: Run judge-reliability gate
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python -m scripts.judge_eval_gate check ${{ steps.scope.outputs.require }} --report-json eval_results/judge_gate.json
+        run: python -m scripts.judge_eval_gate check ${{ steps.scope.outputs.require }} --check-drift --report-json eval_results/judge_gate.json
 
       - name: Upload judge-gate report
         if: always()

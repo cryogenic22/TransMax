@@ -9,8 +9,10 @@ class TestE2EPipeline:
     @pytest.mark.asyncio
     async def test_full_pipeline_headless(self):
         """Full pipeline: translate -> quality -> score."""
-        sdk = TransMaxSDK()
-        result = await sdk.translate("Take 10mg ibuprofen daily.", target_lang="fr", source_lang="en")
+        sdk = TransMaxSDK(config={"allow_passthrough": True})
+        result = await sdk.translate(
+            "Take 10mg ibuprofen daily.", target_lang="fr", source_lang="en"
+        )
 
         assert result.source_lang == "en"
         assert result.target_lang == "fr"
@@ -31,7 +33,9 @@ class TestE2EPipeline:
         tm = sdk.container.resolve("tm")
         tm.store("Take 10mg daily", "Prendre 10mg par jour", "en", "fr")
 
-        result = await sdk.translate("Take 10mg daily", target_lang="fr", source_lang="en")
+        result = await sdk.translate(
+            "Take 10mg daily", target_lang="fr", source_lang="en"
+        )
         assert result.segments[0].translation_source == "TM_EXACT"
         assert result.segments[0].translated_text == "Prendre 10mg par jour"
         assert result.total_cost_usd == 0.0
@@ -89,10 +93,12 @@ class TestE2EDocumentFlow:
     @pytest.mark.asyncio
     async def test_document_to_translation(self):
         """Document segmentation -> translation flow."""
-        sdk = TransMaxSDK()
+        sdk = TransMaxSDK(config={"allow_passthrough": True})
         doc_mgr = sdk.container.resolve("document_manager")
 
-        text = "Take 10mg daily. Do not exceed recommended dose. Store below 25 degrees."
+        text = (
+            "Take 10mg daily. Do not exceed recommended dose. Store below 25 degrees."
+        )
         segments = doc_mgr.text_to_segments(text, "sentence", "doc_1")
 
         assert len(segments) == 3

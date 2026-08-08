@@ -8,7 +8,7 @@ from transmax_sdk.types import TranslationRequest, TranslationSegment, RouteStra
 class TestPipelineAnyToAny:
     @pytest.mark.asyncio
     async def test_direct_route(self):
-        pipeline = DefaultTranslationPipeline()
+        pipeline = DefaultTranslationPipeline(allow_passthrough=True)
         request = TranslationRequest(
             segments=[TranslationSegment(segment_id="s1", source_text="Bonjour")],
             source_lang="fr",
@@ -19,7 +19,7 @@ class TestPipelineAnyToAny:
 
     @pytest.mark.asyncio
     async def test_pivot_route(self):
-        pipeline = DefaultTranslationPipeline()
+        pipeline = DefaultTranslationPipeline(allow_passthrough=True)
         request = TranslationRequest(
             segments=[TranslationSegment(segment_id="s1", source_text="テスト")],
             source_lang="ja",
@@ -30,7 +30,7 @@ class TestPipelineAnyToAny:
 
     @pytest.mark.asyncio
     async def test_source_lang_propagated(self):
-        pipeline = DefaultTranslationPipeline()
+        pipeline = DefaultTranslationPipeline(allow_passthrough=True)
         request = TranslationRequest(
             segments=[TranslationSegment(segment_id="s1", source_text="Test")],
             source_lang="ko",

@@ -23,6 +23,20 @@ Verdicts:
   MISSING-COMMIT  Done + no matching commit anywhere (lying-backlog suspect)
   IN-FLIGHT       Spec / Design / WIP / Verify / Fix / Blocked — non-terminal
   IGNORE          Template / README / handoff doc / planning-only worksheet
+  DONE_STALE_QUALIFIER  (--check-ids only) State header matches `[Done` plus a
+                  trailing qualifier ("[Done, pending push]", "[Done — X]") —
+                  header vocabulary needs normalising to `[Done]`. Advisory
+                  bucket; does not affect the exit code.
+
+Ticket-ID integrity lint (TMX-DRIFT-IDLINT; opt-in via --check-ids so the
+advisory pre-commit hook's flag-less semantics are unchanged):
+
+  - duplicate board-row IDs: the same TMX-id introduced as the first-cell ID
+    of two different rows in ticket-introduction tables (header first cell
+    `Ticket`) inside `.context/active_tasks.md` -> listed, exit non-zero.
+  - orphan IDs: TMX-ids matched anywhere in the board (prose or another row's
+    Notes cell) that are the first-cell ID of NO table row -> advisory list,
+    never affects the exit code (triage belongs to the board-hygiene sweep).
 
 Why `merge-base --is-ancestor` and not `git cat-file -e`:
   cat-file -e only verifies a SHA exists in the object database. We need to
@@ -33,6 +47,7 @@ Usage:
   python scripts/audit_worksheet_drift.py
   python scripts/audit_worksheet_drift.py --root /path/to/repo
   python scripts/audit_worksheet_drift.py --remote-ref origin/main
+  python scripts/audit_worksheet_drift.py --check-ids
 
 CI / pre-commit gate:
   exit 0 = no drift, 1 = drift found.
@@ -44,6 +59,7 @@ import argparse
 import re
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -60,6 +76,112 @@ from _worksheet_parser import (  # noqa: E402  (after sys.path manipulation)
     Worksheet,
     parse_worksheet,
 )
+
+
+# ---------------------------------------------------------------------------
+# Ticket-ID integrity lint (TMX-DRIFT-IDLINT; active only under --check-ids)
+# ---------------------------------------------------------------------------
+
+# A ticket id: `TMX-` then alphanumeric, optionally continuing with
+# alphanumerics/hyphens but always ENDING on an alphanumeric — so prose like
+# "TMX-3604-*" yields "TMX-3604" and brace expansions cannot capture a
+# trailing hyphen.
+TICKET_ID_RE = re.compile(r"TMX-[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?")
+
+# `[Done` + word boundary + at least one more char before `]` — matches
+# "[Done, pending push]" / "[Done — X]" but neither "[Done]" (tokenisable,
+# never reaches the unparseable fallback) nor "[DoneX]" / "[PARKED — ...]".
+DONE_QUALIFIER_RE = re.compile(r"\[Done\b[^\]]+\]")
+
+# Header first-cell that marks a ticket-INTRODUCTION table on the board.
+# Session-recap tables use `Loop` and are rows-but-not-introductions.
+_INTRO_HEADER_CELL = "ticket"
+
+
+@dataclass
+class BoardIdScan:
+    """Mechanical ID facts scanned from `.context/active_tasks.md`.
+
+    The lint reports facts only; whether two introduction rows are "the same
+    ticket re-listed" or "two unrelated tickets colliding" is the
+    board-hygiene sweep's triage, deliberately not guessed here (A3).
+    """
+
+    intro_rows: dict[str, list[int]]  # id -> line numbers of introduction rows
+    any_row_ids: set[str]  # first-cell ids of ANY table row (intro or recap)
+    occurrences: dict[str, list[int]]  # id -> line numbers of every mention
+
+    @property
+    def duplicate_ids(self) -> dict[str, list[int]]:
+        """Ids introduced by two or more board table rows."""
+        return {t: rows for t, rows in self.intro_rows.items() if len(rows) >= 2}
+
+    @property
+    def orphan_ids(self) -> dict[str, list[int]]:
+        """Ids mentioned anywhere but the first-cell ID of no table row."""
+        return {
+            t: lines
+            for t, lines in self.occurrences.items()
+            if t not in self.any_row_ids
+        }
+
+
+def _is_separator_cell(cell: str) -> bool:
+    """True for markdown table separator cells like `---` / `:---:`."""
+    return bool(cell) and set(cell) <= {"-", ":", " "} and "-" in cell
+
+
+def scan_board_ids(text: str) -> BoardIdScan:
+    """Scan the board file for table-row ids vs prose-only ids. Pure function.
+
+    Table-kind tracking: a contiguous block of `|`-prefixed lines is one
+    table; its header's first cell decides whether id-bearing rows count as
+    ticket INTRODUCTIONS (`Ticket`) or mere rows (anything else, e.g. `Loop`).
+    A non-pipe line ends the table.
+    """
+    intro_rows: dict[str, list[int]] = {}
+    any_row_ids: set[str] = set()
+    occurrences: dict[str, list[int]] = {}
+    current_kind: Optional[str] = None  # "intro" | "other" | None
+
+    for lineno, line in enumerate(text.splitlines(), start=1):
+        for match in TICKET_ID_RE.finditer(line):
+            occurrences.setdefault(match.group(0), []).append(lineno)
+
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            current_kind = None
+            continue
+
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if not cells or not cells[0]:
+            continue
+        first = cells[0]
+        if _is_separator_cell(first):
+            continue
+        if first.strip("*`_ ").lower() == _INTRO_HEADER_CELL:
+            current_kind = "intro"
+            continue
+
+        id_match = TICKET_ID_RE.search(first)
+        if id_match is None:
+            # Either the header row of a non-introduction table (`Loop` etc.)
+            # opening a new pipe block, or an id-less data row mid-table
+            # (which must NOT flip the current table's kind).
+            if current_kind is None:
+                current_kind = "other"
+            continue
+
+        ticket_id = id_match.group(0)
+        any_row_ids.add(ticket_id)
+        if current_kind == "intro":
+            intro_rows.setdefault(ticket_id, []).append(lineno)
+
+    return BoardIdScan(
+        intro_rows=intro_rows,
+        any_row_ids=any_row_ids,
+        occurrences=occurrences,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -156,8 +278,19 @@ def is_on_remote(sha: str, remote_ref: str, repo_root: Path) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def classify(ws: Worksheet, sha: Optional[str], on_remote: bool) -> tuple[str, str]:
-    """Return (verdict, actual_state_summary)."""
+def classify(
+    ws: Worksheet,
+    sha: Optional[str],
+    on_remote: bool,
+    tolerate_done_qualifiers: bool = False,
+) -> tuple[str, str]:
+    """Return (verdict, actual_state_summary).
+
+    With ``tolerate_done_qualifiers`` (--check-ids), un-tokenisable State
+    headers of the form `[Done` + qualifier + `]` get their own advisory
+    DONE_STALE_QUALIFIER bucket instead of drowning in IN-FLIGHT noise.
+    Default False keeps the flag-less report byte-identical.
+    """
     if ws.state_token in NON_TERMINAL_STATES:
         if sha is not None:
             # Header lies: code shipped but worksheet still says Spec/WIP/etc.
@@ -176,8 +309,22 @@ def classify(ws: Worksheet, sha: Optional[str], on_remote: bool) -> tuple[str, s
             return "OK", f"commit {sha[:7]} on origin/main"
         return "LOCAL-ONLY", f"commit {sha[:7]} exists, NOT on origin/main"
 
-    # Unknown / un-parseable state: treat as IN-FLIGHT to avoid false alarm,
-    # but flag in the summary so a human can curate.
+    # Unknown / un-parseable state. Under --check-ids, `[Done, pending push]`
+    # style headers become a distinct, mechanically sweepable bucket.
+    if tolerate_done_qualifiers and DONE_QUALIFIER_RE.search(ws.raw_state_line):
+        if sha is None:
+            note = "Done-qualifier header; no commit subject matches ticket id"
+        elif on_remote:
+            note = (
+                f"Done-qualifier header; commit {sha[:7]} on remote — "
+                "normalise header to [Done]"
+            )
+        else:
+            note = f"Done-qualifier header; commit {sha[:7]} local-only"
+        return "DONE_STALE_QUALIFIER", note
+
+    # Treat as IN-FLIGHT to avoid false alarm, but flag in the summary so a
+    # human can curate.
     return "IN-FLIGHT", f"unparseable state: {ws.raw_state_line[:60]!r}"
 
 
@@ -219,12 +366,37 @@ def main() -> int:
         action="store_true",
         help="Disable terminal colour (default: auto).",
     )
+    parser.add_argument(
+        "--check-ids",
+        action="store_true",
+        help=(
+            "Ticket-ID integrity lint on .context/active_tasks.md: duplicate"
+            " board-row ids FAIL, orphan ids are listed advisory, and"
+            " `[Done, <qualifier>]` worksheet headers get their own"
+            " DONE_STALE_QUALIFIER bucket. Default behaviour (and the"
+            " advisory pre-commit hook) is unchanged without this flag."
+        ),
+    )
     args = parser.parse_args()
 
     loops_dir = args.root / ".context" / "loops"
     if not loops_dir.is_dir():
         print(f"error: {loops_dir} does not exist", file=sys.stderr)
         return 2
+
+    board_path = args.root / ".context" / "active_tasks.md"
+    board_scan: Optional[BoardIdScan] = None
+    if args.check_ids:
+        # Fail loud, never silently pass on a missing board (A3).
+        if not board_path.is_file():
+            print(
+                f"error: --check-ids requires {board_path}, which does not exist",
+                file=sys.stderr,
+            )
+            return 2
+        board_scan = scan_board_ids(
+            board_path.read_text(encoding="utf-8", errors="replace")
+        )
 
     # Verify origin/main resolves; if not, treat all "Done with SHA" as
     # LOCAL-ONLY would be wrong, so error out instead of silently passing.
@@ -243,6 +415,7 @@ def main() -> int:
     ok_count = 0
     inflight_count = 0
     ignore_count = 0
+    done_qualifier_count = 0
 
     for path in sorted(loops_dir.iterdir()):
         if not path.is_file():
@@ -261,7 +434,9 @@ def main() -> int:
         )
         on_remote = is_on_remote(sha, args.remote_ref, args.root) if sha else False
 
-        verdict, summary = classify(ws, sha, on_remote)
+        verdict, summary = classify(
+            ws, sha, on_remote, tolerate_done_qualifiers=args.check_ids
+        )
         rows.append((ws, verdict, summary))
 
         if verdict == "OK":
@@ -276,6 +451,8 @@ def main() -> int:
             inflight_count += 1
         elif verdict == "IGNORE":
             ignore_count += 1
+        elif verdict == "DONE_STALE_QUALIFIER":
+            done_qualifier_count += 1
 
     # ---- Render Markdown table ------------------------------------------
     print("# Worksheet drift audit")
@@ -298,31 +475,69 @@ def main() -> int:
     )
     print(f"- IN-FLIGHT: {inflight_count}")
     print(f"- IGNORE: {ignore_count}")
+    if args.check_ids:
+        print(
+            "- DONE_STALE_QUALIFIER (Done-with-qualifier header — normalise"
+            f" to [Done]; advisory): {done_qualifier_count}"
+        )
 
-    failure_count = drift_count + missing_count + stale_count
+    # ---- Ticket-ID integrity section (--check-ids only) ------------------
+    duplicate_ids: dict[str, list[int]] = {}
+    if board_scan is not None:
+        duplicate_ids = board_scan.duplicate_ids
+        orphan_ids = board_scan.orphan_ids
+        print()
+        print("## Ticket-ID integrity (--check-ids)")
+        print(f"_board:_ `{board_path}`")
+        print()
+        print("### Duplicate board-row IDs (2+ introduction rows -> FAIL)")
+        if duplicate_ids:
+            for ticket_id in sorted(duplicate_ids):
+                lines_str = ", ".join(str(n) for n in duplicate_ids[ticket_id])
+                print(f"- `{ticket_id}`: lines {lines_str}")
+        else:
+            print("- none")
+        print()
+        print("### Orphan IDs (prose/Notes mention, no table row) — advisory")
+        if orphan_ids:
+            print(f"{len(orphan_ids)} orphan id(s):")
+            for ticket_id in sorted(orphan_ids):
+                first_line = orphan_ids[ticket_id][0]
+                print(f"- `{ticket_id}` (first mention: line {first_line})")
+        else:
+            print("- none")
+
+    failure_count = drift_count + missing_count + stale_count + len(duplicate_ids)
     if failure_count == 0:
         print()
         print("All Done worksheets resolved to commits on origin/main. No drift.")
         return 0
 
     print()
-    print(
-        f"DRIFT DETECTED: {drift_count} local-only, {missing_count} missing-commit, "
-        f"{stale_count} stale-state."
-    )
-    print("  - LOCAL-ONLY: push the commit to origin/main, then re-run.")
-    print(
-        "  - MISSING-COMMIT: investigate. Either (a) the worksheet's commit"
-        " subject does not start with the ticket id (record explicit"
-        " `Commit: <sha>` in the worksheet's deploy stage), or (b) the"
-        " worksheet claims Done for code that was never committed"
-        " (lying-backlog — spawn a follow-up ticket)."
-    )
-    print(
-        "  - STALE-STATE: the worksheet header still says Spec/WIP/Verify"
-        " but a commit shipped. Bump the State header to `[Done]` and add"
-        " the SHA to the deploy stage."
-    )
+    if drift_count + missing_count + stale_count:
+        print(
+            f"DRIFT DETECTED: {drift_count} local-only, {missing_count} missing-commit, "
+            f"{stale_count} stale-state."
+        )
+        print("  - LOCAL-ONLY: push the commit to origin/main, then re-run.")
+        print(
+            "  - MISSING-COMMIT: investigate. Either (a) the worksheet's commit"
+            " subject does not start with the ticket id (record explicit"
+            " `Commit: <sha>` in the worksheet's deploy stage), or (b) the"
+            " worksheet claims Done for code that was never committed"
+            " (lying-backlog — spawn a follow-up ticket)."
+        )
+        print(
+            "  - STALE-STATE: the worksheet header still says Spec/WIP/Verify"
+            " but a commit shipped. Bump the State header to `[Done]` and add"
+            " the SHA to the deploy stage."
+        )
+    if duplicate_ids:
+        print(
+            f"DUPLICATE-ID DETECTED: {len(duplicate_ids)} ticket id(s) introduced"
+            " by 2+ board table rows (--check-ids). Rename or merge the rows;"
+            " triage belongs to the board-hygiene sweep."
+        )
     return 1
 
 

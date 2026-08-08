@@ -152,6 +152,15 @@ class Settings(BaseSettings):
     # gate runs ZERO QRD checks (byte-identical).
     enable_qrd_checks: bool = False
 
+    # TMX-WEBHOOK-FIRE: SSRF guard for the v1 job-creation webhook callback.
+    # When False (default), JobCreateRequest rejects webhook_url values that
+    # target private/loopback/link-local hosts (localhost, 127.*, 10.*,
+    # 172.16-31.*, 192.168.*, 169.254.*, and the IPv6 equivalents) with a
+    # 422. True is for dev/test only — it lets a local receiver capture
+    # callbacks. Never enable in production (A3: the guard exists so a
+    # tenant cannot aim our egress at internal infrastructure).
+    webhook_allow_private_targets: bool = False
+
     # Feature Flags (Epic 4: Surgical Reality)
     enable_real_pdf_parsing: bool = True  # Enabled for demo
     enable_live_llm_inference: bool = True

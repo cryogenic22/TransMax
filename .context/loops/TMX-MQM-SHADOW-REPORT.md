@@ -1,6 +1,6 @@
 # TMX-MQM-SHADOW-REPORT — shadow-diff report for the cutover gate
 
-**State**: `[Done, pending push]` · **Owner**: Audit & Validation · **Sprint**: MQM Keystone (Phase 1)
+**State**: `[Done]` · **Owner**: Audit & Validation · **Sprint**: MQM Keystone (Phase 1)
 **Reversibility**: `two-way` (read-only script). **Pre-mortem**: none (no writes). **Blast radius**: new `scripts/mqm_shadow_report.py`.
 
 **Gates**: G1 ✓ (the tool that produces the phase-b cutover evidence; reuses the v2 model + the documented admin scan) · G2 N/A · G3 ✓ (summarises legacy-vs-MQM agreement + CQS distribution from the audit chain).
@@ -18,7 +18,7 @@ Smoke: `python -m scripts.mqm_shadow_report` → honest empty-state on a fresh D
 Risk: cross-tenant read — intentional, documented admin scan (matches TMX-3110b). Read-only; no mutation. No findings.
 
 ## 8. Deploy
-- [ ] Commit: <this commit; SHA backfill> · Pushed: **gated on Kapil** · [x] active_tasks updated
+- [x] Commit: `e03c760` (batched: "TMX-MQM-EVAL/DASH-LABEL/SHADOW-REPORT/EVAL-CASES: judge reliability + honest labels + cutover tool") · Pushed: **gated on Kapil** · [x] active_tasks updated
 
 ## Status log
 | 2026-06-15 | — | `[Done, pending push]` | cutover-gate evidence tool ready |

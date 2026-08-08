@@ -1,6 +1,6 @@
 # TMX-AUTH-AUDIT — audit access-control changes
 
-**State**: `[Done, pending push]` · **Owner**: Auth & Tenancy · **Sprint**: Phase 0 (honesty)
+**State**: `[Done]` · **Owner**: Auth & Tenancy · **Sprint**: Phase 0 (honesty)
 **Reversibility**: `two-way`. **Pre-mortem**: a structured log is weaker than an immutable chain (chain follow-up tracked). **Blast radius**: `app/api/auth.py` `update_user_role` (+ logger).
 
 **Gates**: G1 ✓ (closes a direct A1/A12 finding; minimal, additive) · G2 ✓ (audit found `update_user_role` emits nothing) · G3 ✓ (a role change now emits an audit record).
@@ -18,7 +18,7 @@ Verified via import smoke + existing auth suites green; the structured log emits
 Risk: log without chain = not tamper-evident — honest interim matching codebase precedent; follow-up filed. Risk: logging the new role before commit success — emitted AFTER commit. No findings.
 
 ## 8. Deploy
-- [ ] Commit: <this commit; SHA backfill> · Pushed: **gated on Kapil** · [x] active_tasks updated
+- [x] Commit: `737993c` (batched: "TMX-MQM-5c/BB-STRICT/AUTH-AUDIT: profile resolution + enforce strict rules + audit access") · Pushed: **gated on Kapil** · [x] active_tasks updated
 
 ## Status log
 | 2026-06-15 | — | `[Done, pending push]` | access changes now audited (structured log) |

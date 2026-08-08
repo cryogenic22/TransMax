@@ -1,6 +1,6 @@
 # TMX-MQM-4 — independent judge (in shadow)
 
-**State**: `[Done, pending push]` · **Owner**: Agent & AI · **Sprint**: MQM Keystone (Phase 1)
+**State**: `[Done]` · **Owner**: Agent & AI · **Sprint**: MQM Keystone (Phase 1)
 **Reversibility**: `two-way` (default-OFF flag; emits to audit, changes no verdict). **Pre-mortem**: judge LLM mis-parse → fewer annotations (skipped, never guessed); cost = one extra call/job (flag-gated). **Blast radius**: new `mqm_judge.py` + `prompts/judge/v1.0.0.yaml`; `run_judge_shadow` in `mqm_shadow.py`; gate node awaits it (no-op when off).
 
 **Gates**: G1 ✓ (the #1 defensibility component; reuses PromptRegistry + RobustParser + the engine; pure parser carries tests) · G2 N/A · G3 ✓ (judge emits §5.7 annotations + a judge-only MQM score to the audit chain; cannot set the verdict).

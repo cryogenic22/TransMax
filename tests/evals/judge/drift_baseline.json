@@ -1,0 +1,10 @@
+{
+  "_doc": "Judge-reliability drift baseline (TMX-MQM-EVAL-DRIFT). A rolling window of REAL judge-run observations; drift fires when recall/precision regress beyond the one-sided control limit (see app/services/judge_eval.py:detect_metric_drift). COLD START = empty: until >= config.min_history real runs accrue, every metric reports INSUFFICIENT_HISTORY and the gate defers to the absolute EVAL-CI floor. Accrue ONLY via `python -m scripts.judge_eval_gate drift-update --label <id>` (PR-reviewed, like ratchet update). NEVER hand-edit observations to fabricate history (A3 / no vacuous green): a made-up baseline is exactly the vacuous green this pillar exists to prevent. This is judge META-EVAL drift, distinct from app/services/semantic_drift.py (back-translation meaning drift).",
+  "config": {
+    "metrics": ["recall", "precision"],
+    "k": 3.0,
+    "min_history": 5,
+    "min_abs_drop": 0.05
+  },
+  "observations": []
+}

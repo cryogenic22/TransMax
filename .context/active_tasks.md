@@ -9,6 +9,136 @@ This file replaces the legacy ticket list (Tickets 10-23) which were Phase 1-3 h
 
 ---
 
+## Convergence — Regulatory-Grade Engine Pack (2026-07-13) — **ADR-0008**
+
+External second-opinion review (`~\Documents\Codex\2026-07-13\wha\outputs\transmax-regulatory-grade-engine-pack.md` + `…-progress.yaml`) independently reached our MQM keystone architecture (its WS6 = ADR-0007 producer→calculator→decider; its `Finding` schema = our §5.7 `MqmAnnotation`) and its scorecard directly kills our stated #1 liability, the "vacuous-green" hazard. Decision (**ADR-0008**): **converge spine-first** — pull WS0 (release scorecard) + WS1 (canonical job identity) forward under the in-flight MQM cutover; fix 2 verified un-ticketed A3 hazards; keep full headless surfaces (WS10 / E11) deferred to v3.1 (common ground with the pack's own week-14–20 ordering). All 7 of the pack's gap claims verified TRUE against code. WS→epic map is in ADR-0008.
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-RELEASE-SCORECARD | WS0 — signed `release-scorecard.json` recomputed only from evidence; red-stops override any weighted score; can never report READY without proof | Audit+Platform | **[READY]** | kills vacuous-green (VISION-GAP §3.a); adopt the pack's `…-progress.yaml` as the tracked gate artifact |
+| TMX-3221 (identity slice) | WS1 — reconcile the graph string `Document` identity with the v2 UUID `TranslationJob`; one canonical job aggregate + migration plan | Agent+Audit | **[READY]** | **un-deferred from E11/v3.1** — the foundation TMX-MQM-5b cuts over onto; one-way migration is Kapil-gated; `runner.py:31` vs `audit_v2.py:65-67` (A4) |
+| *(Hazards 1–3 re-homed)* | SDK fail-closed · v1 durable+IR · source-language hold — the three ADR-0008 hazards | — | **→ Seam programme** | Rows moved to the ADR-0009 Batch A/B tables below so each ticket is declared exactly once (ID-uniqueness rule; `audit_worksheet_drift.py --check-ids`). Anchors preserved there: `transmax_sdk/pipeline/pipeline.py:113,311` · `app/api/v1/translations.py:79,140` · `app/agents/graph.py:120-130` + `language_detection.py:_fallback` |
+| TMX-CTX-ONBOARD | Onboard repo to CtxPack "ctx" deterministic session-memory ledger (parity with onto_wiz/setu); closes the missing-`.claude/settings.json` hole | Platform | **[Done, this session]** | `ctxpack onboard`: hooks + `.mcp.json` + CLAUDE.md block + `.claude/ctx/`; activates on next Claude Code restart; complements (does not replace) `.context/` |
+
+Recommended build order (spine before the cutover): **TMX-SDK-FAILCLOSED → TMX-LANGDETECT-HOLD** (small, surgical A3 wins) → **TMX-RELEASE-SCORECARD** (WS0 evidence gate) → **TMX-3221 identity slice** (WS1, Kapil-gated migration) → then resume **TMX-MQM-5b** cutover on the now-canonical spine.
+
+---
+
+## Seam programme — TransMax as the language engine behind reSCApe's contract (2026-07-22) — **ADR-0009**
+
+Review of `~\Scriptiva_SCA` (reSCApe) established that reSCApe already owns component
+identity, versioning, markets, lineage, assembly and **Part 11 `signature_records`** — and that its
+component model is **monolingual**, so TransMax supplies the locale dimension rather than duplicating
+anything. The existing integration is a **git submodule pinned at `274557a` (2026-03-03, the 2nd
+commit in TransMax's history)**, consumed by in-process `importlib`, failing open to glossary mode
+while still reporting `mode: "transmax_ai"`. Decision (**ADR-0009**): TransMax becomes a deployed
+service behind a versioned contract. Full analysis: `docs/PROGRAM-STATUS-2026-07-21.html` §8.
+Cross-repo loop rules: `.context/loops/CROSS-REPO-PROTOCOL.md`.
+
+**Supersedes** two epics proposed earlier in this programme: the component-graph epic (reSCApe owns
+it → a foreign reference, not a graph) and the Part 11 e-signature epic (consume `signature_records`).
+
+**Board vocabulary (effective now):** ticket rows use a closed five-value set —
+`READY · WIP · BLOCKED · DONE · DROPPED`. Worksheet headers keep their own 7-value loop-stage
+taxonomy (`[Spec] [Design] [WIP] [Verify] [Fix] [Done] [Blocked]`) — the two are deliberately
+distinct. `[Done, pending push]` is `WIP`, not `DONE`.
+
+**ID-uniqueness rule (enforced):** every ticket id is introduced by exactly one board row.
+`python scripts/audit_worksheet_drift.py --check-ids` fails on duplicates (shipped by
+TMX-DRIFT-IDLINT). The 2026-07-22 sweep cleared all 6 — three were introduced by this very seam
+section re-declaring the ADR-0008 hazards (re-homed to Batch A/B), `TMX-MQM-5 (phase a/b)` split to
+`TMX-MQM-5a`/`TMX-MQM-5b`, the Playwright visual-snapshot ticket renamed `TMX-DS-VISUAL` (it had
+collided with file-upload validation; commit `e212408` unchanged), and the duplicated TODO-sweep row
+merged.
+
+**Orphan-spawn rule (default DROPPED):** the lint also reports ids that appear only in another
+ticket's prose with no row of their own — **~98 as of 2026-08-07** (authoritative count: run `python
+scripts/audit_worksheet_drift.py --check-ids`; do not hand-maintain this number here). They are *not* a plan: no owner, no status,
+no worksheet. Disposition: an orphan is **DROPPED by default**. Reviving one costs a board row and
+an owner, which is the point — the anti-bloat gate (G1) applies to tickets exactly as it applies to
+code. Do not treat the orphan list as a backlog; treat it as an audit of ideas that were never
+committed to. Remaining sweep work is tracked under TMX-BOARD-HYGIENE.
+
+### Batch 0 — critical path (approval latency is the long pole)
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-SEAM-LOCALE-RFC | reSCApe RFC: locale on the component model, in the variant selector, and in `build_hash` | Kapil + reSCApe platform | **READY** | **one-way**, their Backend Lock. Today a FR and an EN label are indistinguishable to `build_hash`. Blocks all of Batch D's value. Draft filed in their `docs/rfc/`. |
+
+### Batch A — truth fixes (all two-way, no seam dependency, can start immediately)
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-POSTURE-FAB | Delete the fabricated compliance posture panel; the honest Trust Center version already exists | Frontend | **WIP (code complete, `6a8928b`, on feat branch — awaiting review-merge)** | A3. Fabricated cards replaced with real `api.trust.getPosture()` render + link-through; red test 5/5 red pre-fix → 5/5 green. Red team deferred a sibling A3 finding: `AuditLogList` swallows fetch errors into "No activity recorded" → spawn TMX-AUDITLOG-ERR |
+| TMX-SCORECARD-MOCK | Remove the first-paint mock scorecard | Frontend | **WIP (code complete, `2294ed4`, on feat branch)** | A3. Null initial state + honest "scoring unavailable"; source-scan test forbids mock literals. Follow-up candidates: "N of M segments scored" honesty; no-op "Approve All" button |
+| TMX-WEBHOOK-FIRE | Fire `webhook_url` or reject the field | Platform | **WIP (code complete, `48165cf`, on feat branch)** | A3/A1. Dispatch + retries + SSRF guard behind `webhook_allow_private_targets=False`; audit events emitted. Becomes the seam callback in Batch B |
+| TMX-QRD-FR-HEADING | Fix the English mandatory heading in `EMA_SMPC_FR_FR` | Quality | **WIP (code complete, `7904396`, on feat branch)** | + repo-wide guard test against English marker words in non-EN profiles |
+| TMX-TM-FUZZY-HONEST | Compute the fuzzy TM score or delete the dead path | Pipeline | **WIP (code complete, `c186270`, on feat branch)** | score now derived from real cosine distance via pure `_assemble_fuzzy_match`; unit-testable without pgvector |
+| TMX-SDK-FAILCLOSED | SDK fails closed with typed errors instead of fabricating `[target] source` | Agent+AI | **WIP (code complete, `9c0bf8c`, on feat branch)** | RS-02. Typed `ProviderUnavailableError`/`InvalidModelResponseError`; opt-in passthrough labelled `PASSTHROUGH_UNTRANSLATED`, never "MT"; full SDK suite green |
+| TMX-BOARD-HYGIENE | Board sweep: five-state vocabulary, adopt-or-drop prose-only orphan IDs, sweep stale "pending push" headers | Platform | **WIP** | ID-uniqueness lint slice shipped as TMX-DRIFT-IDLINT (`0c3d1d0`, `--check-ids`). 2026-08-07 orphan sweep: removed the duplicate `TMX-LANGDETECT-HOLD` board row (stale Batch-A dupe — the canonical row lives in Batch B), promoted the two genuinely-intended orphans (`TMX-AUDITLOG-ERR`, `TMX-VALSUMMARY-VERDICT`) to real rows, de-hardcoded the orphan count. Remaining orphans stay DROPPED by rule; the 13 stale-state worksheets are the seam loops that flip to `[Done]` when PR #22 merges |
+
+### Batch B — the contract (TransMax, additive, two-way)
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-SEAM-CONTRACT | Extend `api_v1` with a source-reference block and a disposition/MQM/provenance result block; version it; export OpenAPI | Platform+Agent | **WIP (code complete, `d5ae686`, on feat branch)** | `CONTRACT_VERSION="1.1.0"` join key; `SourceReference`/`ConstraintPack`/`TranslationDisposition`/`MqmSummary`/`ProvenanceRecord`/`AuditRef`/`SegmentResult`/`JobResultResponse`; `tm_match_key()` per ADR-0009 clause 4; `contract/openapi.json` (74 schemas) for reSCApe's client. **Additive only — nothing wired into the live path**; wiring is a follow-up loop. Red team caught FastAPI's OpenAPI walker silently omitting the unwired result models (fixed via `models_json_schema`) |
+| TMX-SEAM-CONFORMANCE | The seam conformance suite — invariants C-1…C-9, no mocking of the counterpart | Platform | **WIP (code complete, `832e042`, on feat branch)** | 14 passed / 3 skipped. COVERED: C-2, C-3, C-4, C-5, C-7 · PENDING: C-9 (needs TMX-LANG-TIERS) · SKIPPED with named blockers: C-1, C-6, C-8 (all need the live pair / TMX-SEAM-CLIENT). Meta-test forbids vacuous green — silently skipping everything fails the build. **C-3 activated at integration** (it shipped skipped against a guessed API because TMX-LANGDETECT-HOLD landed in the same batch; rewritten against the real `DetectionResult.low_confidence` + typed reason) |
+| TMX-V1-DURABLE-IR | Durable execution + IR-based reconstruction (stop the `". ".join`) | Doc Pipeline | **WIP (IR half complete, `367b7b9`, on feat branch)** | Pure `_reconstruct_document_text` never invents punctuation — single space by default, line break on a real `element_type` boundary, empty segments skipped so a missing translation cannot inject a separator. **Durable-worker half deliberately NOT done** (one-way; remains TMX-ORCH-CHECKPOINT Loop B) |
+| TMX-LANGDETECT-HOLD | Source-language uncertainty becomes an explicit hold, not a silent `en` | Agent+AI | **WIP (code complete, `b21f2cb`, on feat branch)** | RS-06 cleared. `DetectionResult` gains `low_confidence` + typed `DetectionHoldReason`; returns `"und"` never `"en"`; new `decide_after_validate` edge routes to finalize so **no segment is translated under a guessed source**; `SOURCE_LANGUAGE_CONFIRMATION_REQUIRED` v2 audit event fires before the state flip (A1). Declared-language path byte-identical (TMX-SSOT-TIER preserved). Reuses `IN_REVIEW` — no new enum value |
+
+### Batch C — kernel extraction (two-way, incremental — only the slice the contract needs)
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-KERNEL-QUALITY | Extract the pure quality kernel (MQM engine + metric profiles + deterministic checks) so surfaces hold no logic | Quality+Platform | **READY** | WS2 / folds in TMX-3220. `mqm_engine.score()` is already pure — cheapest first slice |
+
+### Batch D — reSCApe side (their Backend Lock applies; prefer extending existing modules)
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-SEAM-CLIENT | Rewrite `transmax_bridge.py` in place as a thin HTTP client | Agent+AI | **BLOCKED** | on TMX-SEAM-CONTRACT. Lock-safe (existing service module) |
+| TMX-SEAM-SUBMODULE-RM | Remove `.gitmodules` entry + `packages/transmax` | Platform | **BLOCKED** | on TMX-SEAM-CLIENT |
+| TMX-SEAM-GLOSSARY-MIGRATE | Migrate reSCApe's `TranslationGlossary` + `PHARMA_GLOSSARY_FR` into the TransMax termbase store | Quality | **BLOCKED** | on TMX-SEAM-CONTRACT; pairs with TMX-TM-UNIFY |
+
+### Batch E — language & knowledge assets (reuses existing tickets; no new IDs)
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-LANG-TIERS | Declared language tier (Qualified / Supported / Available) returned in response provenance | Quality+Agent | **WIP (code complete, `898ea6a`, on feat branch)** | New `app/core/language_tiers.py`: `resolve_language_tier()` **derives** the tier from two live facts — does `LanguagePackFactory` resolve a deep pack (vs generic fallback), and does a non-empty golden `critical_safety.jsonl` exist for the pair. No hardcoded language→tier table, nothing cached; one test proves the tier *changes* when the registry does. Wiring into `ProvenanceRecord` correctly deferred: it is constructed nowhere in `app/` today, so forcing a call site would have been a fake wiring point |
+| TMX-SEAM-WIRE | Populate the contract result block on the live `/result` path from real artefacts only | Platform+Agent | **WIP (code complete, `5ca4b5a`, on feat branch)** | `disposition` from the persisted `QualityScorecard.status` (the real verdict, not `Document.status`); `provenance` from the job's own **`CONFIG_SNAPSHOT_CAPTURED` v2 audit event** — deliberately not a live `resolve_model()` call, which would report *current* config rather than what the job actually ran with; `audit.chain_head_hash` via the identical query `/verify_v2` uses, cross-checked equal in a test. **`mqm` stays `None`** — never synthesised from the legacy scorer. Spawned **TMX-VALSUMMARY-VERDICT** (pre-existing: `ValidationSummary.decision` reads `Document.status`, not the real verdict) |
+| TMX-SEAM-MQM-OPTIONAL | `SegmentResult.mqm` must be able to say "not scored yet" | Platform | **WIP (code complete, on feat branch)** | Contract defect found at integration: `mqm` shipped **required**, so the published contract could not express the system's actual state and TMX-SEAM-WIRE had to route around it entirely. A required field would force a conforming implementer — including reSCApe's generated client — to fabricate a score (C-4). Now `Optional[MqmSummary] = None`; `MqmSummary` itself stays strict so a half-populated score is still rejected. `contract/openapi.json` regenerated |
+| TMX-TM-UNIFY | One glossary model — retire the `translation_glossaries` fork | Quality | **READY** | existing ticket (Phase 3). Batch C/E agent died on an API connection error with **zero** progress (clean worktree, no commits) — re-queued, nothing to resume |
+| TMX-ENF-LEVELS | Four enforcement levels (suggested/preferred/required/locked), not binary `is_strict` | Quality | **READY** | existing ticket (Phase 3); specified in the knowledge ADR |
+| TMX-PRECEDENCE | Layered termbase precedence (MedDRA / EDQM / QRD / product) | Quality | **READY** | existing ticket (Phase 3); one flat list today |
+
+**Ordering:** Batch 0 now (approval latency). Batch A immediately and in parallel — no seam
+decisions needed. B before D. C parallel to B. E after the contract stabilises.
+
+### Spawned by Batch A–E red teams (READY — promoted from orphan prose 2026-08-07)
+
+These were spawned as real follow-ups inside seam red-team notes but never given a row, so the
+`--check-ids` lint flagged them as orphans. Promoted here so intended honesty fixes are not lost to
+the DROPPED-by-default rule. Both still need a worksheet before code.
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-AUDITLOG-ERR | `AuditLogList` must distinguish a failed fetch from an empty log, not render both as "No activity recorded" | Reviewer Frontend | **READY** | A3. Spawned by the TMX-POSTURE-FAB red team. A failed audit-log fetch currently renders identically to a genuinely empty log — a false "clean" compliance signal to a reviewer. Fix: surface a real error state + retry; never present a fetch failure as an empty-but-valid audit history |
+| TMX-VALSUMMARY-VERDICT | `ValidationSummary.decision` must read the real scorecard verdict, not `Document.status` | Quality+Platform | **READY** | Spawned by TMX-SEAM-WIRE. `decision` is derived from `Document.status` rather than the persisted `QualityScorecard.status`, so the summary can disagree with the gate that actually ran — an unearned claim of the C-4 family. Fix: read the real verdict from the same source SEAM-WIRE uses for `disposition` |
+
+### PR #22 stabilization follow-ups (filed 2026-08-08 from the code review)
+
+Spawned while stabilizing PR #22 (see `.context/loops/SEAM-STABILIZE-2026-08-08.md`). The
+first three unblock CI/merge honestly without churning this PR; the rest are tracked debt.
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-QUALITY-GATE-BASELINE | Repo-wide Code Quality baseline: sweep the legacy ruff-format (~400 files), ruff-lint (269) and mypy (374) backlog in dedicated commits, then flip the three `quality.yml` checks back to blocking | Platform | **READY** | The whole-repo Code Quality gate never passed — all three axes are legacy debt, masked because the old UNPINNED `black` step (a different formatter than pre-commit's ruff-format) failed first and stopped the job. Now aligned with pre-commit (ruff pinned `0.7.4`) + all three advisory. pre-commit already gates changed files. Do NOT bundle the sweep into a feature PR — its own PR(s) |
+| TMX-PLAYWRIGHT-LINUX-BASELINE | Generate + commit the Linux Playwright visual baseline `design-system-page-chromium-linux.png` | Reviewer Frontend | **READY** | Missing baseline fails the Frontend check. Must run `playwright test --update-snapshots` on a Linux/CI runner and be visually reviewed before commit — cannot be produced on the Windows dev box |
+| TMX-HISTORY-REWRITE-EVIDENCE | Map SHAs expunged by the 2026-08-05 security rewrite → sanitized replacements; teach the drift auditor a `SUPERSEDED_BY_SECURITY_REWRITE` state | Platform + Audit | **READY** | The purge invalidated ~86 historical worksheet SHAs; `audit_worksheet_drift.py` exits 1. Needs an ADR + an auditor state so legitimate rewritten history is not read as lying-backlog |
+| TMX-3221 (audit-v2 job id) | Reconcile Document-string-id jobs vs v2 UUID `translation_jobs` so audit-v2 inserts stop being FK-rejected | Audit & Validation | **BLOCKED (Kapil-gated, one-way)** | Verified live: Document-backed job ids have no `translation_jobs` row → `LLM_USAGE_RECORDED`/`SCORECARD_GENERATED`/etc. v2 events FK-rejected, `_audit_v2_emit` swallows it (A1/A3 gap). Identity change is one-way — needs Kapil |
+
+---
+
 ## MQM Keystone — defensibility core (Phase 1) — started 2026-06-14
 
 From the 24-agent vision-gap audit (`docs/product_vision_features/VISION-GAP-ANALYSIS-AND-ROADMAP.md`): the three defensibility pillars (MQM engine / independent judge / Black Book) are Divergent or absent. Phase 1 builds the keystone triad — **annotation → engine → judge** — strangler-fig over the existing code (ADR-0007; plan: `PHASE-1-KEYSTONE-BUILD-PLAN.md`). Engine ships in shadow; live pipeline unchanged until the flagged K5 cutover.
@@ -22,8 +152,8 @@ From the 24-agent vision-gap audit (`docs/product_vision_features/VISION-GAP-ANA
 | TMX-MQM-3 | Pure MQM-2.0 engine + shadow harness | Quality+Agent | **[Done, pending push]** | spec-binding (RQS=99; SmPC/Promo boundaries); engine-derived auto-fail; insufficient_sample separate; `ConfidenceService` untouched; 14 tests; see `.context/loops/TMX-MQM-3.md` |
 | TMX-MQM-1a | Persist `mqm_annotations` table + Alembic revision | Quality+Auth | **[READY]** | deferred from MQM-1 (engine/judge need only the in-memory object) |
 | TMX-MQM-4 | Independent judge node; wire the dead `reviewer` prompt → §5.7 output | Agent | **[READY]** | UNBLOCKED 2026-06-14: Kapil chose **model-agnostic** — build behind config, default single-model + compensating controls (planted-defect gates / disagreement escalation / cross-prompt adversarial), flip to dual-model when a 2nd in-boundary model is validated (ADR-0007 open decision resolved this way) |
-| TMX-MQM-5 (phase a) | Graph rewire — MQM engine **shadow** alongside the legacy verdict | Agent+Quality | **[Done, pending push]** | observational, changes no verdict; `mqm_shadow_enabled`; logs legacy-vs-MQM diff; 4 tests; see `.context/loops/TMX-MQM-5.md` |
-| TMX-MQM-5 (phase b) | Verdict cutover (engine = sole decider) + strip self-cert + gates→annotators + `ConfidenceService`→adapter + unify SDK fork | Agent+Quality | **[READY]** | one-way; per-tenant `mqm_engine_enabled` flag; **gated on reviewing the shadow diff**; red-team hardest |
+| TMX-MQM-5a | Graph rewire — MQM engine **shadow** alongside the legacy verdict | Agent+Quality | **[Done, pending push]** | observational, changes no verdict; `mqm_shadow_enabled`; logs legacy-vs-MQM diff; 4 tests; see `.context/loops/TMX-MQM-5.md` |
+| TMX-MQM-5b | Verdict cutover (engine = sole decider) + strip self-cert + gates→annotators + `ConfidenceService`→adapter + unify SDK fork | Agent+Quality | **[READY]** | one-way; per-tenant `mqm_engine_enabled` flag; **gated on reviewing the shadow diff**; red-team hardest |
 | TMX-MQM-5c | Content-type → metric-profile resolution (reconcile `regulatory_profiles`/`profile_resolver` onto the registry) | Quality | **[READY]** | replaces the default-profile seam in `mqm_shadow.resolve_metric_profile` |
 | TMX-MQM-6 | Bounded revise w/ conservation diff-reject + ensemble + disagreement escalation | Agent | **[READY]** | depends on MQM-4/5b; cap Tier-0/1 iterations (cost reckoning in plan §5) |
 | TMX-MQM-CAPTURE | Reviewer override → learning bridge (gold for Phase 2 κ) | Frontend+Quality | **[Done, pending push]** | reconnects the orphaned `process_learning_event`; background-task + tenant-context; `enable_hitl_learning_capture`; 3 tests; see `.context/loops/TMX-MQM-CAPTURE.md` |
@@ -273,7 +403,7 @@ The 4-agent loop verification ran on 2026-05-09 over `HEAD~30..HEAD`. Reports ar
 | TMX-3012d | Cosmetic close on the multi-tenancy sweep — remove residual `DEFAULT_ORG_ID` references outside the four canonical files (`app/models/database.py`, `app/main.py`, `app/core/database.py`, `app/models/tenant_scoped.py`) and add a regression test that walks `app/` and asserts the invariant | 2026-05-09 audit §4.1 / §6 | Auth & Tenancy | 2 — **[Done]** `d1b8ae3` — see `.context/loops/TMX-3012d.md`. Inventory: 3 REMOVE / 4 KEEP-EXPLICIT (8 lines across the 4 canonical files). REMOVEs: stale narrative comments in `app/auth/factory.py:121`, `app/api/auth.py:160`, `app/agents/runner.py:70` (no functional code touched — TMX-3012c already removed all literal arguments). New `tests/test_no_default_org_id_in_services.py` is RED on pre-fix `main`, GREEN post-fix; pattern lifts to a quality-gate rule if a 3rd such loop emerges (see spawned **TMX-3012e**). Foundation 31/31 green (audit + RBAC + blackbook 39/39 green; rule_promotion + resilience + quality_gate_thread_safety 27/27 green). Ratchet pre-existing TODO 17 vs 16 unchanged. Drift exits 0 once committed. |
 | TMX-3412 | Split `quality_gate.py` (717L) into per-defect-class modules (numeric, frequency, unit, negation) — TMX-3411 already extracted frequency data; this completes the per-class split | Quality-audit Concern #2 | Quality | 2 |
 | TMX-3017a | Complete C-06 unwind for the 7 init_db-only tables (`audit_records`, `chunk_translations`, `quality_reports`, `translation_glossaries`, `translation_jobs`, `translation_memory`, `users`) before TMX-3017 rationalisation — defensive FK skip in `audit_events_v2` migration is the visible symptom | Quality-audit Concern #3 | Auth + Platform | 2 |
-| TMX-3618 | Add Playwright visual-snapshot test for `/workspace/design-system` page — covers TMX-3601 design-token regressions | Quality-audit Concern #4 | Frontend | 2 — **[Done, pending push]** `e212408` — `frontend/e2e/design-system-visual.spec.ts` + Windows baseline (85KB) at `e2e/design-system-visual.spec.ts-snapshots/design-system-page-chromium-win32.png`. Uses `page.clock.install` to freeze REVISION_FIXTURES relative-time labels, masks `<time>` belt-and-braces, `maxDiffPixelRatio: 0.05` tolerates antialiasing. **Linux CI on first run** will fail with "snapshot doesn't exist" → fix is `npm run e2e -- design-system-visual --update-snapshots` in Linux env, then commit the linux baseline. Leading comment in the test file documents the regen procedure. e2e 21/21 (was 20, +1). |
+| TMX-DS-VISUAL | *(was TMX-3618 — id collided with File-upload validation; renamed by the board-hygiene sweep, commit `e212408` unchanged)* Add Playwright visual-snapshot test for `/workspace/design-system` page — covers TMX-3601 design-token regressions | Quality-audit Concern #4 | Frontend | 2 — **[Done, pending push]** `e212408` — `frontend/e2e/design-system-visual.spec.ts` + Windows baseline (85KB) at `e2e/design-system-visual.spec.ts-snapshots/design-system-page-chromium-win32.png`. Uses `page.clock.install` to freeze REVISION_FIXTURES relative-time labels, masks `<time>` belt-and-braces, `maxDiffPixelRatio: 0.05` tolerates antialiasing. **Linux CI on first run** will fail with "snapshot doesn't exist" → fix is `npm run e2e -- design-system-visual --update-snapshots` in Linux env, then commit the linux baseline. Leading comment in the test file documents the regen procedure. e2e 21/21 (was 20, +1). |
 | TMX-LOOP-HYGIENE | Backfill worksheets for `9d3c4e7` (CI init_db) and `97b2935` (FK test fix) — sub-ticket fixes spawned by TMX-3011's blast; one-line worksheets with `Stage 5: N/A` per loop README | Quality-audit Concern #5 | pod-A | 2 |
 | TMX-AUDIT-CLEANUP-DASH | Dashboard activity feed empty (4 tests) | Pytest-audit | Platform | 2 — **[Done]** closed by TMX-AUDIT-CLEANUP-ROUTES (same `importlib.reload` test pollution; fixing one fixed both) |
 | TMX-AUDIT-CLEANUP-DOCX | DOCX round-trip: ingestion not prefixing translatable text with `TR:` — 4 tests fail in `test_docx_roundtrip.py` (paragraph-table order, header, footer, ingestion-export order). In-flight from TMX-3700 | Pytest-audit | Pipeline | 2 — **[Pod B's lane]** — flagged, not for pod-A to touch |
@@ -299,7 +429,7 @@ The 4-agent verify-audit on 2026-05-11 went RED on Agent 2 (pytest) with 53 reds
 | TMX-CORRECTIVE-20260511 | Corrective loop — worktree restore + DB rebuild + TMX-3101 docstring fix + audit_worktree_clean.py | 2026-05-11 verify-audit Agent 2 RED | Platform & Observability | corrective — **[Done]** SHAs pending — see `.context/loops/TMX-CORRECTIVE-20260511.md`. Outcomes: (a) `git checkout HEAD --` restored 5 service-layer files reverting silent `DEFAULT_ORG_ID` re-introduction; (b) local-only `transmax.db` rebuilt with current Alembic schema (sprint6_safety 5/5 green); (c) TMX-3101 narrative-only docstring fix (writer/verifier "20 bytes" → "18 bytes (17 ASCII + 1 NUL terminator)" at 7 docstring sites; pinned hex digest unchanged); (d) new `scripts/audit_worktree_clean.py` + 5 synthetic-drift tests + advisory pre-commit hook `worktree-clean-advisory`; (e) CLAUDE.md updates for push-hygiene + recurring-`transmax.db` rebuild command. Spawned: **TMX-AUDIT-DB-3002a**, **TMX-AUDIT-WORKTREE-WATCH-CI**. |
 | TMX-AUDIT-DB-3002a | Test-fixture cleanup — migrate the ~84 test files NOT using `tests/conftest.py::fresh_engine_for_db` so the committed `transmax.db` cannot mask schema-staleness false-reds in future verify-audits | TMX-CORRECTIVE-20260511 stage 6 | Platform & Observability | 2 — **[READY]** |
 | TMX-AUDIT-WORKTREE-WATCH-CI | Promote `scripts/audit_worktree_clean.py` from advisory pre-commit hook to a blocking CI gate, after the script has run advisory-mode for 2-3 sprints without false positives | TMX-CORRECTIVE-20260511 stage 6 | Platform & Observability | 3-4 — **[READY]** after a 2-sprint stability window |
-| TMX-AUDIT-RATCHET-TODO-SWEEP | Sweep stray `TODO/FIXME/XXX/HACK/BUG` comments lacking ticket references; tightened `backend.todo_without_issue` baseline from 16 → 3 by resolving 9 self-references in `scripts/ratchet.py`, rewording 4 narrative `bug`/`buggy` false-positives, and annotating 3 real TODOs with TMX-XXXX | 2026-05-13 ratchet regression | Platform & Observability | corrective — **[Done, pending commit + push]** — see `.context/loops/TMX-AUDIT-RATCHET-TODO-SWEEP.md` |
+| *(merged — see the TODO-sweep row in the Sprint-1 table above)* | Sweep stray `TODO/FIXME/XXX/HACK/BUG` comments lacking ticket references; tightened `backend.todo_without_issue` baseline from 16 → 3 by resolving 9 self-references in `scripts/ratchet.py`, rewording 4 narrative `bug`/`buggy` false-positives, and annotating 3 real TODOs with TMX-XXXX | 2026-05-13 ratchet regression | Platform & Observability | corrective — **[Done, pending commit + push]** — see `.context/loops/TMX-AUDIT-RATCHET-TODO-SWEEP.md` |
 | TMX-AUDIT-QG-BATCH-EMBED | Batch the OpenAI embedding call in `app/services/quality_gate.py::SemanticEquivalenceCheck` — currently one pair per call (`embed_documents([source, back_translation])`); a batch path would cut latency + cost for large jobs by 10-100× | TMX-AUDIT-RATCHET-TODO-SWEEP | Quality & Regulatory | **[Backlog]** |
 | TMX-AUDIT-DB-DOCID-LOOKUP | Add `get_doc_id_from_job(job_id)` to `app/services/db_service.py`; `ReviewService.fetch_review_segments` currently has a `pass`-bodied method because the lookup doesn't exist, so the reviewer-frontend cannot resolve segments by job ID without the caller pre-fetching doc IDs | TMX-AUDIT-RATCHET-TODO-SWEEP | Auth & Tenancy + Reviewer Frontend | **[Backlog]** |
 
