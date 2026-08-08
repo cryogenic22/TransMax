@@ -125,6 +125,18 @@ the DROPPED-by-default rule. Both still need a worksheet before code.
 | TMX-AUDITLOG-ERR | `AuditLogList` must distinguish a failed fetch from an empty log, not render both as "No activity recorded" | Reviewer Frontend | **READY** | A3. Spawned by the TMX-POSTURE-FAB red team. A failed audit-log fetch currently renders identically to a genuinely empty log — a false "clean" compliance signal to a reviewer. Fix: surface a real error state + retry; never present a fetch failure as an empty-but-valid audit history |
 | TMX-VALSUMMARY-VERDICT | `ValidationSummary.decision` must read the real scorecard verdict, not `Document.status` | Quality+Platform | **READY** | Spawned by TMX-SEAM-WIRE. `decision` is derived from `Document.status` rather than the persisted `QualityScorecard.status`, so the summary can disagree with the gate that actually ran — an unearned claim of the C-4 family. Fix: read the real verdict from the same source SEAM-WIRE uses for `disposition` |
 
+### PR #22 stabilization follow-ups (filed 2026-08-08 from the code review)
+
+Spawned while stabilizing PR #22 (see `.context/loops/SEAM-STABILIZE-2026-08-08.md`). The
+first three unblock CI/merge honestly without churning this PR; the rest are tracked debt.
+
+| Ticket | Title | Owner | Status | Notes |
+|---|---|---|---|---|
+| TMX-QUALITY-GATE-BASELINE | Repo-wide Code Quality baseline: sweep the legacy ruff-format (~400 files), ruff-lint (269) and mypy (374) backlog in dedicated commits, then flip the three `quality.yml` checks back to blocking | Platform | **READY** | The whole-repo Code Quality gate never passed — all three axes are legacy debt, masked because the old UNPINNED `black` step (a different formatter than pre-commit's ruff-format) failed first and stopped the job. Now aligned with pre-commit (ruff pinned `0.7.4`) + all three advisory. pre-commit already gates changed files. Do NOT bundle the sweep into a feature PR — its own PR(s) |
+| TMX-PLAYWRIGHT-LINUX-BASELINE | Generate + commit the Linux Playwright visual baseline `design-system-page-chromium-linux.png` | Reviewer Frontend | **READY** | Missing baseline fails the Frontend check. Must run `playwright test --update-snapshots` on a Linux/CI runner and be visually reviewed before commit — cannot be produced on the Windows dev box |
+| TMX-HISTORY-REWRITE-EVIDENCE | Map SHAs expunged by the 2026-08-05 security rewrite → sanitized replacements; teach the drift auditor a `SUPERSEDED_BY_SECURITY_REWRITE` state | Platform + Audit | **READY** | The purge invalidated ~86 historical worksheet SHAs; `audit_worksheet_drift.py` exits 1. Needs an ADR + an auditor state so legitimate rewritten history is not read as lying-backlog |
+| TMX-3221 (audit-v2 job id) | Reconcile Document-string-id jobs vs v2 UUID `translation_jobs` so audit-v2 inserts stop being FK-rejected | Audit & Validation | **BLOCKED (Kapil-gated, one-way)** | Verified live: Document-backed job ids have no `translation_jobs` row → `LLM_USAGE_RECORDED`/`SCORECARD_GENERATED`/etc. v2 events FK-rejected, `_audit_v2_emit` swallows it (A1/A3 gap). Identity change is one-way — needs Kapil |
+
 ---
 
 ## MQM Keystone — defensibility core (Phase 1) — started 2026-06-14
