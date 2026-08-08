@@ -205,6 +205,53 @@ def test_result_carries_contract_version_and_real_disposition(fresh_app_client):
     )
 
 
+def test_quality_summary_decision_is_the_scorecard_verdict_not_doc_status(fresh_app_client):
+    """TMX-VALSUMMARY-VERDICT (A3): the legacy `quality_summary.decision` must
+    report the REAL scorecard verdict, never `Document.status`. Here the doc is
+    TRANSLATED but the scorecard says REVIEW_REQUIRED — a reviewer must see the
+    verdict, not the workflow state that looks clean."""
+    client, core_db, _ = fresh_app_client
+    from app.core.tenant_context import org_context
+    from app.models.database import DEFAULT_ORG_ID
+
+    _seed_org(core_db.engine, DEFAULT_ORG_ID)
+    with org_context(DEFAULT_ORG_ID):
+        job_id = _seed_completed_job(
+            core_db, DEFAULT_ORG_ID, scorecard_status="REVIEW_REQUIRED",
+        )
+
+    resp = client.get(f"/api/v1/translations/{job_id}/result")
+    assert resp.status_code == 200, resp.text
+    summary = resp.json()["quality_summary"]
+
+    assert summary["decision"] == "REVIEW_REQUIRED"
+    assert summary["decision"].lower() != "translated", (
+        "decision must be the scorecard verdict, never the Document workflow state"
+    )
+    # counts come from the real scorecard (REVIEW_REQUIRED seeds one major).
+    assert summary["major_count"] == 1
+
+
+def test_quality_summary_says_not_scored_when_no_scorecard(fresh_app_client):
+    """No scorecard must read as an explicit NOT_SCORED — never Document.status
+    and never a fabricated clean verdict. The zero counts must carry a
+    non-verdict decision so they cannot read as a clean pass (A3)."""
+    client, core_db, _ = fresh_app_client
+    from app.core.tenant_context import org_context
+    from app.models.database import DEFAULT_ORG_ID
+
+    _seed_org(core_db.engine, DEFAULT_ORG_ID)
+    with org_context(DEFAULT_ORG_ID):
+        job_id = _seed_completed_job(core_db, DEFAULT_ORG_ID, scorecard_status=None)
+
+    resp = client.get(f"/api/v1/translations/{job_id}/result")
+    assert resp.status_code == 200, resp.text
+    summary = resp.json()["quality_summary"]
+
+    assert summary["decision"] == "NOT_SCORED"
+    assert summary["decision"].lower() != "translated"
+
+
 def test_disposition_blocked_when_scorecard_says_blocked(fresh_app_client):
     """A different real verdict (BLOCKED) is not silently normalised to PASS."""
     client, core_db, _ = fresh_app_client

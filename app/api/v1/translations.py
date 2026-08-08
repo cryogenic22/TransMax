@@ -311,25 +311,39 @@ def get_job_result(job_id: str, db: Session = Depends(get_db)):
     segments = db.query(Segment).filter(Segment.document_id == job_id).order_by(Segment.order_index).all()
     full_text = _reconstruct_document_text(segments)
     
-    # Calc Quality Stats
+    # Quality summary — TMX-VALSUMMARY-VERDICT (A3). Two defects fixed here:
+    #  1. `decision` used to read `Document.status` (workflow state: UPLOADED /
+    #     TRANSLATED / IN_REVIEW / APPROVED). That is NOT the quality verdict.
+    #     It now comes from `QualityScorecard.status` — the PASS/BLOCK/REVIEW
+    #     the gate actually decided on (the same source `_derive_disposition`
+    #     uses). A scorecard saying REVIEW while the doc is TRANSLATED no longer
+    #     surfaces as a clean-looking result.
+    #  2. The old broad `except Exception` swallowed a genuine lookup failure
+    #     into a "0 defects" summary — falsely-empty quality evidence. Each
+    #     state is now explicit, and zero counts always carry a non-verdict
+    #     decision (NOT_SCORED / UNAVAILABLE) so they can never read as a pass.
     scorecard: Optional[QualityScorecard] = None
     try:
         scorecard = db.query(QualityScorecard).filter(QualityScorecard.job_id == job_id).first()
-
-        summary = ValidationSummary(
-            critical_count=scorecard.critical_defect_count if scorecard else 0,
-            major_count=scorecard.major_defect_count if scorecard else 0,
-            minor_count=scorecard.minor_defect_count if scorecard else 0,
-            decision=doc.status.value if hasattr(doc.status, 'value') else doc.status,
-            semantic_drift=scorecard.semantic_drift_score if scorecard else None
-        )
     except Exception:
-        # Fallback if no scorecard. The disposition/provenance/audit block
-        # below must not claim a verdict it couldn't actually look up either
-        # — force scorecard back to None so `_derive_disposition` also
-        # returns None rather than reading a half-fetched object (A3).
-        summary = ValidationSummary(critical_count=0, major_count=0, minor_count=0, decision="UNKNOWN")
+        logger.exception("QualityScorecard lookup failed for job %s", job_id)
         scorecard = None
+        summary = ValidationSummary(
+            critical_count=0, major_count=0, minor_count=0, decision="UNAVAILABLE",
+        )
+    else:
+        if scorecard is not None:
+            summary = ValidationSummary(
+                critical_count=scorecard.critical_defect_count,
+                major_count=scorecard.major_defect_count,
+                minor_count=scorecard.minor_defect_count,
+                decision=scorecard.status,
+                semantic_drift=scorecard.semantic_drift_score,
+            )
+        else:
+            summary = ValidationSummary(
+                critical_count=0, major_count=0, minor_count=0, decision="NOT_SCORED",
+            )
 
     # TMX-SEAM-WIRE (ADR-0009 clause 3): the result block, wired honestly —
     # every field below is either derived from a real persisted artefact or
