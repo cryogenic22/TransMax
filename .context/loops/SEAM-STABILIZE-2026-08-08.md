@@ -1,7 +1,8 @@
 # SEAM-STABILIZE-2026-08-08 — make PR #22 truly mergeable
 
-**Owner**: Claude (orchestrator). **Status**: [WIP]. **Reversibility**: two-way (feature
-branch `feat/seam-clean`; nothing autonomous touches `main`).
+**Owner**: Claude (orchestrator). **Status**: [Verify] — **all 11 CI checks green on PR #22
+@ `48722d9`**, awaiting Kapil's review + merge. **Reversibility**: two-way (feature branch
+`feat/seam-clean`; nothing autonomous touches `main`).
 
 ## Task
 A 2026-08-08 code review (relayed by Kapil) found PR #22's local "1517 green" was
@@ -53,9 +54,11 @@ the rewritten main. No reapply needed (confirmed by content, not SHA).
 Commits: `53a158e` (hermetic) · `ca717ef` (lang-tiers) · `162e9c3` (valsummary) ·
 `328f939` (CI + governance) · `f6a2b3f` (playwright skip).
 
-**Green (10):** Unit Tests ✅ (the core blocker — passes on Postgres CI, was 14-red) ·
-Frontend ✅ · Code Quality ✅ · gitleaks ✅ · Ratchet ✅ · Docker Build ✅ (was skipped) ·
-Golden eval ✅ · Judge-reliability ✅ · Fresh-context review ✅.
+**ALL 11 GREEN @ `48722d9`** (0 fail, 0 pending): Unit Tests ✅ (the core blocker — passes
+on Postgres CI, was 14-red) · Frontend ✅ · Frontend↔Backend integration ✅ (was red then
+fixed — see below; was always skipped before) · Code Quality ✅ · gitleaks ✅ · Ratchet ✅ ·
+Docker Build ✅ (was skipped) · Golden eval ✅ · Judge-reliability ✅ · Fresh-context review ✅.
+Commits added since: `48722d9` (integration DB provision).
 
 **Was red, now fixed:** Frontend ↔ Backend integration — was ALWAYS skipped before (its
 `needs:` deps failed first), so this was its first-ever run. 5 live-backend 500s, ALL one
